@@ -2,4 +2,20 @@
 <resources>
     <string name="app_name">WoR Scanner</string>
     <string name="touch_service_description">Taps through the gear storage of Watcher of Realms while a scan runs. Nothing is read from other apps.</string>
+
+    <string name="prepare_title">Before a scan</string>
+    <string name="prepare_accessibility">Accessibility service on</string>
+    <string name="prepare_overlay">Draw over other apps</string>
+    <string name="prepare_capture">Screen capture allowed</string>
+    <string name="prepare_open_settings">Open settings</string>
+    <string name="prepare_allow">Allow</string>
+    <string name="prepare_follow">Follow the scan</string>
+
+    <string name="capture_channel">Screen capture</string>
+    <string name="capture_notification_title">WoR Scanner is capturing the screen</string>
+
+    <string name="overlay_capture">Capture</string>
+    <string name="overlay_stop">Stop</string>
+    <string name="overlay_kept">Kept %1$s</string>
+    <string name="overlay_capture_failed">Capture failed: %1$s</string>
 </resources>
