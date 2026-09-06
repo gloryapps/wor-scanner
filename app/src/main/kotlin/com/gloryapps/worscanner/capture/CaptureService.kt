@@ -94,7 +94,7 @@ class CaptureService : LifecycleService() {
     private fun show(state: ScanState) {
         val text = when (state) {
             ScanState.Idle -> getString(R.string.capture_notification_title)
-            is ScanState.Running -> getString(R.string.scan_running, state.progress.done, state.progress.total)
+            is ScanState.Running -> getString(R.string.scan_running, state.progress.done, state.progress.held)
             is ScanState.Ended -> when (val outcome = state.outcome) {
                 is Outcome.Finished -> getString(R.string.scan_finished, outcome.entries.size)
                 is Outcome.Stopped -> getString(R.string.scan_stopped, outcome.reason.name.lowercase().replace('_', ' '), outcome.entries.size)

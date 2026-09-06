@@ -2,7 +2,6 @@ package com.gloryapps.worscanner.scanner.walk
 
 import com.gloryapps.worscanner.scanner.Frame
 import com.gloryapps.worscanner.scanner.catalogue.Slot
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -20,6 +19,9 @@ class WalkTest {
 
     private fun walkOver(storage: FakeStorage) = Walk(storage, storage, storage, keeper, settleMillis = 0)
 
+    /** The piece each entry read, which the fake prints as its ATK Bonus. */
+    private fun Outcome.pieces() = entries.map { it.card.attributes.single().value.toInt() }
+
     @Test
     fun `every piece on one screen is tapped once, in reading order`() = runTest {
         val storage = FakeStorage(pieces = 10)
@@ -27,12 +29,10 @@ class WalkTest {
         val outcome = walkOver(storage).run()
 
         assertIs<Outcome.Finished>(outcome)
+        assertEquals((0 until 10).toList(), outcome.pieces())
         assertEquals((0 until 10).toList(), outcome.entries.map { it.index })
         assertEquals(10, storage.taps.size)
-        /* One drag downward, to learn the grid was already at its top. */
-        assertEquals(1, storage.drags)
-        assertEquals(174 to 285, storage.taps.first())
-        assertEquals(254 to 471, storage.taps[8])
+        assertEquals(0, storage.drags)
     }
 
     @Test
@@ -43,8 +43,8 @@ class WalkTest {
         outcome.entries.forEach { entry ->
             assertEquals("cataclysm", entry.card.set)
             assertEquals(Slot.RING, entry.card.slot)
-            assertEquals(entry.index.toDouble(), entry.card.attributes.single().value)
         }
+        assertEquals((0 until 30).toList(), outcome.pieces())
     }
 
     @Test
@@ -54,53 +54,58 @@ class WalkTest {
         val outcome = walkOver(storage).run()
 
         assertIs<Outcome.Finished>(outcome)
-        assertEquals(30, outcome.entries.size)
-        assertEquals((0 until 30).toList(), outcome.entries.map { it.index })
+        assertEquals((0 until 30).toList(), outcome.pieces())
         assertTrue(storage.drags >= 1)
     }
 
     @Test
     fun `a drag that stops between two rows is found out by the tiles, not assumed`() = runTest {
-        val storage = FakeStorage(pieces = 35, rowsPerDrag = 1.4)
-
-        val outcome = walkOver(storage).run()
+        val outcome = walkOver(FakeStorage(pieces = 35, rowsPerDrag = 1.4)).run()
 
         assertIs<Outcome.Finished>(outcome)
-        assertEquals((0 until 35).toList(), outcome.entries.map { it.index })
-        assertEquals((0 until 35).map { it.toDouble() }, outcome.entries.map { it.card.attributes.single().value })
+        assertEquals((0 until 35).toList(), outcome.pieces())
     }
 
     @Test
     fun `a drag that overshoots is found out just the same`() = runTest {
-        val storage = FakeStorage(pieces = 42, rowsPerDrag = 1.6)
-
-        val outcome = walkOver(storage).run()
+        val outcome = walkOver(FakeStorage(pieces = 42, rowsPerDrag = 1.6)).run()
 
         assertIs<Outcome.Finished>(outcome)
-        assertEquals((0 until 42).toList(), outcome.entries.map { it.index })
-        assertEquals((0 until 42).map { it.toDouble() }, outcome.entries.map { it.card.attributes.single().value })
+        assertEquals((0 until 42).toList(), outcome.pieces())
     }
 
     @Test
-    fun `the last rows settle on the viewport's floor and are still read`() = runTest {
-        val storage = FakeStorage(pieces = 29)
-
-        val outcome = walkOver(storage).run()
+    fun `the last rows settle on the viewport's floor and are still read, the partial one included`() = runTest {
+        val outcome = walkOver(FakeStorage(pieces = 29)).run()
 
         assertIs<Outcome.Finished>(outcome)
-        assertEquals((0 until 29).toList(), outcome.entries.map { it.index })
-        assertEquals((0 until 29).map { it.toDouble() }, outcome.entries.map { it.card.attributes.single().value })
+        assertEquals((0 until 29).toList(), outcome.pieces())
     }
 
     @Test
-    fun `a grid left scrolled is brought back to the top before the first tap`() = runTest {
-        val storage = FakeStorage(pieces = 42, startRow = 3)
-
-        val outcome = walkOver(storage).run()
+    fun `the walk begins on the piece the game has selected`() = runTest {
+        val outcome = walkOver(FakeStorage(pieces = 30, selected = 9)).run()
 
         assertIs<Outcome.Finished>(outcome)
-        assertEquals((0 until 42).toList(), outcome.entries.map { it.index })
-        assertEquals((0 until 42).map { it.toDouble() }, outcome.entries.map { it.card.attributes.single().value })
+        assertEquals((9 until 30).toList(), outcome.pieces())
+        assertEquals(0, outcome.entries.first().index)
+        assertEquals(0 to 2, outcome.entries.first().row to outcome.entries.first().column)
+    }
+
+    @Test
+    fun `a grid left scrolled with nothing selected begins on the first whole row in view`() = runTest {
+        val outcome = walkOver(FakeStorage(pieces = 42, scrolledRows = 1.4)).run()
+
+        assertIs<Outcome.Finished>(outcome)
+        assertEquals((14 until 42).toList(), outcome.pieces())
+    }
+
+    @Test
+    fun `a selected piece on a scrolled grid is where the walk begins`() = runTest {
+        val outcome = walkOver(FakeStorage(pieces = 42, scrolledRows = 2.0, selected = 18)).run()
+
+        assertIs<Outcome.Finished>(outcome)
+        assertEquals((18 until 42).toList(), outcome.pieces())
     }
 
     @Test
@@ -131,7 +136,7 @@ class WalkTest {
             val job = launch {
                 ended = Walk(storage, storage, storage, keeper, settleMillis = 1_000).run(entries)
             }
-            testScheduler.advanceTimeBy(4_500)
+            testScheduler.advanceTimeBy(3_500)
             job.cancel()
             job.join()
         }

@@ -76,7 +76,7 @@ fun OverlayContent(
                     is ScanState.Running -> {
                         /* Worded without a slash, so the count region can never take it for the header's. */
                         Text(
-                            stringResource(R.string.overlay_scanning, held.progress.done, held.progress.total),
+                            stringResource(R.string.overlay_scanning, held.progress.done, held.progress.held),
                             Modifier.padding(horizontal = 8.dp),
                         )
                         Button(onClick = { CaptureService.stopScan(context) }) { Text(stringResource(R.string.overlay_stop)) }

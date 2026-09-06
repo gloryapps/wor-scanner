@@ -17,8 +17,8 @@ import kotlin.math.abs
  * Null where no shift gathers enough pairs, which is a screen that is no longer the storage.
  */
 fun shiftByText(before: List<Line>, after: List<Line>, grid: Box, columnPitch: Int): Int? {
-    val was = before.filter { grid.holds(it) && it.votes() }
-    val now = after.filter { grid.holds(it) && it.votes() }.groupBy { it.text }
+    val was = before.filter { grid.holds(it) && it.namesATile() }
+    val now = after.filter { grid.holds(it) && it.namesATile() }.groupBy { it.text }
     val votes = HashMap<Int, MutableList<Int>>()
 
     for (line in was) {
@@ -34,8 +34,6 @@ fun shiftByText(before: List<Line>, after: List<Line>, grid: Box, columnPitch: I
 
     return best.average().toInt()
 }
-
-private fun Line.votes(): Boolean = !text.trim().startsWith("+")
 
 /** Pixels within which two shifts count as one vote. */
 private const val BUCKET = 6

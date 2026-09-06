@@ -4,7 +4,6 @@ import com.gloryapps.worscanner.scanner.Frame
 import com.gloryapps.worscanner.scanner.Screen
 import com.gloryapps.worscanner.scanner.TextReader
 import com.gloryapps.worscanner.scanner.Touch
-import com.gloryapps.worscanner.scanner.reading.Box
 import com.gloryapps.worscanner.scanner.reading.Line
 import com.gloryapps.worscanner.scanner.reading.readGearCard
 import com.gloryapps.worscanner.scanner.reading.rowsOf
@@ -18,9 +17,10 @@ fun interface Keeper {
 
 /**
  * The walk over the storage: tap a tile, read the panel, next tile; drag when the next row sits
- * too low to tap and find where the grid landed by the tiles already seen.
+ * too low to tap and find where the grid landed by the words on its tiles.
  *
- * A piece's identity is its place in the grid, never its content: two equal pieces are two entries.
+ * It begins on the tile the game has selected, or on the first whole row in view where none is,
+ * and ends where the rows run out. A piece's identity is its place in the walk, never its content.
  */
 class Walk(
     private val screen: Screen,
@@ -31,7 +31,7 @@ class Walk(
     private val settleMillis: Long = 250,
 ) {
     /**
-     * Walks the whole storage, filling `entries` as it goes.
+     * Walks the storage from where it stands to its end, filling `entries` as it goes.
      *
      * The list is the caller's so that a cancelled walk, which ends by the exception it must, still
      * leaves the caller holding what was read before it.
@@ -42,25 +42,27 @@ class Walk(
     private suspend fun walk(entries: MutableList<ScanEntry>, progress: suspend (Progress) -> Unit): Outcome {
         var frame = screen.capture()
         var lines = reader.read(frame)
-        val total = countIn(rowsWithin(frame, lines, layout.count))
+        val held = countIn(rowsWithin(frame, lines, layout.count))
             ?: return Outcome.Stopped(Outcome.Reason.STORAGE_NOT_OPEN, entries)
-        val rows = (total + layout.columns - 1) / layout.columns
         val pitch = layout.pitchY(frame.height)
         val floor = (layout.gridBottom * frame.height).toInt()
-        val grid = layout.grid.box(frame.width, frame.height)
-        val columnPitch = (layout.tilePitchX * frame.width).toInt()
+        val grid = layout.gridBox(frame)
+        val columnPitch = layout.pitchX(frame.width)
         /* A row is tapped where it sits whole; at the grid's end, where a drag moves nothing, a row still mostly in view will do. */
         val lowest = floor - pitch / 2
         val lowestAtEnd = floor - pitch / 4
 
-        /* The grid may have been left anywhere; the walk starts from row zero. */
-        frame = toTop(frame, lines, grid, columnPitch).also { lines = reader.read(it) }
-        /* The centre of row zero, which the grid carries upward as it scrolls. */
-        var origin = (layout.firstTileY * frame.height).toInt()
+        /* The centre of the row the walk began on, which the grid carries upward as it scrolls. */
+        var origin = topRowCentre(lines, layout, frame) ?: return Outcome.Stopped(Outcome.Reason.STORAGE_NOT_OPEN, entries)
+        val rowsInView = (0..(floor - origin) / pitch).map { origin + it * pitch }
+        val (startRow, startColumn) = selectedTile(frame, layout, rowsInView) ?: (0 to 0)
+        origin += startRow * pitch
 
-        for (row in 0 until rows) {
+        var row = 0
+        var atEnd = false
+        while (true) {
             while (origin + row * pitch > lowest) {
-                scroll(frame, layout.rowsPerDrag)
+                scroll(frame)
                 val moved = screen.capture()
                 val movedLines = reader.read(moved)
                 val shift = shiftByText(lines, movedLines, grid, columnPitch)
@@ -70,54 +72,39 @@ class Walk(
                 if (shift > 0) {
                     origin -= shift
                 } else if (origin + row * pitch <= lowestAtEnd) {
+                    atEnd = true
                     break
                 } else {
-                    return Outcome.Stopped(Outcome.Reason.GRID_LOST, entries)
+                    return Outcome.Finished(entries)
                 }
             }
 
-            for (column in 0 until layout.columns) {
-                val index = row * layout.columns + column
-                if (index >= total) break
-
-                touch.tap(layout.tileX(column, frame.width), origin + row * pitch)
+            val centreY = origin + row * pitch
+            var any = false
+            for (column in (if (row == 0) startColumn else 0) until layout.columns) {
+                if (!tileAt(lines, layout, frame, column, centreY)) break
+                any = true
+                touch.tap(layout.tileX(column, frame.width), centreY)
                 delay(settleMillis)
                 frame = screen.capture()
                 lines = reader.read(frame)
                 val panel = rowsWithin(frame, lines, layout.panel)
-                var entry = ScanEntry(index, row, column, readGearCard(panel), panel)
+                var entry = ScanEntry(entries.size, row, column, readGearCard(panel), panel)
                 if (entry.unread) entry = entry.copy(png = keeper.keep(frame, entry))
                 entries += entry
-                progress(Progress(entries.size, total))
+                progress(Progress(entries.size, held))
             }
+            if (!any || atEnd && !tileAt(lines, layout, frame, 0, centreY + pitch)) return Outcome.Finished(entries)
+            row++
         }
-
-        return Outcome.Finished(entries)
     }
 
     /** Dragged slowly so the grid stops near where the finger does; where exactly is measured after. */
-    private suspend fun scroll(frame: Frame, rows: Int) {
+    private suspend fun scroll(frame: Frame) {
         val x = (layout.dragX * frame.width).toInt()
         val from = (layout.dragFromY * frame.height).toInt()
-        touch.drag(x, from, x, from - rows * layout.pitchY(frame.height), DRAG_MILLIS)
+        touch.drag(x, from, x, from - layout.rowsPerDrag * layout.pitchY(frame.height), DRAG_MILLIS)
         delay(settleMillis)
-    }
-
-    /** Dragged downward, a screen at a time, until the grid stops moving: that is its top. */
-    private suspend fun toTop(start: Frame, startLines: List<Line>, grid: Box, columnPitch: Int): Frame {
-        var frame = start
-        var lines = startLines
-        repeat(MOST_DRAGS_TO_TOP) {
-            scroll(frame, -ROWS_PER_DRAG_TO_TOP)
-            val moved = screen.capture()
-            val movedLines = reader.read(moved)
-            val shift = shiftByText(lines, movedLines, grid, columnPitch)
-            frame = moved
-            lines = movedLines
-            if (shift == 0) return frame
-        }
-
-        return frame
     }
 
     private fun rowsWithin(frame: Frame, lines: List<Line>, region: Region): List<String> {
@@ -128,7 +115,5 @@ class Walk(
 
     private companion object {
         const val DRAG_MILLIS = 900L
-        const val ROWS_PER_DRAG_TO_TOP = 3
-        const val MOST_DRAGS_TO_TOP = 400
     }
 }

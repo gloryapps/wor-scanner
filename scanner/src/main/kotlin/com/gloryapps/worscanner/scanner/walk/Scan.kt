@@ -3,7 +3,11 @@ package com.gloryapps.worscanner.scanner.walk
 import com.gloryapps.worscanner.scanner.reading.ScannedGear
 import kotlinx.serialization.Serializable
 
-/** One piece as the walk found it: where it sat in the grid, what the reader made of its panel, and the rows read. */
+/**
+ * One piece as the walk found it: its place in the walk, what the reader made of its panel, and
+ * the rows read. `row` and `column` count from the tile the walk began on, which is the selected
+ * one or the first in view.
+ */
 @Serializable
 data class ScanEntry(
     val index: Int,
@@ -30,4 +34,5 @@ sealed interface Outcome {
     val entries: List<ScanEntry>
 }
 
-data class Progress(val done: Int, val total: Int)
+/** How many pieces are read, and how many the header says the storage holds. */
+data class Progress(val done: Int, val held: Int)
