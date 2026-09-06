@@ -14,8 +14,13 @@ the azhor lab imports. Distributed as an APK on GitHub, not on the Play Store.
   `AccessibilityService` using `dispatchGesture` (taps and swipes, blind: the game is Unity and
   exposes no view tree), ML Kit (text) and the file writer; holds the foreground service that runs
   the walk, the floating button drawn over the game, and the two screens.
-- The catalogue's words (sets, slots, attribute names) reach `scanner` as a JSON asset generated
-  from the azhor-wor monorepo's `@wor/catalogue`. One source; the app never hand-copies a name.
+- The catalogue (sets, slots, attribute names, variants, factions) is `scanner`'s own, transcribed
+  from the wiki's Gear page. The app depends on no other repository: what it shares with the azhor
+  lab is the JSON it writes, not code. A word the catalogue lacks reads as `null` beside the raw
+  lines, and the lab's picker settles it. The wiki's Gear page is behind Cloudflare; the
+  transcription was made from azhor-wor's verbatim copy, `docs/gear.md`. If the two transcriptions
+  drift, the option on the table is a third project, a library both read; not now.
+- The `Exclusive` line's name is written as read; who that hero or faction is belongs to the lab.
 - Named after what it is, never where it sits: `scanner`, not `core:domain`.
 
 ## State
@@ -76,3 +81,9 @@ the azhor lab imports. Distributed as an APK on GitHub, not on the Play Store.
   resolution, and a second aspect ratio is to be checked against the first sample.
 - The card's banner says `Variant` where the old reader knew `Ancient`; both are words of the
   reader.
+
+## Open decisions
+
+- Interview the user to define which game languages the reader must know beyond English. Many
+  players run the game in another language; the catalogue's ids stay English and each language
+  adds its own words for the same entries.

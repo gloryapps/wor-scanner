@@ -13,8 +13,8 @@ GitHub.
 ## Rules
 
 - `scanner` imports nothing from Android. `app` implements its interfaces.
-- The catalogue's words arrive as a generated JSON asset from the azhor-wor monorepo; never type
-  a set, slot or attribute name by hand.
+- The catalogue in `scanner` is transcribed from the wiki's Gear page, spelled as the page spells
+  it. No code or data is shared with the azhor lab: the JSON the app writes is the whole contract.
 - Use `resultOf { }`, never `runCatching`: it swallows `CancellationException`.
 - A piece's identity is its grid position, never its content.
 - Positions are fractions of the display, never pixels.
