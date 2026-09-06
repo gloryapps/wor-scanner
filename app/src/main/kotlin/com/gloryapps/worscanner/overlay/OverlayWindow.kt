@@ -18,7 +18,8 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
  * A Compose view over every other app, owned by the service that shows it.
  *
  * Compose needs a lifecycle and a saved-state owner on the view tree; a service has neither, so
- * this window carries its own and walks them with show and hide.
+ * this window carries its own. They run once: a window is shown once and hidden once, and the
+ * service makes a new one to show the overlay again.
  */
 class OverlayWindow(private val context: Context) : LifecycleOwner, SavedStateRegistryOwner {
     private val registry = LifecycleRegistry(this)

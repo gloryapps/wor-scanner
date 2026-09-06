@@ -1,19 +1,20 @@
 package com.gloryapps.worscanner.walk
 
+import com.gloryapps.worscanner.scanner.Touch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** Whether the system has the accessibility service bound, which only the service itself knows. */
+/** The hand while the system has the accessibility service bound, which only the service itself knows. */
 class TouchState {
-    private val _connected = MutableStateFlow(false)
-    val connected: StateFlow<Boolean> = _connected.asStateFlow()
+    private val _hand = MutableStateFlow<Touch?>(null)
+    val hand: StateFlow<Touch?> = _hand.asStateFlow()
 
-    fun bound() {
-        _connected.value = true
+    fun bound(hand: Touch) {
+        _hand.value = hand
     }
 
     fun unbound() {
-        _connected.value = false
+        _hand.value = null
     }
 }

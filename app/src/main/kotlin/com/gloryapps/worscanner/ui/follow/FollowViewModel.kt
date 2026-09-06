@@ -37,6 +37,13 @@ class FollowViewModel(
 
     fun shareIntent(kept: Kept): Intent = exports.shareIntent(kept.files)
 
+    fun text(kept: Kept): String = readings.text(kept)
+
+    fun delete(kept: Kept) {
+        readings.delete(kept)
+        refresh()
+    }
+
     fun heard() = _state.update { it.copy(said = null) }
 
     private inline fun MutableStateFlow<FollowState>.update(change: (FollowState) -> FollowState) {

@@ -8,6 +8,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.gloryapps.worscanner.ui.follow.FollowScreen
+import com.gloryapps.worscanner.ui.follow.ViewScreen
 import com.gloryapps.worscanner.ui.prepare.PrepareScreen
 import kotlinx.serialization.Serializable
 
@@ -15,9 +16,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object Prepare : NavKey
 
-/** A scan under way, or the last one's result. */
+/** What was kept: readings and scans, to look at, share, save or delete. */
 @Serializable
 data object Follow : NavKey
+
+/** One kept JSON, shown as written. */
+@Serializable
+data class View(val stamp: String) : NavKey
 
 @Composable
 fun Navigation() {
@@ -32,7 +37,8 @@ fun Navigation() {
         ),
         entryProvider = entryProvider {
             entry<Prepare> { PrepareScreen(onFollow = { backStack.add(Follow) }) }
-            entry<Follow> { FollowScreen() }
+            entry<Follow> { FollowScreen(onView = { backStack.add(View(it.stamp)) }, onBack = { backStack.removeLastOrNull() }) }
+            entry<View> { ViewScreen(it.stamp, onBack = { backStack.removeLastOrNull() }) }
         },
     )
 }

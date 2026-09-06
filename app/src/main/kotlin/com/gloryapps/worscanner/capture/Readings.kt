@@ -14,34 +14,46 @@ import java.time.format.DateTimeFormatter
 @Serializable
 data class Reading(val width: Int, val height: Int, val lines: List<Line>, val card: ScannedGear)
 
-/** A reading on disk: the JSON and the PNG that share a stamp. */
-data class Kept(val stamp: String, val json: File, val png: File) {
-    val files: List<File> get() = listOf(json, png)
+/** Something kept on disk under a stamp: a reading's JSON and PNG, or a scan's folder. */
+data class Kept(val stamp: String, val kind: String, val files: List<File>) {
+    val at: LocalDateTime get() = LocalDateTime.parse(stamp, STAMP)
 }
 
-/** Where a reading goes to be looked at later: the app's own external folder, a PNG and a JSON per stamp. */
+val STAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+
+/** Where readings and scans go to be looked at later: the app's own external folder. */
 class Readings(private val context: Context) {
     private val json = Json { prettyPrint = true }
-    private val folder: File get() = File(context.getExternalFilesDir(null), "readings").apply { mkdirs() }
+    private val readings: File get() = File(context.getExternalFilesDir(null), "readings").apply { mkdirs() }
+    private val scans: File get() = File(context.getExternalFilesDir(null), "scans").apply { mkdirs() }
 
     fun keep(frame: BitmapFrame, reading: Reading): Kept {
         val stamp = LocalDateTime.now().format(STAMP)
-        val kept = at(stamp)
-        kept.png.outputStream().use { frame.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        kept.json.writeText(json.encodeToString(reading))
+        val png = File(readings, "$stamp.png")
+        val text = File(readings, "$stamp.json")
+        png.outputStream().use { frame.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        text.writeText(json.encodeToString(reading))
 
-        return kept
+        return Kept(stamp, "reading", listOf(text, png))
+    }
+
+    /** The JSON of a kept thing, as written. */
+    fun text(kept: Kept): String = kept.files.first { it.extension == "json" }.readText()
+
+    fun delete(kept: Kept) {
+        kept.files.forEach { it.delete() }
+        if (kept.kind == "scan") File(scans, kept.stamp).delete()
     }
 
     /** Newest first, which is the one the reader came to look at. */
-    fun list(): List<Kept> = folder.listFiles { file -> file.extension == "json" }
-        .orEmpty()
-        .map { at(it.nameWithoutExtension) }
-        .sortedByDescending { it.stamp }
+    fun list(): List<Kept> {
+        val read = readings.listFiles { file -> file.extension == "json" }.orEmpty().map {
+            Kept(it.nameWithoutExtension, "reading", listOf(it, File(readings, "${it.nameWithoutExtension}.png")))
+        }
+        val scanned = scans.listFiles { file -> file.isDirectory }.orEmpty().map { folder ->
+            Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name })
+        }
 
-    private fun at(stamp: String) = Kept(stamp, File(folder, "$stamp.json"), File(folder, "$stamp.png"))
-
-    private companion object {
-        val STAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+        return (read + scanned).sortedByDescending { it.stamp }
     }
 }

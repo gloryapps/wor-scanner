@@ -11,15 +11,25 @@
     <string name="prepare_allow">Allow</string>
     <string name="prepare_follow">Readings</string>
 
+    <string name="back">Back</string>
     <string name="follow_title">Readings</string>
+    <string name="view_title">JSON</string>
     <string name="follow_empty">No reading yet. Press Read over the game.</string>
+    <string name="follow_view">View</string>
     <string name="follow_share">Share</string>
+    <string name="follow_delete">Delete</string>
     <string name="follow_download">Save to Downloads</string>
 
     <string name="capture_channel">Screen capture</string>
-    <string name="capture_notification_title">WoR Scanner is capturing the screen</string>
+    <string name="capture_notification_title">Capturing the screen. Open the gear storage and press Scan.</string>
+    <string name="scan_running">Scanning %1$d/%2$d</string>
+    <string name="scan_finished">Scan finished: %1$d pieces</string>
+    <string name="scan_stopped">Scan stopped, %1$s, %2$d pieces kept</string>
+    <string name="scan_failed">Scan failed: %1$s</string>
+    <string name="scan_stop">Stop scan</string>
 
     <string name="overlay_drag">Move</string>
+    <string name="overlay_scan">Scan</string>
     <string name="overlay_read">Read</string>
     <string name="overlay_stop">Stop</string>
     <string name="overlay_read_kept">Kept %1$s, %2$d lines</string>

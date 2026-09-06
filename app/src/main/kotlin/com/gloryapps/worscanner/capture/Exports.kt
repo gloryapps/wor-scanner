@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
 import java.io.File
 
@@ -32,6 +33,7 @@ class Exports(private val context: Context) {
         ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun throughMediaStore(file: File): String {
         val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, file.name)

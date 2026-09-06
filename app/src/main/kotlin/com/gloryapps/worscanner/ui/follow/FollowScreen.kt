@@ -31,10 +31,13 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.ui.Bar
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun FollowScreen(viewModel: FollowViewModel = koinViewModel()) {
+fun FollowScreen(onView: (Kept) -> Unit, onBack: () -> Unit, viewModel: FollowViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -66,24 +69,23 @@ fun FollowScreen(viewModel: FollowViewModel = koinViewModel()) {
         }
     }
 
-    Scaffold { padding ->
+    Scaffold(topBar = { Bar(stringResource(R.string.follow_title), onBack) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.follow_title), style = MaterialTheme.typography.headlineSmall)
-
             if (state.readings.isEmpty()) {
                 Text(stringResource(R.string.follow_empty))
             }
 
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(state.readings, key = { it.stamp }) { kept ->
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(kept.stamp, Modifier.padding(top = 12.dp))
-                        Row {
-                            TextButton(onClick = { context.startActivity(viewModel.shareIntent(kept)) }) {
-                                Text(stringResource(R.string.follow_share))
+                    Column(Modifier.fillMaxWidth()) {
+                        Text("${kept.at.format(SHOWN)} · ${kept.kind}", style = MaterialTheme.typography.titleMedium)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Row {
+                                TextButton(onClick = { onView(kept) }) { Text(stringResource(R.string.follow_view)) }
+                                TextButton(onClick = { context.startActivity(viewModel.shareIntent(kept)) }) {
+                                    Text(stringResource(R.string.follow_share))
+                                }
+                                TextButton(onClick = { viewModel.delete(kept) }) { Text(stringResource(R.string.follow_delete)) }
                             }
                             Button(onClick = { save(kept) }) { Text(stringResource(R.string.follow_download)) }
                         }
@@ -93,3 +95,6 @@ fun FollowScreen(viewModel: FollowViewModel = koinViewModel()) {
         }
     }
 }
+
+/** The stamp as a person reads it, in their own locale: `6 Sept 2026, 19:18:02`. */
+private val SHOWN: DateTimeFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)

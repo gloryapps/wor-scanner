@@ -28,7 +28,7 @@ import com.gloryapps.worscanner.capture.ReadScreen
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
-/** The floating buttons over the game: read what is on screen, or end the session; the grip drags them. */
+/** The floating buttons over the game: scan the storage, read one screen, or end the session; the grip drags them. */
 @Composable
 fun OverlayContent(onDrag: (dx: Float, dy: Float) -> Unit, readScreen: ReadScreen = koinInject()) {
     val context = LocalContext.current
@@ -50,7 +50,8 @@ fun OverlayContent(onDrag: (dx: Float, dy: Float) -> Unit, readScreen: ReadScree
                             }
                         },
                 )
-                Button(onClick = {
+                Button(onClick = { CaptureService.scan(context) }) { Text(stringResource(R.string.overlay_scan)) }
+                TextButton(onClick = {
                     scope.launch {
                         val said = readScreen.now().fold(
                             onSuccess = { resources.getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },

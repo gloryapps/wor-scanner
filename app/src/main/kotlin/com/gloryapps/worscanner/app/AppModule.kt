@@ -9,6 +9,7 @@ import com.gloryapps.worscanner.scanner.TextReader
 import com.gloryapps.worscanner.ui.follow.FollowViewModel
 import com.gloryapps.worscanner.ui.prepare.Permissions
 import com.gloryapps.worscanner.ui.prepare.PrepareViewModel
+import com.gloryapps.worscanner.walk.Scanning
 import com.gloryapps.worscanner.walk.TouchState
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -21,7 +22,8 @@ val appModule = module {
     single { Exports(androidContext()) }
     single<TextReader> { MlKitTextReader() }
     factory { ReadScreen(get(), get(), get()) }
+    single { Scanning(androidContext(), get(), get(), get()) }
     single { Permissions(androidContext()) }
-    viewModel { PrepareViewModel(get(), get(), get()) }
+    viewModel { PrepareViewModel(get(), get()) }
     viewModel { FollowViewModel(get(), get()) }
 }

@@ -4,7 +4,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -14,9 +13,17 @@ import android.util.DisplayMetrics
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.overlay.OverlayWindow
+import com.gloryapps.worscanner.scanner.walk.Outcome
+import com.gloryapps.worscanner.walk.ScanState
+import com.gloryapps.worscanner.walk.Scanning
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
 /**
@@ -25,57 +32,105 @@ import org.koin.android.ext.android.inject
  */
 class CaptureService : LifecycleService() {
     private val session: CaptureSession by inject()
+    private val scanning: Scanning by inject()
     private var screen: ProjectionScreen? = null
     private var overlay: OverlayWindow? = null
+    private var scan: Job? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        lifecycleScope.launch { scanning.state.onEach(::show).collect() }
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        val consent = intent?.consent()
-        if (intent?.action == ACTION_STOP || consent == null) {
-            stopSelf()
-            return START_NOT_STICKY
+        when (intent?.action) {
+            ACTION_STOP -> stopSelf()
+            ACTION_SCAN -> startScan()
+            ACTION_STOP_SCAN -> scan?.cancel()
+            else -> intent?.consent()?.let(::open) ?: stopSelf()
         }
-
-        goForeground()
-        val projection = getSystemService(MediaProjectionManager::class.java)
-            .getMediaProjection(consent.resultCode, consent.data)
-        if (projection == null) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-        val metrics = realMetrics()
-        screen = ProjectionScreen(projection, metrics.widthPixels, metrics.heightPixels, metrics.densityDpi)
-            .also(session::opened)
-        overlay = OverlayWindow(this).also { it.show() }
 
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
-        overlay?.hide()
+        scan?.cancel()
+        hideOverlay()
         session.closed()
         screen?.close()
         super.onDestroy()
     }
 
-    private fun goForeground() {
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(
-            NotificationChannel(CHANNEL, getString(R.string.capture_channel), NotificationManager.IMPORTANCE_LOW),
-        )
-        val open = PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE,
-        )
-        val notification: Notification = NotificationCompat.Builder(this, CHANNEL)
+    private fun open(consent: Consent) {
+        goForeground(notification(getString(R.string.capture_notification_title)))
+        val projection = getSystemService(MediaProjectionManager::class.java)
+            .getMediaProjection(consent.resultCode, consent.data)
+        if (projection == null) {
+            stopSelf()
+            return
+        }
+        val metrics = realMetrics()
+        screen = ProjectionScreen(projection, metrics.widthPixels, metrics.heightPixels, metrics.densityDpi)
+            .also(session::opened)
+        showOverlay()
+    }
+
+    private fun showOverlay() {
+        overlay = OverlayWindow(this).also { it.show() }
+    }
+
+    private fun hideOverlay() {
+        overlay?.hide()
+        overlay = null
+    }
+
+    /* The overlay leaves the screen while the walk reads it, so its own words never land on a panel. */
+    private fun startScan() {
+        if (scan?.isActive == true) return
+        hideOverlay()
+        scan = lifecycleScope.launch {
+            try {
+                scanning.run()
+            } finally {
+                showOverlay()
+            }
+        }
+    }
+
+    private fun show(state: ScanState) {
+        val text = when (state) {
+            ScanState.Idle -> getString(R.string.capture_notification_title)
+            is ScanState.Running -> getString(R.string.scan_running, state.progress.done, state.progress.total)
+            is ScanState.Ended -> when (val outcome = state.outcome) {
+                is Outcome.Finished -> getString(R.string.scan_finished, outcome.entries.size)
+                is Outcome.Stopped -> getString(R.string.scan_stopped, outcome.reason.name.lowercase().replace('_', ' '), outcome.entries.size)
+                is Outcome.Failed -> getString(R.string.scan_failed, outcome.cause.message)
+            }
+        }
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text, stoppable = state is ScanState.Running))
+    }
+
+    private fun notification(text: String, stoppable: Boolean = false): Notification {
+        val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+        val builder = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_menu_camera)
-            .setContentTitle(getString(R.string.capture_notification_title))
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(text)
             .setContentIntent(open)
             .setOngoing(true)
-            .build()
+        if (stoppable) {
+            val stop = PendingIntent.getService(this, 1, Intent(this, CaptureService::class.java).setAction(ACTION_STOP_SCAN), PendingIntent.FLAG_IMMUTABLE)
+            builder.addAction(0, getString(R.string.scan_stop), stop)
+        }
 
+        return builder.build()
+    }
+
+    private fun goForeground(notification: Notification) {
+        getSystemService(NotificationManager::class.java).createNotificationChannel(
+            NotificationChannel(CHANNEL, getString(R.string.capture_channel), NotificationManager.IMPORTANCE_LOW),
+        )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
         } else {
@@ -109,6 +164,8 @@ class CaptureService : LifecycleService() {
         private const val CHANNEL = "capture"
         private const val NOTIFICATION_ID = 1
         private const val ACTION_STOP = "com.gloryapps.worscanner.STOP"
+        private const val ACTION_SCAN = "com.gloryapps.worscanner.SCAN"
+        private const val ACTION_STOP_SCAN = "com.gloryapps.worscanner.STOP_SCAN"
         private const val EXTRA_RESULT_CODE = "resultCode"
         private const val EXTRA_RESULT_DATA = "resultData"
 
@@ -117,11 +174,19 @@ class CaptureService : LifecycleService() {
             val intent = Intent(context, CaptureService::class.java)
                 .putExtra(EXTRA_RESULT_CODE, resultCode)
                 .putExtra(EXTRA_RESULT_DATA, data)
-            context.startForegroundService(intent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
         }
 
-        fun stop(context: Context) {
-            context.startService(Intent(context, CaptureService::class.java).setAction(ACTION_STOP))
+        fun scan(context: Context) = send(context, ACTION_SCAN)
+
+        fun stop(context: Context) = send(context, ACTION_STOP)
+
+        private fun send(context: Context, action: String) {
+            context.startService(Intent(context, CaptureService::class.java).setAction(action))
         }
     }
 }
