@@ -25,6 +25,7 @@ class OverlayWindow(private val context: Context) : LifecycleOwner, SavedStateRe
     private val savedState = SavedStateRegistryController.create(this)
     private val manager = context.getSystemService(WindowManager::class.java)
     private var view: ComposeView? = null
+    private val params = layout()
 
     override val lifecycle: Lifecycle get() = registry
     override val savedStateRegistry: SavedStateRegistry get() = savedState.savedStateRegistry
@@ -35,9 +36,9 @@ class OverlayWindow(private val context: Context) : LifecycleOwner, SavedStateRe
         val view = ComposeView(context).apply {
             setViewTreeLifecycleOwner(this@OverlayWindow)
             setViewTreeSavedStateRegistryOwner(this@OverlayWindow)
-            setContent { OverlayContent() }
+            setContent { OverlayContent(onDrag = ::moveBy) }
         }
-        manager.addView(view, layout())
+        manager.addView(view, params)
         this.view = view
     }
 
@@ -45,6 +46,13 @@ class OverlayWindow(private val context: Context) : LifecycleOwner, SavedStateRe
         view?.let(manager::removeView)
         view = null
         registry.currentState = Lifecycle.State.DESTROYED
+    }
+
+    /** The window follows the finger on its handle; the params are the window's, not the view's. */
+    private fun moveBy(dx: Float, dy: Float) {
+        params.x += dx.toInt()
+        params.y += dy.toInt()
+        view?.let { manager.updateViewLayout(it, params) }
     }
 
     private fun layout() = WindowManager.LayoutParams(

@@ -41,6 +41,7 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
+    implementation(libs.compose.materialIconsCore)
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
 
@@ -58,6 +59,7 @@ dependencies {
     implementation(libs.koin.compose.viewmodel)
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.playServices)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.mlkit.textRecognition)
 

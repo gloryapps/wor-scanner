@@ -1,12 +1,16 @@
 package com.gloryapps.worscanner.scanner.reading
 
+import kotlinx.serialization.Serializable
+
 /** Where a line sits in the frame it was read from, in that frame's pixels. */
+@Serializable
 data class Box(val left: Int, val top: Int, val right: Int, val bottom: Int) {
     val height: Int get() = bottom - top
     val middle: Int get() = (top + bottom) / 2
 }
 
 /** One line of text as the recogniser gave it up, with the box it sat in. */
+@Serializable
 data class Line(val text: String, val box: Box)
 
 /**

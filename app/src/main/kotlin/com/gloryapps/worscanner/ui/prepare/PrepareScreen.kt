@@ -80,7 +80,7 @@ fun PrepareScreen(onFollow: () -> Unit, viewModel: PrepareViewModel = koinViewMo
                 projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
             }
 
-            Button(onClick = onFollow, enabled = state.ready) { Text(stringResource(R.string.prepare_follow)) }
+            Button(onClick = onFollow) { Text(stringResource(R.string.prepare_follow)) }
         }
     }
 }
