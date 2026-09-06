@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WoR Scanner</string>
+    <string name="touch_service_description">Taps through the gear storage of Watcher of Realms while a scan runs. Nothing is read from other apps.</string>
+</resources>
