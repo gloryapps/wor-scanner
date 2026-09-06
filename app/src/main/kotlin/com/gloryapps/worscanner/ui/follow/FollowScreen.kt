@@ -53,19 +53,21 @@ fun FollowScreen(onView: (Kept) -> Unit, onBack: () -> Unit, viewModel: FollowVi
         }
     }
 
-    /* Android 9 asks for the storage permission before Downloads takes a file; the save waits for the answer. */
+    /* Android 9 asks for the storage permission before a public folder takes a file; the save waits for the answer. */
     var pending by remember { mutableStateOf<Kept?>(null) }
+    var saving by remember { mutableStateOf<(Kept) -> Unit>(viewModel::saveToDownloads) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        pending?.takeIf { granted }?.let(viewModel::saveToDownloads)
+        pending?.takeIf { granted }?.let { saving(it) }
         pending = null
     }
 
-    fun save(kept: Kept) {
+    fun save(kept: Kept, into: (Kept) -> Unit) {
+        saving = into
         if (viewModel.downloadsNeedPermission) {
             pending = kept
             permission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         } else {
-            viewModel.saveToDownloads(kept)
+            into(kept)
         }
     }
 
@@ -82,6 +84,9 @@ fun FollowScreen(onView: (Kept) -> Unit, onBack: () -> Unit, viewModel: FollowVi
                         if (kept.pieces != null && kept.outcome != null) {
                             Text(stringResource(R.string.follow_pieces, kept.pieces, kept.outcome), style = MaterialTheme.typography.bodyMedium)
                         }
+                        if (kept.detail != null) {
+                            Text(kept.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        }
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Row {
                                 TextButton(onClick = { onView(kept) }) { Text(stringResource(R.string.follow_view)) }
@@ -90,7 +95,10 @@ fun FollowScreen(onView: (Kept) -> Unit, onBack: () -> Unit, viewModel: FollowVi
                                 }
                                 TextButton(onClick = { viewModel.delete(kept) }) { Text(stringResource(R.string.follow_delete)) }
                             }
-                            Button(onClick = { save(kept) }) { Text(stringResource(R.string.follow_download)) }
+                            Row {
+                                TextButton(onClick = { save(kept, viewModel::saveToDownloads) }) { Text(stringResource(R.string.follow_download)) }
+                                Button(onClick = { save(kept, viewModel::saveToPictures) }) { Text(stringResource(R.string.follow_pictures)) }
+                            }
                         }
                     }
                 }

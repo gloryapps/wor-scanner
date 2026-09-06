@@ -27,8 +27,12 @@ class FollowViewModel(
 
     fun refresh() = _state.update { it.copy(readings = readings.list()) }
 
-    fun saveToDownloads(kept: Kept) {
-        val said = resultOf { exports.toDownloads(kept.files) }.fold(
+    fun saveToDownloads(kept: Kept) = save { exports.toDownloads(kept.files) }
+
+    fun saveToPictures(kept: Kept) = save { exports.toPictures(kept.files) }
+
+    private fun save(export: () -> List<String>) {
+        val said = resultOf(export).fold(
             onSuccess = { paths -> "Saved to ${paths.first().substringBeforeLast('/')}" },
             onFailure = { "Saving failed: ${it.message}" },
         )

@@ -22,6 +22,9 @@ data class Scan(
     val width: Int,
     val height: Int,
     val outcome: String,
+    /** Why it stopped, and the rows of the frame it stopped on, where it did. */
+    val detail: String? = null,
+    val seen: List<String> = emptyList(),
     val entries: List<ScanEntry>,
 )
 
@@ -40,13 +43,24 @@ class ScanWriter(private val context: Context, private val layout: StorageLayout
         file.name
     }
 
-    fun write(width: Int, height: Int, outcome: Outcome): File {
+    fun write(first: BitmapFrame, outcome: Outcome): File {
         val (ended, entries) = when (outcome) {
             is Outcome.Finished -> "finished" to outcome.entries
             is Outcome.Stopped -> "stopped:${outcome.reason.name.lowercase()}" to outcome.entries
-            is Outcome.Failed -> "failed:${outcome.cause.message}" to outcome.entries
+            is Outcome.Failed -> "failed:${outcome.cause}" to outcome.entries
         }
-        val scan = Scan(startedAt = stamp, width = width, height = height, outcome = ended, entries = entries)
+        val stopped = outcome as? Outcome.Stopped
+        val scan = Scan(
+            startedAt = stamp,
+            width = first.width,
+            height = first.height,
+            outcome = ended,
+            detail = stopped?.detail ?: (outcome as? Outcome.Failed)?.cause?.stackTraceToString()?.lineSequence()?.take(4)?.joinToString(" | "),
+            seen = stopped?.seen.orEmpty(),
+            entries = entries,
+        )
+        /* A walk that read nothing leaves the frame it looked at, which is what tells why. */
+        if (entries.isEmpty()) File(folder, "first.png").outputStream().use { first.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
 
         return File(folder, "scan.json").apply { writeText(json.encodeToString(scan)) }
     }

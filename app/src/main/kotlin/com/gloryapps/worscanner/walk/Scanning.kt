@@ -1,6 +1,7 @@
 package com.gloryapps.worscanner.walk
 
 import android.content.Context
+import com.gloryapps.worscanner.capture.BitmapFrame
 import com.gloryapps.worscanner.capture.CaptureSession
 import com.gloryapps.worscanner.scanner.Screen
 import com.gloryapps.worscanner.scanner.TextReader
@@ -38,7 +39,7 @@ class Scanning(
         val hand = checkNotNull(touch.hand.value) { "accessibility service not bound" }
         val layout = StorageLayout()
         val writer = ScanWriter(context, layout)
-        val first = screen.capture()
+        val first = screen.capture() as BitmapFrame
 
         val entries = mutableListOf<ScanEntry>()
         var outcome: Outcome? = null
@@ -48,8 +49,8 @@ class Scanning(
             outcome = Walk(screen, hand, reader, writer.keeper, layout).run(entries) { _state.value = ScanState.Running(it) }
         } finally {
             /* A cancelled walk ends by its exception; what it read before is still worth writing. */
-            val ended = outcome ?: Outcome.Stopped(Outcome.Reason.CANCELLED, entries)
-            _state.value = ScanState.Ended(ended, writer.write(first.width, first.height, ended))
+            val ended = outcome ?: Outcome.Stopped(Outcome.Reason.CANCELLED, entries, "stopped by the user")
+            _state.value = ScanState.Ended(ended, writer.write(first, ended))
         }
     }
 }

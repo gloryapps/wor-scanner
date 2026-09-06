@@ -17,7 +17,15 @@ import java.time.format.DateTimeFormatter
 data class Reading(val width: Int, val height: Int, val lines: List<Line>, val card: ScannedGear)
 
 /** Something kept on disk under a stamp: a reading's JSON and PNG, or a scan's folder with what it came to. */
-data class Kept(val stamp: String, val kind: String, val files: List<File>, val pieces: Int? = null, val outcome: String? = null) {
+data class Kept(
+    val stamp: String,
+    val kind: String,
+    val files: List<File>,
+    val pieces: Int? = null,
+    val outcome: String? = null,
+    /** Why a scan stopped or failed, in the walk's own words; null when it finished. */
+    val detail: String? = null,
+) {
     val at: LocalDateTime get() = LocalDateTime.parse(stamp, STAMP)
 }
 
@@ -54,7 +62,7 @@ class Readings(private val context: Context) {
         }
         val scanned = scans.listFiles { file -> file.isDirectory }.orEmpty().map { folder ->
             val scan = File(folder, "scan.json").takeIf { it.exists() }?.let { resultOf { json.decodeFromString<Scan>(it.readText()) }.getOrNull() }
-            Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name }, scan?.entries?.size, scan?.outcome)
+            Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name }, scan?.entries?.size, scan?.outcome, scan?.detail)
         }
 
         return (read + scanned).sortedByDescending { it.stamp }

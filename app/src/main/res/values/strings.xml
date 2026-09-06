@@ -20,13 +20,14 @@
     <string name="follow_view">View</string>
     <string name="follow_share">Share</string>
     <string name="follow_delete">Delete</string>
-    <string name="follow_download">Save to Downloads</string>
+    <string name="follow_download">Downloads</string>
+    <string name="follow_pictures">Save to Pictures</string>
 
     <string name="capture_channel">Screen capture</string>
     <string name="capture_notification_title">Capturing the screen. Open the gear storage and press Scan.</string>
     <string name="scan_running">Scanning: %1$d read, %2$d in storage</string>
     <string name="scan_finished">Scan finished: %1$d pieces</string>
-    <string name="scan_stopped">Scan stopped, %1$s, %2$d pieces kept</string>
+    <string name="scan_stopped">Scan stopped: %1$s. %2$d pieces kept.</string>
     <string name="scan_failed">Scan failed: %1$s</string>
     <string name="scan_stop">Stop</string>
 

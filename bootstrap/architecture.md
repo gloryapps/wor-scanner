@@ -44,6 +44,9 @@ the azhor lab imports. Distributed as an APK on GitHub, not on the Play Store.
 - Every entry in the JSON carries the raw OCR lines it was read from.
 - The panel PNG is kept only for a piece the reader did not close: set or slot null, or the card
   refused. A full run keeps no other image.
+- A scan leaves an emulator by the folder it shares with the PC: LDPlayer mounts `/mnt/shared/Pictures`
+  inside Android and shows it under the Windows Documents folder, so "Save to Pictures" writes there.
+  The clipboard does not cross that border, and the two apps are not linked over the network.
 - Preferences in DataStore.
 - Room enters only if scan history inside the app is ever wanted, and brings the no-destructive-
   migration rule with it.
@@ -87,3 +90,5 @@ the azhor lab imports. Distributed as an APK on GitHub, not on the Play Store.
 - Interview the user to define which game languages the reader must know beyond English. Many
   players run the game in another language; the catalogue's ids stay English and each language
   adds its own words for the same entries.
+- Interview the user to define how a scan leaves the other emulators, BlueStacks first: LDPlayer's
+  shared `/mnt/shared/Pictures` is the only door wired today.

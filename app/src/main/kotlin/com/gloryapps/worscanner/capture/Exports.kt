@@ -18,7 +18,20 @@ class Exports(private val context: Context) {
     val downloadsNeedPermission: Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
 
     fun toDownloads(files: List<File>): List<String> = files.map { file ->
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) throughMediaStore(file) else ontoDisk(file)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) throughMediaStore(file) else ontoDisk(file, publicFolder(Environment.DIRECTORY_DOWNLOADS))
+    }
+
+    /**
+     * The Pictures folder an emulator shares with the PC: LDPlayer mounts it at `/mnt/shared/Pictures`
+     * and shows it under the Windows Documents folder. A device without that mount has no such door,
+     * and says so rather than hiding a JSON among the photos.
+     */
+    fun toPictures(files: List<File>): List<String> {
+        val shared = File(SHARED_PICTURES)
+        check(shared.isDirectory && shared.canWrite()) { "no shared Pictures folder on this device" }
+        val folder = File(shared, FOLDER).apply { mkdirs() }
+
+        return files.map { ontoDisk(it, folder) }
     }
 
     fun shareIntent(files: List<File>): Intent {
@@ -48,8 +61,10 @@ class Exports(private val context: Context) {
     }
 
     @Suppress("DEPRECATION")
-    private fun ontoDisk(file: File): String {
-        val folder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), FOLDER).apply { mkdirs() }
+    private fun publicFolder(directory: String): File =
+        File(Environment.getExternalStoragePublicDirectory(directory), FOLDER).apply { mkdirs() }
+
+    private fun ontoDisk(file: File, folder: File): String {
         val copy = File(folder, file.name)
         file.copyTo(copy, overwrite = true)
         MediaScannerConnection.scanFile(context, arrayOf(copy.path), null, null)
@@ -61,5 +76,6 @@ class Exports(private val context: Context) {
 
     private companion object {
         const val FOLDER = "WoR Scanner"
+        const val SHARED_PICTURES = "/mnt/shared/Pictures"
     }
 }

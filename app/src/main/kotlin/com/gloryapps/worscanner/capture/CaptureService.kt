@@ -11,6 +11,7 @@ import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.util.DisplayMetrics
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
@@ -97,11 +98,13 @@ class CaptureService : LifecycleService() {
             is ScanState.Running -> getString(R.string.scan_running, state.progress.done, state.progress.held)
             is ScanState.Ended -> when (val outcome = state.outcome) {
                 is Outcome.Finished -> getString(R.string.scan_finished, outcome.entries.size)
-                is Outcome.Stopped -> getString(R.string.scan_stopped, outcome.reason.name.lowercase().replace('_', ' '), outcome.entries.size)
-                is Outcome.Failed -> getString(R.string.scan_failed, outcome.cause.message)
+                is Outcome.Stopped -> getString(R.string.scan_stopped, outcome.detail, outcome.entries.size)
+                is Outcome.Failed -> getString(R.string.scan_failed, outcome.cause.toString())
             }
         }
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text, stoppable = state is ScanState.Running))
+        /* The end of a scan is said out loud too: the notification is easy to miss under a game. */
+        if (state is ScanState.Ended) Toast.makeText(this, text, Toast.LENGTH_LONG).show()
     }
 
     private fun notification(text: String, stoppable: Boolean = false): Notification {
