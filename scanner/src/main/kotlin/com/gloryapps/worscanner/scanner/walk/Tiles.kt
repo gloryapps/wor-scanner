@@ -16,7 +16,8 @@ fun topRowCentre(lines: List<Line>, layout: StorageLayout, frame: Frame): Int? {
     val grid = layout.grid.box(frame.width, frame.height)
     val pitch = layout.pitchY(frame.height)
     val above = (layout.labelBelowCentre * pitch).toInt()
-    val lowestTop = (layout.gridTop * frame.height).toInt() + pitch / 2
+    /* A row is whole once its tile's top edge clears the viewport's, which is half a tile below its centre. */
+    val lowestTop = (layout.gridTop * frame.height).toInt() + (layout.tileHeight * pitch / 2).toInt()
 
     return lines.filter { grid.holds(it) && it.namesATile() }
         .map { it.box.top - above }
@@ -24,7 +25,12 @@ fun topRowCentre(lines: List<Line>, layout: StorageLayout, frame: Frame): Int? {
         .minOrNull()
 }
 
-/** Whether a tile is printed at this column and row centre: its number is there. */
+/**
+ * Whether a tile is printed at this column and row centre: its number is there.
+ *
+ * The recogniser runs neighbouring numbers into one line when they sit level, so a line counts
+ * for every column its box reaches over, not only the one it is centred on.
+ */
 fun tileAt(lines: List<Line>, layout: StorageLayout, frame: Frame, column: Int, centreY: Int): Boolean {
     val x = layout.tileX(column, frame.width)
     val labelY = centreY + (layout.labelBelowCentre * layout.pitchY(frame.height)).toInt()
@@ -32,7 +38,7 @@ fun tileAt(lines: List<Line>, layout: StorageLayout, frame: Frame, column: Int, 
     val slackY = layout.pitchY(frame.height) / 4
 
     return lines.any { line ->
-        line.namesATile() && abs((line.box.left + line.box.right) / 2 - x) <= slackX && abs(line.box.top - labelY) <= slackY
+        line.namesATile() && x in (line.box.left - slackX)..(line.box.right + slackX) && abs(line.box.top - labelY) <= slackY
     }
 }
 

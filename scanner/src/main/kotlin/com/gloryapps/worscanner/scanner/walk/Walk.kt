@@ -43,7 +43,7 @@ class Walk(
         var frame = screen.capture()
         var lines = reader.read(frame)
         val held = countIn(rowsWithin(frame, lines, layout.count))
-            ?: return Outcome.Stopped(Outcome.Reason.STORAGE_NOT_OPEN, entries)
+            ?: return Outcome.Stopped(Outcome.Reason.STORAGE_NOT_OPEN, entries, "no count like 1,169/2,500 in the header", rowsOf(lines))
         val pitch = layout.pitchY(frame.height)
         val floor = (layout.gridBottom * frame.height).toInt()
         val grid = layout.gridBox(frame)
@@ -53,7 +53,8 @@ class Walk(
         val lowestAtEnd = floor - pitch / 4
 
         /* The centre of the row the walk began on, which the grid carries upward as it scrolls. */
-        var origin = topRowCentre(lines, layout, frame) ?: return Outcome.Stopped(Outcome.Reason.STORAGE_NOT_OPEN, entries)
+        var origin = topRowCentre(lines, layout, frame)
+            ?: return Outcome.Stopped(Outcome.Reason.STORAGE_NOT_OPEN, entries, "no tile numbers in the grid", rowsOf(lines))
         val rowsInView = (0..(floor - origin) / pitch).map { origin + it * pitch }
         val (startRow, startColumn) = selectedTile(frame, layout, rowsInView) ?: (0 to 0)
         origin += startRow * pitch
@@ -66,7 +67,7 @@ class Walk(
                 val moved = screen.capture()
                 val movedLines = reader.read(moved)
                 val shift = shiftByText(lines, movedLines, grid, columnPitch)
-                    ?: return Outcome.Stopped(Outcome.Reason.GRID_LOST, entries)
+                    ?: return Outcome.Stopped(Outcome.Reason.GRID_LOST, entries, "the tiles seen before the drag were not found after it", rowsOf(movedLines))
                 frame = moved
                 lines = movedLines
                 if (shift > 0) {

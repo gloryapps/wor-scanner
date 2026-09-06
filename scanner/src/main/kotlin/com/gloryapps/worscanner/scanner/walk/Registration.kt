@@ -11,8 +11,9 @@ import kotlin.math.abs
  * box; a number that was at one height and is now higher moved with the grid. Numbers repeat across
  * tiles, so a pair of equal words proves nothing alone, but the true shift is the one every true
  * pair agrees on and the rest scatter; pairing only within a column keeps the scatter thin. The
- * badge reads `+16` on every tile and says nothing about which, so it does not vote. The tiles' art
- * animates and cannot be trusted; the words do not move.
+ * badge reads `+16` on every tile and says nothing about which, so it does not vote. A line the
+ * recogniser ran together out of several tiles' numbers votes once per number, since it stands for
+ * that many tiles. The tiles' art animates and cannot be trusted; the words do not move.
  *
  * Null where no shift gathers enough pairs, which is a screen that is no longer the storage.
  */
@@ -25,15 +26,17 @@ fun shiftByText(before: List<Line>, after: List<Line>, grid: Box, columnPitch: I
         for (again in now[line.text].orEmpty()) {
             if (abs(line.box.left - again.box.left) > columnPitch / 2) continue
             val shift = line.box.top - again.box.top
-            votes.getOrPut(Math.floorDiv(shift, BUCKET)) { mutableListOf() } += shift
+            repeat(line.words()) { votes.getOrPut(Math.floorDiv(shift, BUCKET)) { mutableListOf() } += shift }
         }
     }
 
-    val needed = maxOf(FEWEST_PAIRS, was.size * SHARE / 100)
+    val needed = maxOf(FEWEST_PAIRS, was.sumOf { it.words() } * SHARE / 100)
     val best = votes.values.filter { it.size >= needed }.maxByOrNull { it.size } ?: return null
 
     return best.average().toInt()
 }
+
+private fun Line.words(): Int = text.trim().split(Regex("\\s+")).size
 
 /** Pixels within which two shifts count as one vote. */
 private const val BUCKET = 6

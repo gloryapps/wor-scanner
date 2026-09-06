@@ -25,6 +25,8 @@ class FakeStorage(
     scrolledRows: Double = 0.0,
     /** The piece the game had selected before the walk began. */
     selected: Int? = null,
+    /** Whether the recogniser hands a row's numbers back as one line, as it does when they sit level. */
+    private val runsNumbersTogether: Boolean = false,
 ) : Screen, Touch, TextReader {
     val taps = mutableListOf<Pair<Int, Int>>()
     var drags = 0
@@ -92,13 +94,19 @@ class FakeStorage(
         for (row in 0 until rows) {
             val centre = rowCentre(row)
             if (centre < layout.gridTop * 1000 || centre > layout.gridBottom * 1000) continue
+            val labelTop = centre + (layout.labelBelowCentre * pitch).toInt()
+            val numbers = mutableListOf<Line>()
             for (column in 0 until layout.columns) {
                 val index = row * layout.columns + column
                 if (index >= pieces) break
                 val x = layout.tileX(column, 1000)
-                val labelTop = centre + (layout.labelBelowCentre * pitch).toInt()
                 lines += Line("+16", Box(x + 10, centre - 60, x + 40, centre - 45))
-                lines += Line("${1000 + (index * 7) % 9}", Box(x - 30, labelTop, x + 30, labelTop + 15))
+                numbers += Line("${1000 + (index * 7) % 9}", Box(x - 30, labelTop, x + 30, labelTop + 15))
+            }
+            if (runsNumbersTogether && numbers.isNotEmpty()) {
+                lines += Line(numbers.joinToString(" ") { it.text }, Box(numbers.first().box.left, labelTop, numbers.last().box.right, labelTop + 15))
+            } else {
+                lines += numbers
             }
         }
         /* The overlay's own words, outside every region the walk reads. */

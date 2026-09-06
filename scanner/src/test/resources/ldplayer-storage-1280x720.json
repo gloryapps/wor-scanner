@@ -1,0 +1,837 @@
+{
+    "width": 1280,
+    "height": 720,
+    "lines": [
+        {
+            "text": "Overview",
+            "box": {
+                "left": 17,
+                "top": 148,
+                "right": 106,
+                "bottom": 163
+            }
+        },
+        {
+            "text": "Gear",
+            "box": {
+                "left": 39,
+                "top": 251,
+                "right": 84,
+                "bottom": 265
+            }
+        },
+        {
+            "text": "Artifact",
+            "box": {
+                "left": 23,
+                "top": 352,
+                "right": 98,
+                "bottom": 368
+            }
+        },
+        {
+            "text": "Material",
+            "box": {
+                "left": 21,
+                "top": 454,
+                "right": 101,
+                "bottom": 470
+            }
+        },
+        {
+            "text": "STORAGE",
+            "box": {
+                "left": 105,
+                "top": 14,
+                "right": 248,
+                "bottom": 41
+            }
+        },
+        {
+            "text": "Shard",
+            "box": {
+                "left": 33,
+                "top": 557,
+                "right": 89,
+                "bottom": 572
+            }
+        },
+        {
+            "text": "Scan",
+            "box": {
+                "left": 102,
+                "top": 670,
+                "right": 146,
+                "bottom": 685
+            }
+        },
+        {
+            "text": "T2",
+            "box": {
+                "left": 161,
+                "top": 356,
+                "right": 173,
+                "bottom": 371
+            }
+        },
+        {
+            "text": "T2",
+            "box": {
+                "left": 150,
+                "top": 492,
+                "right": 170,
+                "bottom": 504
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 206,
+                "top": 156,
+                "right": 236,
+                "bottom": 169
+            }
+        },
+        {
+            "text": "66%",
+            "box": {
+                "left": 199,
+                "top": 242,
+                "right": 232,
+                "bottom": 266
+            }
+        },
+        {
+            "text": "72%",
+            "box": {
+                "left": 189,
+                "top": 379,
+                "right": 227,
+                "bottom": 394
+            }
+        },
+        {
+            "text": "+16 8+16",
+            "box": {
+                "left": 205,
+                "top": 282,
+                "right": 345,
+                "bottom": 302
+            }
+        },
+        {
+            "text": "1056",
+            "box": {
+                "left": 191,
+                "top": 508,
+                "right": 236,
+                "bottom": 529
+            }
+        },
+        {
+            "text": "E+16",
+            "box": {
+                "left": 270,
+                "top": 148,
+                "right": 346,
+                "bottom": 181
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 206,
+                "top": 553,
+                "right": 239,
+                "bottom": 567
+            }
+        },
+        {
+            "text": "66%",
+            "box": {
+                "left": 304,
+                "top": 244,
+                "right": 338,
+                "bottom": 265
+            }
+        },
+        {
+            "text": "+16 8416",
+            "box": {
+                "left": 189,
+                "top": 414,
+                "right": 349,
+                "bottom": 436
+            }
+        },
+        {
+            "text": "Read",
+            "box": {
+                "left": 207,
+                "top": 669,
+                "right": 250,
+                "bottom": 685
+            }
+        },
+        {
+            "text": "72%",
+            "box": {
+                "left": 297,
+                "top": 379,
+                "right": 335,
+                "bottom": 394
+            }
+        },
+        {
+            "text": "1056",
+            "box": {
+                "left": 301,
+                "top": 510,
+                "right": 340,
+                "bottom": 528
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 314,
+                "top": 552,
+                "right": 344,
+                "bottom": 568
+            }
+        },
+        {
+            "text": "App",
+            "box": {
+                "left": 296,
+                "top": 670,
+                "right": 332,
+                "bottom": 689
+            }
+        },
+        {
+            "text": "T2",
+            "box": {
+                "left": 369,
+                "top": 356,
+                "right": 389,
+                "bottom": 369
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 422,
+                "top": 154,
+                "right": 455,
+                "bottom": 169
+            }
+        },
+        {
+            "text": "T1",
+            "box": {
+                "left": 368,
+                "top": 491,
+                "right": 396,
+                "bottom": 503
+            }
+        },
+        {
+            "text": "1056",
+            "box": {
+                "left": 408,
+                "top": 243,
+                "right": 450,
+                "bottom": 263
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 423,
+                "top": 288,
+                "right": 455,
+                "bottom": 302
+            }
+        },
+        {
+            "text": "66%",
+            "box": {
+                "left": 384,
+                "top": 377,
+                "right": 447,
+                "bottom": 398
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 422,
+                "top": 420,
+                "right": 455,
+                "bottom": 434
+            }
+        },
+        {
+            "text": "60%",
+            "box": {
+                "left": 411,
+                "top": 509,
+                "right": 445,
+                "bottom": 528
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 422,
+                "top": 553,
+                "right": 455,
+                "bottom": 567
+            }
+        },
+        {
+            "text": "Close",
+            "box": {
+                "left": 378,
+                "top": 669,
+                "right": 430,
+                "bottom": 685
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 530,
+                "top": 154,
+                "right": 563,
+                "bottom": 169
+            }
+        },
+        {
+            "text": "ell",
+            "box": {
+                "left": 460,
+                "top": 660,
+                "right": 483,
+                "bottom": 676
+            }
+        },
+        {
+            "text": "1056",
+            "box": {
+                "left": 515,
+                "top": 241,
+                "right": 551,
+                "bottom": 262
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 530,
+                "top": 288,
+                "right": 563,
+                "bottom": 302
+            }
+        },
+        {
+            "text": "66%",
+            "box": {
+                "left": 518,
+                "top": 374,
+                "right": 550,
+                "bottom": 394
+            }
+        },
+        {
+            "text": "8416",
+            "box": {
+                "left": 479,
+                "top": 418,
+                "right": 562,
+                "bottom": 435
+            }
+        },
+        {
+            "text": "60%",
+            "box": {
+                "left": 519,
+                "top": 506,
+                "right": 555,
+                "bottom": 530
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 530,
+                "top": 553,
+                "right": 563,
+                "bottom": 567
+            }
+        },
+        {
+            "text": "+16 8416 8",
+            "box": {
+                "left": 638,
+                "top": 150,
+                "right": 813,
+                "bottom": 171
+            }
+        },
+        {
+            "text": "1056",
+            "box": {
+                "left": 625,
+                "top": 241,
+                "right": 667,
+                "bottom": 262
+            }
+        },
+        {
+            "text": "+16 ở",
+            "box": {
+                "left": 639,
+                "top": 286,
+                "right": 705,
+                "bottom": 302
+            }
+        },
+        {
+            "text": "1056",
+            "box": {
+                "left": 618,
+                "top": 379,
+                "right": 664,
+                "bottom": 394
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 639,
+                "top": 420,
+                "right": 671,
+                "bottom": 434
+            }
+        },
+        {
+            "text": "66%",
+            "box": {
+                "left": 621,
+                "top": 512,
+                "right": 661,
+                "bottom": 526
+            }
+        },
+        {
+            "text": "etl6",
+            "box": {
+                "left": 617,
+                "top": 547,
+                "right": 672,
+                "bottom": 579
+            }
+        },
+        {
+            "text": "Recommendatio",
+            "box": {
+                "left": 580,
+                "top": 657,
+                "right": 665,
+                "bottom": 668
+            }
+        },
+        {
+            "text": "n Settings",
+            "box": {
+                "left": 597,
+                "top": 673,
+                "right": 651,
+                "bottom": 683
+            }
+        },
+        {
+            "text": "1056",
+            "box": {
+                "left": 730,
+                "top": 243,
+                "right": 776,
+                "bottom": 265
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 747,
+                "top": 288,
+                "right": 780,
+                "bottom": 302
+            }
+        },
+        {
+            "text": "1056",
+            "box": {
+                "left": 733,
+                "top": 378,
+                "right": 778,
+                "bottom": 396
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 749,
+                "top": 420,
+                "right": 780,
+                "bottom": 434
+            }
+        },
+        {
+            "text": "60%",
+            "box": {
+                "left": 736,
+                "top": 510,
+                "right": 771,
+                "bottom": 528
+            }
+        },
+        {
+            "text": "-16",
+            "box": {
+                "left": 755,
+                "top": 553,
+                "right": 780,
+                "bottom": 567
+            }
+        },
+        {
+            "text": "Gem",
+            "box": {
+                "left": 731,
+                "top": 679,
+                "right": 769,
+                "bottom": 691
+            }
+        },
+        {
+            "text": "Filtered",
+            "box": {
+                "left": 843,
+                "top": 55,
+                "right": 915,
+                "bottom": 70
+            }
+        },
+        {
+            "text": "1,169/2,500",
+            "box": {
+                "left": 806,
+                "top": 103,
+                "right": 904,
+                "bottom": 119
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 855,
+                "top": 155,
+                "right": 888,
+                "bottom": 169
+            }
+        },
+        {
+            "text": "1056",
+            "box": {
+                "left": 840,
+                "top": 244,
+                "right": 882,
+                "bottom": 263
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 856,
+                "top": 288,
+                "right": 888,
+                "bottom": 302
+            }
+        },
+        {
+            "text": "1056",
+            "box": {
+                "left": 835,
+                "top": 379,
+                "right": 881,
+                "bottom": 394
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 855,
+                "top": 420,
+                "right": 888,
+                "bottom": 434
+            }
+        },
+        {
+            "text": "K960",
+            "box": {
+                "left": 832,
+                "top": 509,
+                "right": 876,
+                "bottom": 526
+            }
+        },
+        {
+            "text": "t16",
+            "box": {
+                "left": 858,
+                "top": 548,
+                "right": 888,
+                "bottom": 569
+            }
+        },
+        {
+            "text": "Foundry",
+            "box": {
+                "left": 819,
+                "top": 678,
+                "right": 880,
+                "bottom": 692
+            }
+        },
+        {
+            "text": "50,815",
+            "box": {
+                "left": 930,
+                "top": 23,
+                "right": 989,
+                "bottom": 40
+            }
+        },
+        {
+            "text": "+16",
+            "box": {
+                "left": 1002,
+                "top": 157,
+                "right": 1029,
+                "bottom": 175
+            }
+        },
+        {
+            "text": "ATK",
+            "box": {
+                "left": 989,
+                "top": 368,
+                "right": 1024,
+                "bottom": 381
+            }
+        },
+        {
+            "text": "Variant Mythic Gear",
+            "box": {
+                "left": 1053,
+                "top": 154,
+                "right": 1225,
+                "bottom": 171
+            }
+        },
+        {
+            "text": "Variant: Vierna's Bangle",
+            "box": {
+                "left": 1052,
+                "top": 178,
+                "right": 1232,
+                "bottom": 193
+            }
+        },
+        {
+            "text": "ATK Bonus",
+            "box": {
+                "left": 998,
+                "top": 317,
+                "right": 1114,
+                "bottom": 341
+            }
+        },
+        {
+            "text": "VIERNA",
+            "box": {
+                "left": 1057,
+                "top": 257,
+                "right": 1116,
+                "bottom": 270
+            }
+        },
+        {
+            "text": "Exclusive",
+            "box": {
+                "left": 1057,
+                "top": 277,
+                "right": 1146,
+                "bottom": 292
+            }
+        },
+        {
+            "text": "Crit. Rate",
+            "box": {
+                "left": 989,
+                "top": 416,
+                "right": 1067,
+                "bottom": 429
+            }
+        },
+        {
+            "text": "HP Bonus",
+            "box": {
+                "left": 988,
+                "top": 465,
+                "right": 1068,
+                "bottom": 477
+            }
+        },
+        {
+            "text": "70,043.3K +",
+            "box": {
+                "left": 1131,
+                "top": 21,
+                "right": 1250,
+                "bottom": 41
+            }
+        },
+        {
+            "text": "Rarity",
+            "box": {
+                "left": 1080,
+                "top": 100,
+                "right": 1135,
+                "bottom": 120
+            }
+        },
+        {
+            "text": "DEF Bonus",
+            "box": {
+                "left": 990,
+                "top": 513,
+                "right": 1079,
+                "bottom": 526
+            }
+        },
+        {
+            "text": "Cataclysm",
+            "box": {
+                "left": 978,
+                "top": 587,
+                "right": 1065,
+                "bottom": 604
+            }
+        },
+        {
+            "text": "66%",
+            "box": {
+                "left": 1197,
+                "top": 320,
+                "right": 1243,
+                "bottom": 338
+            }
+        },
+        {
+            "text": "Gem Enhancement",
+            "box": {
+                "left": 1027,
+                "top": 664,
+                "right": 1155,
+                "bottom": 677
+            }
+        },
+        {
+            "text": "469",
+            "box": {
+                "left": 1210,
+                "top": 372,
+                "right": 1241,
+                "bottom": 384
+            }
+        },
+        {
+            "text": "13.5%",
+            "box": {
+                "left": 1197,
+                "top": 420,
+                "right": 1241,
+                "bottom": 433
+            }
+        },
+        {
+            "text": "(3 pieces) Upon landing a Crit.",
+            "box": {
+                "left": 952,
+                "top": 616,
+                "right": 1205,
+                "bottom": 634
+            }
+        },
+        {
+            "text": "17%",
+            "box": {
+                "left": 1210,
+                "top": 469,
+                "right": 1241,
+                "bottom": 481
+            }
+        },
+        {
+            "text": "25.5%",
+            "box": {
+                "left": 1196,
+                "top": 517,
+                "right": 1241,
+                "bottom": 529
+            }
+        }
+    ],
+    "card": {
+        "set": "cataclysm",
+        "slot": "Bangle",
+        "ancient": false,
+        "variant": true,
+        "exclusive": "VIERNA",
+        "attributes": [
+            {
+                "name": "ATK Bonus",
+                "value": 66.0,
+                "unit": "percentage",
+                "bonus": null
+            },
+            {
+                "name": "ATK",
+                "value": 469.0,
+                "unit": "flat",
+                "bonus": null
+            },
+            {
+                "name": "Crit. Rate",
+                "value": 13.5,
+                "unit": "percentage",
+                "bonus": null
+            },
+            {
+                "name": "HP Bonus",
+                "value": 17.0,
+                "unit": "percentage",
+                "bonus": null
+            },
+            {
+                "name": "DEF Bonus",
+                "value": 25.5,
+                "unit": "percentage",
+                "bonus": null
+            }
+        ]
+    }
+}

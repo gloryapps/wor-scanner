@@ -25,7 +25,8 @@ data class ScanEntry(
 sealed interface Outcome {
     data class Finished(override val entries: List<ScanEntry>) : Outcome
 
-    data class Stopped(val reason: Reason, override val entries: List<ScanEntry>) : Outcome
+    /** `seen` is what the reader made of the frame the walk stopped on, for whoever asks why. */
+    data class Stopped(val reason: Reason, override val entries: List<ScanEntry>, val detail: String, val seen: List<String> = emptyList()) : Outcome
 
     data class Failed(val cause: Throwable, override val entries: List<ScanEntry>) : Outcome
 

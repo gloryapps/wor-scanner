@@ -109,6 +109,14 @@ class WalkTest {
     }
 
     @Test
+    fun `a row whose numbers come back as one line still has every tile`() = runTest {
+        val outcome = walkOver(FakeStorage(pieces = 30, runsNumbersTogether = true)).run()
+
+        assertIs<Outcome.Finished>(outcome)
+        assertEquals((0 until 30).toList(), outcome.pieces())
+    }
+
+    @Test
     fun `without the header's count the storage is not open`() = runTest {
         val outcome = walkOver(FakeStorage(pieces = 5, storageOpen = false)).run()
 
