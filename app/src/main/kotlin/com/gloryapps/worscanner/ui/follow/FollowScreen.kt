@@ -79,6 +79,9 @@ fun FollowScreen(onView: (Kept) -> Unit, onBack: () -> Unit, viewModel: FollowVi
                 items(state.readings, key = { it.stamp }) { kept ->
                     Column(Modifier.fillMaxWidth()) {
                         Text("${kept.at.format(SHOWN)} · ${kept.kind}", style = MaterialTheme.typography.titleMedium)
+                        if (kept.pieces != null && kept.outcome != null) {
+                            Text(stringResource(R.string.follow_pieces, kept.pieces, kept.outcome), style = MaterialTheme.typography.bodyMedium)
+                        }
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Row {
                                 TextButton(onClick = { onView(kept) }) { Text(stringResource(R.string.follow_view)) }

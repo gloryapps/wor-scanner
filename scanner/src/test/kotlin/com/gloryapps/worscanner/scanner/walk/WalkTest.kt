@@ -29,7 +29,8 @@ class WalkTest {
         assertIs<Outcome.Finished>(outcome)
         assertEquals((0 until 10).toList(), outcome.entries.map { it.index })
         assertEquals(10, storage.taps.size)
-        assertEquals(0, storage.drags)
+        /* One drag downward, to learn the grid was already at its top. */
+        assertEquals(1, storage.drags)
         assertEquals(174 to 285, storage.taps.first())
         assertEquals(254 to 471, storage.taps[8])
     }
@@ -92,6 +93,17 @@ class WalkTest {
     }
 
     @Test
+    fun `a grid left scrolled is brought back to the top before the first tap`() = runTest {
+        val storage = FakeStorage(pieces = 42, startRow = 3)
+
+        val outcome = walkOver(storage).run()
+
+        assertIs<Outcome.Finished>(outcome)
+        assertEquals((0 until 42).toList(), outcome.entries.map { it.index })
+        assertEquals((0 until 42).map { it.toDouble() }, outcome.entries.map { it.card.attributes.single().value })
+    }
+
+    @Test
     fun `without the header's count the storage is not open`() = runTest {
         val outcome = walkOver(FakeStorage(pieces = 5, storageOpen = false)).run()
 
@@ -119,7 +131,7 @@ class WalkTest {
             val job = launch {
                 ended = Walk(storage, storage, storage, keeper, settleMillis = 1_000).run(entries)
             }
-            testScheduler.advanceTimeBy(3_500)
+            testScheduler.advanceTimeBy(4_500)
             job.cancel()
             job.join()
         }

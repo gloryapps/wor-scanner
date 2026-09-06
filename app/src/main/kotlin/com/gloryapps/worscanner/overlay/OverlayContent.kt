@@ -1,19 +1,21 @@
 package com.gloryapps.worscanner.overlay
 
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,18 +24,34 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
+import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.capture.CaptureService
 import com.gloryapps.worscanner.capture.ReadScreen
+import com.gloryapps.worscanner.walk.ScanState
+import com.gloryapps.worscanner.walk.Scanning
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
-/** The floating buttons over the game: scan the storage, read one screen, or end the session; the grip drags them. */
+/**
+ * The floating strip over the game; the grip drags it.
+ *
+ * Idle, it scans the storage, reads one screen, goes back to the app or closes the session. While
+ * a scan runs it shows how far the scan is and the one thing left to do, stop it.
+ */
 @Composable
-fun OverlayContent(onDrag: (dx: Float, dy: Float) -> Unit, readScreen: ReadScreen = koinInject()) {
+fun OverlayContent(
+    onDrag: (dx: Float, dy: Float) -> Unit,
+    onDragStart: () -> Unit,
+    onDragEnd: () -> Unit,
+    readScreen: ReadScreen = koinInject(),
+    scanning: Scanning = koinInject(),
+) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
+    val state by scanning.state.collectAsStateWithLifecycle()
 
     MaterialTheme {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 4.dp) {
@@ -44,24 +62,41 @@ fun OverlayContent(onDrag: (dx: Float, dy: Float) -> Unit, readScreen: ReadScree
                     Modifier
                         .size(32.dp)
                         .pointerInput(Unit) {
-                            detectDragGestures { change, dragged ->
+                            detectDragGestures(
+                                onDragStart = { onDragStart() },
+                                onDragEnd = onDragEnd,
+                                onDragCancel = onDragEnd,
+                            ) { change, dragged ->
                                 change.consume()
                                 onDrag(dragged.x, dragged.y)
                             }
                         },
                 )
-                Button(onClick = { CaptureService.scan(context) }) { Text(stringResource(R.string.overlay_scan)) }
-                TextButton(onClick = {
-                    scope.launch {
-                        val said = readScreen.now().fold(
-                            onSuccess = { resources.getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
-                            onFailure = { resources.getString(R.string.overlay_read_failed, it.message) },
+                when (val held = state) {
+                    is ScanState.Running -> {
+                        /* Worded without a slash, so the count region can never take it for the header's. */
+                        Text(
+                            stringResource(R.string.overlay_scanning, held.progress.done, held.progress.total),
+                            Modifier.padding(horizontal = 8.dp),
                         )
-                        Toast.makeText(context, said, Toast.LENGTH_LONG).show()
+                        Button(onClick = { CaptureService.stopScan(context) }) { Text(stringResource(R.string.overlay_stop)) }
                     }
-                }) { Text(stringResource(R.string.overlay_read)) }
-                TextButton(onClick = { CaptureService.stop(context) }) {
-                    Text(stringResource(R.string.overlay_stop))
+                    else -> {
+                        Button(onClick = { CaptureService.scan(context) }) { Text(stringResource(R.string.overlay_scan)) }
+                        TextButton(onClick = {
+                            scope.launch {
+                                val said = readScreen.now().fold(
+                                    onSuccess = { resources.getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
+                                    onFailure = { resources.getString(R.string.overlay_read_failed, it.message) },
+                                )
+                                Toast.makeText(context, said, Toast.LENGTH_LONG).show()
+                            }
+                        }) { Text(stringResource(R.string.overlay_read)) }
+                        TextButton(onClick = {
+                            context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }) { Text(stringResource(R.string.overlay_app)) }
+                        TextButton(onClick = { CaptureService.stop(context) }) { Text(stringResource(R.string.overlay_close)) }
+                    }
                 }
             }
         }

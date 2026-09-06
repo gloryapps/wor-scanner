@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.gloryapps.worscanner.scanner.reading.Line
 import com.gloryapps.worscanner.scanner.reading.ScannedGear
+import com.gloryapps.worscanner.scanner.resultOf
+import com.gloryapps.worscanner.walk.Scan
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -14,8 +16,8 @@ import java.time.format.DateTimeFormatter
 @Serializable
 data class Reading(val width: Int, val height: Int, val lines: List<Line>, val card: ScannedGear)
 
-/** Something kept on disk under a stamp: a reading's JSON and PNG, or a scan's folder. */
-data class Kept(val stamp: String, val kind: String, val files: List<File>) {
+/** Something kept on disk under a stamp: a reading's JSON and PNG, or a scan's folder with what it came to. */
+data class Kept(val stamp: String, val kind: String, val files: List<File>, val pieces: Int? = null, val outcome: String? = null) {
     val at: LocalDateTime get() = LocalDateTime.parse(stamp, STAMP)
 }
 
@@ -23,7 +25,7 @@ val STAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
 /** Where readings and scans go to be looked at later: the app's own external folder. */
 class Readings(private val context: Context) {
-    private val json = Json { prettyPrint = true }
+    private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     private val readings: File get() = File(context.getExternalFilesDir(null), "readings").apply { mkdirs() }
     private val scans: File get() = File(context.getExternalFilesDir(null), "scans").apply { mkdirs() }
 
@@ -51,7 +53,8 @@ class Readings(private val context: Context) {
             Kept(it.nameWithoutExtension, "reading", listOf(it, File(readings, "${it.nameWithoutExtension}.png")))
         }
         val scanned = scans.listFiles { file -> file.isDirectory }.orEmpty().map { folder ->
-            Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name })
+            val scan = File(folder, "scan.json").takeIf { it.exists() }?.let { resultOf { json.decodeFromString<Scan>(it.readText()) }.getOrNull() }
+            Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name }, scan?.entries?.size, scan?.outcome)
         }
 
         return (read + scanned).sortedByDescending { it.stamp }

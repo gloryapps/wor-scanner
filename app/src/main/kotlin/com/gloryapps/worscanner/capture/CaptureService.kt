@@ -77,7 +77,7 @@ class CaptureService : LifecycleService() {
     }
 
     private fun showOverlay() {
-        overlay = OverlayWindow(this).also { it.show() }
+        overlay = OverlayWindow(this, onClose = ::stopSelf).also { it.show() }
     }
 
     private fun hideOverlay() {
@@ -85,17 +85,10 @@ class CaptureService : LifecycleService() {
         overlay = null
     }
 
-    /* The overlay leaves the screen while the walk reads it, so its own words never land on a panel. */
+    /* The overlay stays, showing the scan and its stop; the walk reads only the regions it knows, and the strip sits elsewhere. */
     private fun startScan() {
         if (scan?.isActive == true) return
-        hideOverlay()
-        scan = lifecycleScope.launch {
-            try {
-                scanning.run()
-            } finally {
-                showOverlay()
-            }
-        }
+        scan = lifecycleScope.launch { scanning.run() }
     }
 
     private fun show(state: ScanState) {
@@ -182,6 +175,8 @@ class CaptureService : LifecycleService() {
         }
 
         fun scan(context: Context) = send(context, ACTION_SCAN)
+
+        fun stopScan(context: Context) = send(context, ACTION_STOP_SCAN)
 
         fun stop(context: Context) = send(context, ACTION_STOP)
 

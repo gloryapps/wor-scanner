@@ -18,8 +18,8 @@ data class StorageLayout(
     /** The grid's viewport; a row is tapped only while its centre sits well inside it. */
     val gridTop: Double = 0.195,
     val gridBottom: Double = 0.856,
-    /** The tile's art, sampled to tell one tile from another; a fraction of the pitch around the centre. */
-    val tileSample: Double = 0.30,
+    /** The grid's own rectangle, where the tiles' words are read to find the grid again after a drag. */
+    val grid: Region = Region(0.11, 0.195, 0.70, 0.856),
     val panel: Region = Region(0.724, 0.195, 0.962, 0.904),
     /** Where the header prints `1,169/2,500`. */
     val count: Region = Region(0.59, 0.135, 0.705, 0.171),

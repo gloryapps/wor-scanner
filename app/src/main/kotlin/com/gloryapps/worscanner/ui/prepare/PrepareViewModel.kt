@@ -12,9 +12,7 @@ data class PrepareState(
     val accessibilityOn: Boolean = false,
     val overlayAllowed: Boolean = false,
     val capturing: Boolean = false,
-) {
-    val ready: Boolean get() = accessibilityOn && overlayAllowed && capturing
-}
+)
 
 class PrepareViewModel(
     session: CaptureSession,
