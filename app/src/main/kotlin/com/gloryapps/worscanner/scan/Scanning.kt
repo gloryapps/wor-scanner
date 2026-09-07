@@ -21,9 +21,9 @@ import java.io.File
 sealed interface ScanState {
     data object Idle : ScanState
 
-    data class Running(val progress: Progress) : ScanState
+    data class Running(val kind: Kind, val progress: Progress) : ScanState
 
-    data class Ended(val outcome: Outcome<*>, val file: File) : ScanState
+    data class Ended(val kind: Kind, val outcome: Outcome<*>, val file: File) : ScanState
 }
 
 /** Runs one scan of a kind with the hand and eyes of the moment and writes what it found. */
@@ -48,13 +48,13 @@ class Scanning(
         val entries = mutableListOf<ScanEntry<T>>()
         var outcome: Outcome<T>? = null
 
-        _state.value = ScanState.Running(Progress(0, 0))
+        _state.value = ScanState.Running(kind, Progress(0, 0))
         try {
-            outcome = Scan(scannable, screen, hand, reader, writer.keeper).run(entries) { _state.value = ScanState.Running(it) }
+            outcome = Scan(scannable, screen, hand, reader, writer.keeper).run(entries) { _state.value = ScanState.Running(kind, it) }
         } finally {
             /* A cancelled scan ends by its exception; what it read before is still worth writing. */
             val ended = outcome ?: Outcome.Stopped(Outcome.Reason.CANCELLED, entries, "stopped by the user")
-            _state.value = ScanState.Ended(ended, writer.write(first, ended))
+            _state.value = ScanState.Ended(kind, ended, writer.write(first, ended))
         }
     }
 }

@@ -84,7 +84,7 @@ fun OverlayContent(
                     is ScanState.Running -> {
                         /* Worded without a slash, so the count region can never take it for the header's. */
                         Text(
-                            stringResource(R.string.overlay_scanning, held.progress.done, held.progress.held),
+                            stringResource(R.string.overlay_scanning, stringResource(held.kind.label), held.progress.done, held.progress.held),
                             Modifier.padding(horizontal = 8.dp),
                         )
                         Button(onClick = { CaptureService.stopScan(context) }) { Text(stringResource(R.string.overlay_stop)) }
@@ -92,7 +92,7 @@ fun OverlayContent(
                     else -> {
                         if (Kind.entries.size > 1) {
                             Kind.entries.forEach { each ->
-                                FilterChip(selected = each == kind, onClick = { kind = each }, label = { Text(each.label()) }, modifier = Modifier.padding(horizontal = 2.dp))
+                                FilterChip(selected = each == kind, onClick = { kind = each }, label = { Text(stringResource(each.label)) }, modifier = Modifier.padding(horizontal = 2.dp))
                             }
                         }
                         Button(onClick = { CaptureService.scan(context, kind) }) { Text(stringResource(R.string.overlay_scan)) }

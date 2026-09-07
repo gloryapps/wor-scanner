@@ -2,6 +2,7 @@ package com.gloryapps.worscanner.capture
 
 import android.content.Context
 import android.graphics.Bitmap
+import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.text.Line
 import com.gloryapps.worscanner.scan.ScanFile
@@ -23,7 +24,9 @@ data class Kept(
     /** `reading` or `scan`. */
     val form: String,
     val files: List<File>,
-    val pieces: Int? = null,
+    /** What a scan scanned; null for a reading, whose JSON says. */
+    val kind: Kind? = null,
+    val entries: Int? = null,
     val outcome: String? = null,
     /** Why a scan stopped or failed, in the scan's own words; null when it finished. */
     val detail: String? = null,
@@ -65,7 +68,7 @@ class Readings(private val context: Context) {
         /* The list wants the count and the outcome, not the cards, so the card stays whatever JSON it is. */
         val scanned = scans.listFiles { file -> file.isDirectory }.orEmpty().map { folder ->
             val scan = File(folder, "scan.json").takeIf { it.exists() }?.let { resultOf { json.decodeFromString(ScanFile.serializer(JsonElement.serializer()), it.readText()) }.getOrNull() }
-            Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name }, scan?.entries?.size, scan?.outcome, scan?.detail)
+            Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name }, Kind.entries.firstOrNull { it.id == scan?.kind }, scan?.entries?.size, scan?.outcome, scan?.detail)
         }
 
         return (read + scanned).sortedByDescending { it.stamp }

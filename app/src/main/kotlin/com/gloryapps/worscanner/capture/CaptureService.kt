@@ -20,6 +20,7 @@ import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.overlay.OverlayWindow
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.scan.Outcome
+import com.gloryapps.worscanner.ui.label
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
 import kotlinx.coroutines.Job
@@ -96,11 +97,11 @@ class CaptureService : LifecycleService() {
     private fun show(state: ScanState) {
         val text = when (state) {
             ScanState.Idle -> getString(R.string.capture_notification_title)
-            is ScanState.Running -> getString(R.string.scan_running, state.progress.done, state.progress.held)
+            is ScanState.Running -> getString(R.string.scan_running, getString(state.kind.label), state.progress.done, state.progress.held)
             is ScanState.Ended -> when (val outcome = state.outcome) {
-                is Outcome.Finished<*> -> getString(R.string.scan_finished, outcome.entries.size)
-                is Outcome.Stopped<*> -> getString(R.string.scan_stopped, outcome.detail, outcome.entries.size)
-                is Outcome.Failed<*> -> getString(R.string.scan_failed, outcome.cause.toString())
+                is Outcome.Finished<*> -> getString(R.string.scan_finished, getString(state.kind.label), outcome.entries.size)
+                is Outcome.Stopped<*> -> getString(R.string.scan_stopped, getString(state.kind.label), outcome.detail, outcome.entries.size)
+                is Outcome.Failed<*> -> getString(R.string.scan_failed, getString(state.kind.label), outcome.cause.toString())
             }
         }
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text, stoppable = state is ScanState.Running))

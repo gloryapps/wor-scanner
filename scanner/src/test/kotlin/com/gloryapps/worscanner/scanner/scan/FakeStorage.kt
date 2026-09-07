@@ -1,6 +1,5 @@
 package com.gloryapps.worscanner.scanner.scan
 
-import com.gloryapps.worscanner.scanner.kinds.gear.GEAR_STORAGE
 import com.gloryapps.worscanner.scanner.kinds.GridLayout
 import com.gloryapps.worscanner.scanner.kinds.Reader
 import com.gloryapps.worscanner.scanner.kinds.Region
@@ -23,7 +22,7 @@ import kotlin.math.roundToInt
  */
 class FakeStorage(
     private val pieces: Int,
-    override val layout: GridLayout = GEAR_STORAGE,
+    override val layout: GridLayout = FAKE_GRID,
     /** Rows the grid actually moves on a drag, whole or not; the scan must not care. */
     private val rowsPerDrag: Double = layout.rowsPerDrag.toDouble(),
     private val storageOpen: Boolean = true,
@@ -147,3 +146,22 @@ class FakeStorage(
         const val FRAME = 230
     }
 }
+
+/** A grid of seven, like the game's, in round fractions that belong to no kind. */
+val FAKE_GRID = GridLayout(
+    columns = 7,
+    firstTileX = 0.15,
+    tilePitchX = 0.085,
+    tilePitchY = 0.18,
+    tileWidth = 0.85,
+    tileHeight = 0.94,
+    labelBelowCentre = 0.28,
+    gridTop = 0.19,
+    gridBottom = 0.85,
+    grid = Region(0.11, 0.19, 0.71, 0.85),
+    panel = Region(0.73, 0.20, 0.98, 0.89),
+    count = Region(0.60, 0.13, 0.72, 0.175),
+    dragX = 0.40,
+    dragFromY = 0.78,
+    rowsPerDrag = 1,
+)

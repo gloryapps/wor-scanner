@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">WoR Scanner</string>
-    <string name="touch_service_description">Taps through the gear storage of Watcher of Realms while a scan runs. Nothing is read from other apps.</string>
+    <string name="touch_service_description">Taps through a Watcher of Realms storage while a scan runs. Nothing is read from other apps.</string>
 
     <string name="prepare_title">Before a scan</string>
     <string name="prepare_accessibility">Accessibility service on</string>
@@ -9,14 +9,14 @@
     <string name="prepare_open_settings">Open settings</string>
     <string name="prepare_start">Start</string>
     <string name="prepare_stop">Stop</string>
-    <string name="prepare_running">Capturing. Open the gear storage in the game and press Scan on the floating buttons.</string>
+    <string name="prepare_running">Capturing. Open the storage to scan in the game and press Scan on the floating buttons.</string>
     <string name="prepare_follow">Readings</string>
 
     <string name="back">Back</string>
     <string name="follow_title">Readings</string>
     <string name="view_title">JSON</string>
     <string name="follow_empty">No reading yet. Press Read over the game.</string>
-    <string name="follow_pieces">%1$d pieces · %2$s</string>
+    <string name="follow_entries">%1$d read · %2$s</string>
     <string name="follow_view">View</string>
     <string name="follow_share">Share</string>
     <string name="follow_delete">Delete</string>
@@ -24,11 +24,11 @@
     <string name="follow_pictures">Save to Pictures</string>
 
     <string name="capture_channel">Screen capture</string>
-    <string name="capture_notification_title">Capturing the screen. Open the gear storage and press Scan.</string>
-    <string name="scan_running">Scanning: %1$d read, %2$d in storage</string>
-    <string name="scan_finished">Scan finished: %1$d pieces</string>
-    <string name="scan_stopped">Scan stopped: %1$s. %2$d pieces kept.</string>
-    <string name="scan_failed">Scan failed: %1$s</string>
+    <string name="capture_notification_title">Capturing the screen. Open the storage to scan and press Scan.</string>
+    <string name="scan_running">Scanning %1$s: %2$d read, %3$d in storage</string>
+    <string name="scan_finished">%1$s scan finished: %2$d read</string>
+    <string name="scan_stopped">%1$s scan stopped: %2$s. %3$d kept.</string>
+    <string name="scan_failed">%1$s scan failed: %2$s</string>
     <string name="scan_stop">Stop</string>
 
     <string name="overlay_drag">Move</string>
@@ -36,7 +36,7 @@
     <string name="overlay_scan">Scan</string>
     <string name="overlay_read">Read</string>
     <string name="overlay_app">App</string>
-    <string name="overlay_scanning">Scanning %1$d read, %2$d in storage</string>
+    <string name="overlay_scanning">Scanning %1$s %2$d read, %3$d in storage</string>
     <string name="overlay_stop">Stop</string>
     <string name="overlay_close">Close</string>
     <string name="overlay_read_kept">Kept %1$s, %2$d lines</string>

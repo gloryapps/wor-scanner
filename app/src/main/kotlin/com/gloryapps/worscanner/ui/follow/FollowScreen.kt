@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.ui.Bar
+import com.gloryapps.worscanner.ui.label
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import org.koin.compose.viewmodel.koinViewModel
@@ -80,9 +81,10 @@ fun FollowScreen(onView: (Kept) -> Unit, onBack: () -> Unit, viewModel: FollowVi
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(state.readings, key = { it.stamp }) { kept ->
                     Column(Modifier.fillMaxWidth()) {
-                        Text("${kept.at.format(SHOWN)} · ${kept.form}", style = MaterialTheme.typography.titleMedium)
-                        if (kept.pieces != null && kept.outcome != null) {
-                            Text(stringResource(R.string.follow_pieces, kept.pieces, kept.outcome), style = MaterialTheme.typography.bodyMedium)
+                        val what = listOfNotNull(kept.kind?.let { stringResource(it.label) }, kept.form).joinToString(" ")
+                        Text("${kept.at.format(SHOWN)} · $what", style = MaterialTheme.typography.titleMedium)
+                        if (kept.entries != null && kept.outcome != null) {
+                            Text(stringResource(R.string.follow_entries, kept.entries, kept.outcome), style = MaterialTheme.typography.bodyMedium)
                         }
                         if (kept.detail != null) {
                             Text(kept.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
