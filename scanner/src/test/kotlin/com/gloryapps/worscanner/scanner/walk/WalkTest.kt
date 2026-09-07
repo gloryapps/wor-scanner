@@ -152,4 +152,36 @@ class WalkTest {
         assertNull(ended)
         assertEquals(3, entries.size)
     }
+
+    @Test
+    fun `a number the recogniser missed mid-row is still a tile, since only the last row runs short`() = runTest {
+        val outcome = walkOver(FakeStorage(pieces = 30, unlabelled = setOf(4, 13, 28))).run()
+
+        assertIs<Outcome.Finished>(outcome)
+        assertEquals((0 until 30).toList(), outcome.pieces())
+    }
+
+    @Test
+    fun `a last row short of a number is not made longer than it is`() = runTest {
+        val outcome = walkOver(FakeStorage(pieces = 31, unlabelled = setOf(30))).run()
+
+        assertIs<Outcome.Finished>(outcome)
+        assertEquals((0 until 30).toList(), outcome.pieces())
+    }
+
+    @Test
+    fun `a grid that keeps gliding after the drag is registered once it stops`() = runTest {
+        val outcome = walkOver(FakeStorage(pieces = 42, rowsPerDrag = 0.4, glideRows = 0.6)).run()
+
+        assertIs<Outcome.Finished>(outcome)
+        assertEquals((0 until 42).toList(), outcome.pieces())
+    }
+
+    @Test
+    fun `tiles that all print the same number are registered by the framed tile instead`() = runTest {
+        val outcome = walkOver(FakeStorage(pieces = 42, sameNumbers = true)).run()
+
+        assertIs<Outcome.Finished>(outcome)
+        assertEquals((0 until 42).toList(), outcome.pieces())
+    }
 }

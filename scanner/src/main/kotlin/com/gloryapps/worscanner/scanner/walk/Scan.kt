@@ -21,11 +21,10 @@ data class ScanEntry(
     val unread: Boolean get() = card.set == null || card.slot == null
 }
 
-/** Why a walk ended. */
+/** Why a walk ended; `seen` is what the reader made of the frame it ended on, for whoever asks why. */
 sealed interface Outcome {
-    data class Finished(override val entries: List<ScanEntry>) : Outcome
+    data class Finished(override val entries: List<ScanEntry>, val seen: List<String> = emptyList()) : Outcome
 
-    /** `seen` is what the reader made of the frame the walk stopped on, for whoever asks why. */
     data class Stopped(val reason: Reason, override val entries: List<ScanEntry>, val detail: String, val seen: List<String> = emptyList()) : Outcome
 
     data class Failed(val cause: Throwable, override val entries: List<ScanEntry>) : Outcome

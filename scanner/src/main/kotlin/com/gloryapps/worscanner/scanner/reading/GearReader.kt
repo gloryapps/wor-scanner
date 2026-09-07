@@ -5,8 +5,8 @@ import com.gloryapps.worscanner.scanner.catalogue.GEAR_SETS
 import com.gloryapps.worscanner.scanner.catalogue.Slot
 import com.gloryapps.worscanner.scanner.catalogue.gearSetOf
 
-/** Where the piece's own rows end: the set block below them talks about attributes too. */
-private val SET_BLOCK = Regex("\\(\\s*\\d+\\s*pieces?\\s*\\)", RegexOption.IGNORE_CASE)
+/** Where the piece's own rows end: the set block below them talks about attributes too. The count reads `B` as often as `3`. */
+private val SET_BLOCK = Regex("\\(\\s*\\S{1,2}\\s*pieces?\\s*\\)", RegexOption.IGNORE_CASE)
 
 private fun setBlockAt(rows: List<String>): Int = rows.indexOfFirst { SET_BLOCK.containsMatchIn(it) }
 
@@ -91,11 +91,14 @@ private fun exclusiveIn(rows: List<String>): String? {
     return named.ifEmpty { null }
 }
 
-/** The slot as a whole word of the row, never fuzzily: a loose match once read `Amulet` as `Ring`. */
+/**
+ * The slot as a whole word of the row, a character off at most: a loose match once read `Amulet`
+ * as `Ring`, and `Amnulet` and `Banglet` are what the recogniser makes of the real words.
+ */
 private fun slotWordIn(row: String, candidates: List<Slot>): Slot? {
-    val words = row.split(Regex("[^A-Za-z]+")).toSet()
+    val words = row.split(Regex("[^A-Za-z]+")).filter { it.isNotEmpty() }
 
-    return candidates.firstOrNull { it.word in words }
+    return candidates.firstOrNull { slot -> words.any { readsAs(it, slot.word) } }
 }
 
 /**

@@ -27,6 +27,12 @@ class FakeStorage(
     selected: Int? = null,
     /** Whether the recogniser hands a row's numbers back as one line, as it does when they sit level. */
     private val runsNumbersTogether: Boolean = false,
+    /** Pieces whose number the recogniser never reads, though the tile is there. */
+    private val unlabelled: Set<Int> = emptySet(),
+    /** Rows the grid keeps gliding after a drag, one capture at a time, before it comes to rest. */
+    private val glideRows: Double = 0.0,
+    /** Whether every tile prints the same number, as a storage full of one stat does. */
+    private val sameNumbers: Boolean = false,
 ) : Screen, Touch, TextReader {
     val taps = mutableListOf<Pair<Int, Int>>()
     var drags = 0
@@ -39,6 +45,8 @@ class FakeStorage(
     /** How far the grid has scrolled, in pixels of a 1000-pixel display. */
     private var scrolled = (scrolledRows * pitch).toInt().coerceIn(0, floor)
     private var selected: Int? = selected
+    /** Pixels the grid has still to glide, given up a step per capture. */
+    private var gliding = 0
 
     private fun rowCentre(row: Int) = restingTop + row * pitch - scrolled
 
@@ -48,7 +56,7 @@ class FakeStorage(
         val shown = selected
         private val centres = (0 until rows).map { rowCentre(it) }
 
-        override fun luminanceAt(x: Int, y: Int): Int {
+        override fun palenessAt(x: Int, y: Int): Int {
             val chosen = shown ?: return DARK
             val cx = layout.tileX(chosen % layout.columns, 1000)
             val cy = centres[chosen / layout.columns]
@@ -60,7 +68,15 @@ class FakeStorage(
         }
     }
 
-    override suspend fun capture(): Frame = Fake()
+    override suspend fun capture(): Frame {
+        if (gliding > 0) {
+            val step = minOf(gliding, pitch / 3)
+            scrolled = (scrolled + step).coerceAtMost(floor)
+            gliding -= step
+        }
+
+        return Fake()
+    }
 
     override suspend fun tap(x: Int, y: Int) {
         taps += x to y
@@ -73,6 +89,7 @@ class FakeStorage(
     override suspend fun drag(fromX: Int, fromY: Int, toX: Int, toY: Int, millis: Long) {
         drags++
         scrolled = (scrolled + (rowsPerDrag * pitch).toInt()).coerceAtMost(floor)
+        gliding = (glideRows * pitch).toInt()
     }
 
     override fun toString() = "FakeStorage(scrolled=$scrolled, selected=$selected)"
@@ -101,7 +118,8 @@ class FakeStorage(
                 if (index >= pieces) break
                 val x = layout.tileX(column, 1000)
                 lines += Line("+16", Box(x + 10, centre - 60, x + 40, centre - 45))
-                numbers += Line("${1000 + (index * 7) % 9}", Box(x - 30, labelTop, x + 30, labelTop + 15))
+                if (index in unlabelled) continue
+                numbers += Line(if (sameNumbers) "66%" else "${1000 + (index * 7) % 9}", Box(x - 30, labelTop, x + 30, labelTop + 15))
             }
             if (runsNumbersTogether && numbers.isNotEmpty()) {
                 lines += Line(numbers.joinToString(" ") { it.text }, Box(numbers.first().box.left, labelTop, numbers.last().box.right, labelTop + 15))

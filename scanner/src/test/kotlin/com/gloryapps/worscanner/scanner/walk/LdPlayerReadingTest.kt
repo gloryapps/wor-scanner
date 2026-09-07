@@ -21,7 +21,7 @@ class LdPlayerReadingTest {
     private val frame = object : Frame {
         override val width = reading.width
         override val height = reading.height
-        override fun luminanceAt(x: Int, y: Int) = 0
+        override fun palenessAt(x: Int, y: Int) = 0
     }
 
     private val layout = StorageLayout()

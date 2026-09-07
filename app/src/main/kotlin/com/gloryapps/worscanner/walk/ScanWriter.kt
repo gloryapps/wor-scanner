@@ -56,7 +56,7 @@ class ScanWriter(private val context: Context, private val layout: StorageLayout
             height = first.height,
             outcome = ended,
             detail = stopped?.detail ?: (outcome as? Outcome.Failed)?.cause?.stackTraceToString()?.lineSequence()?.take(4)?.joinToString(" | "),
-            seen = stopped?.seen.orEmpty(),
+            seen = stopped?.seen ?: (outcome as? Outcome.Finished)?.seen.orEmpty(),
             entries = entries,
         )
         /* A walk that read nothing leaves the frame it looked at, which is what tells why. */

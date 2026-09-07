@@ -8,9 +8,9 @@ class BitmapFrame(val bitmap: Bitmap) : Frame {
     override val width: Int get() = bitmap.width
     override val height: Int get() = bitmap.height
 
-    override fun luminanceAt(x: Int, y: Int): Int {
+    override fun palenessAt(x: Int, y: Int): Int {
         val pixel = bitmap.getPixel(x, y)
 
-        return (Color.red(pixel) * 299 + Color.green(pixel) * 587 + Color.blue(pixel) * 114) / 1000
+        return minOf(Color.red(pixel), Color.green(pixel), Color.blue(pixel))
     }
 }

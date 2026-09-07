@@ -112,4 +112,31 @@ class GearReaderTest {
         assertNull(card.set)
         assertEquals(Slot.RING, card.slot)
     }
+
+    /** Rows as the scan of 2026-09-07 kept them, one per line. */
+    private fun rows(vararg text: String) = text.mapIndexed { index, row -> at(row, 1140, 200 + index * 40, 1480, 220 + index * 40) }
+
+    @Test
+    fun `Bonus read as Bornus is still the attribute`() {
+        val card = readGearCard(rows("+16 Ancient Mythic Gear", "Ancient: Infernal Roar", "Ring", "Crit. DMG 72%", "ATK Bornus 17.5%", "Crit. Rate 22%", "ATK Spd. 68", "ATK 419", "Infernal Roar", "(3 pieces) Basic ATK DMG +40%"))
+
+        assertEquals(listOf(Attribute.CRIT_DAMAGE, Attribute.ATK_BONUS, Attribute.CRIT_RATE, Attribute.ATK_SPEED, Attribute.ATK), card.attributes.map { it.name })
+    }
+
+    @Test
+    fun `a slot word a character off still names the slot`() {
+        val amulet = readGearCard(rows("+16 Mythic Gear", "Infernal Roar Amnulet", "HP Bonus 66%", "HP 2175", "Crit. Rate 23.5%", "Crit. DMG 31.5%", "ATK Spd. 67", "Infernal Roar", "(3 pieces) Basic ATK DMG +40%"))
+        val bangle = readGearCard(rows("+16 Mythic Gear", "Guardian Banglet", "HP Bonus 60%", "ATK 411", "HP 2420", "DEF Bonus 16.5%", "4 ATK Spd. 49", "Guardian", "(3 pieces) DMG Taken -15%"))
+
+        assertEquals(Slot.AMULET, amulet.slot)
+        assertEquals(Slot.BANGLE, bangle.slot)
+    }
+
+    @Test
+    fun `a pieces count read as a letter still closes the card`() {
+        val card = readGearCard(rows("+16 Mythic Gear", "Undying Savage Ring", "Crit. DMG 72%", "Crit. Rate 24%", "Rage Regen 21.5%", "ATK Spd. 70", "HP Bonus 22.5%", "Undying Savage", "(B pieces) When the hero gains a", "shield or receives healing,", "increases Max HP by 1% and"))
+
+        assertEquals("undying-savage", card.set)
+        assertEquals(5, card.attributes.size)
+    }
 }

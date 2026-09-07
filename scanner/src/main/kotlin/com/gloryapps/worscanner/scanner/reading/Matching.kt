@@ -24,21 +24,34 @@ internal fun distance(one: String, two: String): Int {
     return grid[one.length][two.length]
 }
 
-/** Whether a name sits anywhere in the line, with a character of slack per five of the name. */
+/**
+ * Whether a name sits anywhere in the line, with a character of slack per five of the name. The
+ * window tried is as long as the name give or take the slack, since `Bornus` for `Bonus` is one
+ * character more, not one different.
+ */
 internal fun holdsName(line: String, name: String): Boolean {
     val flat = flatten(line)
     val candidate = flatten(name)
     if (candidate.isEmpty()) return false
 
     val slack = candidate.length / 5
-    for (at in 0..(flat.length - candidate.length + slack).coerceAtLeast(0)) {
-        val end = minOf(at + candidate.length, flat.length)
-        if (at >= flat.length) break
-        if (distance(flat.substring(at, end), candidate) <= slack) return true
+    for (at in 0 until flat.length) {
+        for (length in (candidate.length - slack)..(candidate.length + slack)) {
+            val end = at + length
+            if (length <= 0 || end > flat.length) continue
+            if (distance(flat.substring(at, end), candidate) <= slack) return true
+        }
     }
 
     return false
 }
+
+/** Whether a word is this one read again: the same, or off by one character where there are enough to be sure. */
+internal fun readsAs(word: String, name: String): Boolean =
+    word.equals(name, ignoreCase = true) || name.length >= SURE_LENGTH && distance(word.lowercase(), name.lowercase()) <= 1
+
+/** Letters a word needs before a slip of one is forgiven: `Ring` and `King` are too short to tell apart. */
+private const val SURE_LENGTH = 5
 
 /** The longest of the names the line holds, so `ATK` cannot shadow `ATK Bonus`. */
 internal fun <T> longestHeld(line: String, candidates: Iterable<T>, nameOf: (T) -> String): T? =

@@ -17,7 +17,7 @@ data class StorageLayout(
     val tilePitchY: Double = 0.184,
     /** The tile's own rectangle, as a fraction of the pitch; the selection frame is drawn on its edge. */
     val tileWidth: Double = 0.85,
-    val tileHeight: Double = 0.90,
+    val tileHeight: Double = 0.94,
     /** How far below the tile's centre its number is printed, as a fraction of the row pitch. */
     val labelBelowCentre: Double = 0.28,
     /** The grid's viewport; a row is tapped only while its centre sits well inside it. */
