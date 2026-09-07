@@ -33,7 +33,7 @@ import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.capture.CaptureService
 import com.gloryapps.worscanner.capture.ReadScreen
-import com.gloryapps.worscanner.scanner.kind.Kind
+import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.label
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning

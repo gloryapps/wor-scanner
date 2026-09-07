@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.scanner.gear
+package com.gloryapps.worscanner.scanner.kinds.gear
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

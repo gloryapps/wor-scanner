@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.scanner.kind
+package com.gloryapps.worscanner.scanner.kinds
 
 import kotlinx.serialization.KSerializer
 

@@ -1,8 +1,8 @@
-package com.gloryapps.worscanner.scanner.gear
+package com.gloryapps.worscanner.scanner.kinds.gear
 
 import com.gloryapps.worscanner.scanner.game.Attribute
 import com.gloryapps.worscanner.scanner.game.ReadAttribute
-import com.gloryapps.worscanner.scanner.kind.Reader
+import com.gloryapps.worscanner.scanner.kinds.Reader
 import com.gloryapps.worscanner.scanner.text.ValueUnit
 import com.gloryapps.worscanner.scanner.text.flatten
 import com.gloryapps.worscanner.scanner.text.holdsName

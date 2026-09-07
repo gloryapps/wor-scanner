@@ -1,8 +1,8 @@
 package com.gloryapps.worscanner.scanner.scan
 
-import com.gloryapps.worscanner.scanner.gear.GEAR_STORAGE
-import com.gloryapps.worscanner.scanner.gear.GearReader
-import com.gloryapps.worscanner.scanner.kind.holds
+import com.gloryapps.worscanner.scanner.kinds.gear.GEAR_STORAGE
+import com.gloryapps.worscanner.scanner.kinds.gear.GearReader
+import com.gloryapps.worscanner.scanner.kinds.holds
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.text.Line
 import com.gloryapps.worscanner.scanner.text.rowsOf

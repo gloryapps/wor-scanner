@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.scanner.gear
+package com.gloryapps.worscanner.scanner.kinds.gear
 
 /** A set as the wiki's Gear page names it; the id is what the JSON carries. */
 data class GearSet(val id: String, val name: String, val tier: Int, val side: Side)

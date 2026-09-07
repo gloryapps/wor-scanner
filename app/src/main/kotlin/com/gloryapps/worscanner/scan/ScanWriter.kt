@@ -4,8 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.gloryapps.worscanner.capture.BitmapFrame
 import com.gloryapps.worscanner.capture.STAMP
-import com.gloryapps.worscanner.scanner.kind.Kind
-import com.gloryapps.worscanner.scanner.kind.Scannable
+import com.gloryapps.worscanner.scanner.kinds.Kind
+import com.gloryapps.worscanner.scanner.kinds.Scannable
 import com.gloryapps.worscanner.scanner.scan.Keeper
 import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.scanner.scan.ScanEntry

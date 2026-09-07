@@ -1,8 +1,8 @@
 package com.gloryapps.worscanner.scanner.scan
 
-import com.gloryapps.worscanner.scanner.kind.Region
-import com.gloryapps.worscanner.scanner.kind.Scannable
-import com.gloryapps.worscanner.scanner.kind.holds
+import com.gloryapps.worscanner.scanner.kinds.Region
+import com.gloryapps.worscanner.scanner.kinds.Scannable
+import com.gloryapps.worscanner.scanner.kinds.holds
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.senses.Screen

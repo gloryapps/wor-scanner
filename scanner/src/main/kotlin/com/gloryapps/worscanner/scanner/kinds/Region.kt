@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.scanner.kind
+package com.gloryapps.worscanner.scanner.kinds
 
 import com.gloryapps.worscanner.scanner.text.Box
 import com.gloryapps.worscanner.scanner.text.Line

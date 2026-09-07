@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.scanner.kind
+package com.gloryapps.worscanner.scanner.kinds
 
 /**
  * Where a kind's screen puts things, in fractions of the display.

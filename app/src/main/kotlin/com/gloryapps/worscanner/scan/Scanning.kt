@@ -3,8 +3,8 @@ package com.gloryapps.worscanner.scan
 import android.content.Context
 import com.gloryapps.worscanner.capture.BitmapFrame
 import com.gloryapps.worscanner.capture.CaptureSession
-import com.gloryapps.worscanner.scanner.kind.Kind
-import com.gloryapps.worscanner.scanner.kind.Scannable
+import com.gloryapps.worscanner.scanner.kinds.Kind
+import com.gloryapps.worscanner.scanner.kinds.Scannable
 import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.scanner.scan.Progress
 import com.gloryapps.worscanner.scanner.scan.Scan

@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.scanner.gear
+package com.gloryapps.worscanner.scanner.kinds.gear
 
 import com.gloryapps.worscanner.scanner.game.Named
 

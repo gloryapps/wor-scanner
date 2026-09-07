@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.scanner.kind
+package com.gloryapps.worscanner.scanner.kinds
 
 /** What the app can scan. The name, lower-cased, is the JSON's `kind` and the scan folder's. */
 enum class Kind {

@@ -1,10 +1,10 @@
 package com.gloryapps.worscanner.scanner.scan
 
-import com.gloryapps.worscanner.scanner.gear.GEAR_STORAGE
-import com.gloryapps.worscanner.scanner.kind.GridLayout
-import com.gloryapps.worscanner.scanner.kind.Reader
-import com.gloryapps.worscanner.scanner.kind.Region
-import com.gloryapps.worscanner.scanner.kind.Scannable
+import com.gloryapps.worscanner.scanner.kinds.gear.GEAR_STORAGE
+import com.gloryapps.worscanner.scanner.kinds.GridLayout
+import com.gloryapps.worscanner.scanner.kinds.Reader
+import com.gloryapps.worscanner.scanner.kinds.Region
+import com.gloryapps.worscanner.scanner.kinds.Scannable
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.senses.Screen
 import com.gloryapps.worscanner.scanner.senses.TextReader

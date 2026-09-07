@@ -1,7 +1,7 @@
 package com.gloryapps.worscanner.capture
 
-import com.gloryapps.worscanner.scanner.kind.Kind
-import com.gloryapps.worscanner.scanner.kind.Scannable
+import com.gloryapps.worscanner.scanner.kinds.Kind
+import com.gloryapps.worscanner.scanner.kinds.Scannable
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.scan.scannable
 import com.gloryapps.worscanner.scanner.senses.TextReader

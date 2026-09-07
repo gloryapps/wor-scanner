@@ -1,7 +1,7 @@
-package com.gloryapps.worscanner.scanner.gear
+package com.gloryapps.worscanner.scanner.kinds.gear
 
-import com.gloryapps.worscanner.scanner.kind.GridLayout
-import com.gloryapps.worscanner.scanner.kind.Region
+import com.gloryapps.worscanner.scanner.kinds.GridLayout
+import com.gloryapps.worscanner.scanner.kinds.Region
 
 /**
  * Where the gear storage puts things, measured on a reading taken inside LDPlayer at 1280x720

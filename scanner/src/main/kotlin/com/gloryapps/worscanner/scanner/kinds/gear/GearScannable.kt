@@ -1,6 +1,6 @@
-package com.gloryapps.worscanner.scanner.gear
+package com.gloryapps.worscanner.scanner.kinds.gear
 
-import com.gloryapps.worscanner.scanner.kind.Scannable
+import com.gloryapps.worscanner.scanner.kinds.Scannable
 
 /** Gear's one door for the scanner: its storage, its record and its reader. */
 object GearScannable : Scannable<ScannedGear> {

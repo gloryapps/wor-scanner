@@ -1,6 +1,6 @@
 package com.gloryapps.worscanner.scanner.scan
 
-import com.gloryapps.worscanner.scanner.kind.holds
+import com.gloryapps.worscanner.scanner.kinds.holds
 import com.gloryapps.worscanner.scanner.text.Box
 import com.gloryapps.worscanner.scanner.text.Line
 import kotlin.math.abs

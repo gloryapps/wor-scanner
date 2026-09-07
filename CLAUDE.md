@@ -13,7 +13,7 @@ kinds to come. Shipped as an APK on GitHub.
 ## Rules
 
 - `scanner` imports nothing from Android. `app` implements its interfaces.
-- A kind is a package under `scanner` behind one `Scannable` object; its reader is its own model,
+- A kind is a sub-package of `scanner`'s `kinds/` behind one `Scannable` object; its reader is its own model,
   written with `text/`'s instruments. The scan names no kind: `Kind.scannable()` and
   `Kind.label()` are the only two places that do. Adding one is the checklist in
   `bootstrap/architecture.md`.

@@ -34,11 +34,11 @@ that a kind is a package with its own model behind one small contract, and the s
 | `senses/` | `Screen`, `Touch`, `TextReader`, `Frame` | nothing |
 | `text/` | `Line`, `Box`, `rowsOf`, matching, `numbersIn`, `wordIn`, `nameIn` | senses |
 | `game/` | `Attribute`, `FACTIONS`, `Named`, `ReadAttribute`: the words every kind shares | text |
-| `kind/` | `Kind`, `Scannable<T>`, `Reader<T>`, `GridLayout`, `Region` | text |
-| `gear/` | `ScannedGear`, its words, `GearReader`, `GEAR_STORAGE`, `GearScannable` | kind, text, game |
-| `scan/` | `Kind.scannable()`, `Scan<T>`, `ScanEntry<T>`, `Outcome<T>`, tiles, registration, count | kind, and every kind through one `when` |
+| `kinds/` | the contracts: `Kind`, `Scannable<T>`, `Reader<T>`, `GridLayout`, `Region` | text |
+| `kinds/gear/` | `ScannedGear`, its words, `GearReader`, `GEAR_STORAGE`, `GearScannable` | kinds, text, game |
+| `scan/` | `Kind.scannable()`, `Scan<T>`, `ScanEntry<T>`, `Outcome<T>`, tiles, registration, count | kinds, and every kind through one `when` |
 
-- Arrows point down only. The contracts sit below both the kinds and the scan: a kind implements
+- Arrows point down only. Every kind is a sub-package of `kinds/`, whose root holds the contracts; they sit below both the kinds and the scan: a kind implements
   them without knowing the scan, the scan consumes them without knowing a kind. `Kind.scannable()`
   in `scan/` is the one place every kind is named; `Kind.label()` in the app is the other, for the
   overlay's button.
@@ -68,14 +68,14 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
 1. Record the hero screen inside LDPlayer, grid and panel, and keep the frame under the tests as
    `ldplayer-storage-1280x720.json` is kept for gear. This is where the scan's assumption is
    checked: a grid with a side panel, or something else.
-2. `hero/ScannedHero.kt`: the record, `@Serializable`, what the panel may fail to name nullable.
-3. `hero/` words: the hero's own, transcribed from the wiki as it spells them; attributes and
+2. `kinds/hero/ScannedHero.kt`: the record, `@Serializable`, what the panel may fail to name nullable.
+3. `kinds/hero/` words: the hero's own, transcribed from the wiki as it spells them; attributes and
    factions are in `game/` already.
-4. `hero/HeroReader.kt`: `object HeroReader : Reader<ScannedHero>`, written against recorded
+4. `kinds/hero/HeroReader.kt`: `object HeroReader : Reader<ScannedHero>`, written against recorded
    panels with `text/`'s instruments.
-5. `hero/HeroRoster.kt`: `HERO_ROSTER: GridLayout`, measured off the recorded frame, tested the
+5. `kinds/hero/HeroRoster.kt`: `HERO_ROSTER: GridLayout`, measured off the recorded frame, tested the
    way `LdPlayerReadingTest` tests gear's.
-6. `hero/HeroScannable.kt`: `object HeroScannable : Scannable<ScannedHero>`.
+6. `kinds/hero/HeroScannable.kt`: `object HeroScannable : Scannable<ScannedHero>`.
 7. `Kind.HEROES`; the compiler then asks for its branch in `Kind.scannable()` and its string in
    `Kind.label()`.
 8. Tell the lab the `hero` shape: `kind` names it and `entries[].card` is shaped by it.
