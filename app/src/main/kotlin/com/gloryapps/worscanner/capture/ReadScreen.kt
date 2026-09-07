@@ -1,10 +1,13 @@
 package com.gloryapps.worscanner.capture
 
-import com.gloryapps.worscanner.scanner.TextReader
-import com.gloryapps.worscanner.scanner.reading.readGearCard
+import com.gloryapps.worscanner.scanner.kind.Kind
+import com.gloryapps.worscanner.scanner.kind.Scannable
 import com.gloryapps.worscanner.scanner.resultOf
+import com.gloryapps.worscanner.scanner.scan.scannable
+import com.gloryapps.worscanner.scanner.senses.TextReader
+import com.gloryapps.worscanner.scanner.text.rowsOf
 
-/** The frame on screen right now, read whole and kept on disk with what the reader made of it. */
+/** The frame on screen right now, read whole as one kind and kept on disk with what the reader made of it. */
 class ReadScreen(
     private val session: CaptureSession,
     private val reader: TextReader,
@@ -12,12 +15,14 @@ class ReadScreen(
 ) {
     class Read(val kept: Kept, val lines: Int)
 
-    suspend fun now(): Result<Read> = resultOf {
+    suspend fun now(kind: Kind): Result<Read> = resultOf { now(kind, kind.scannable()) }
+
+    private suspend fun <T> now(kind: Kind, scannable: Scannable<T>): Read {
         val screen = checkNotNull(session.screen.value) { "no capture session" }
         val frame = screen.capture() as BitmapFrame
         val lines = reader.read(frame)
-        val reading = Reading(frame.width, frame.height, lines, readGearCard(lines))
+        val reading = Reading(kind.id, frame.width, frame.height, lines, scannable.reader.read(rowsOf(lines)))
 
-        Read(readings.keep(frame, reading), lines.size)
+        return Read(readings.keep(frame, reading, scannable.serializer), lines.size)
     }
 }

@@ -9,8 +9,8 @@ import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.os.Handler
 import android.os.Looper
-import com.gloryapps.worscanner.scanner.Frame
-import com.gloryapps.worscanner.scanner.Screen
+import com.gloryapps.worscanner.scanner.senses.Frame
+import com.gloryapps.worscanner.scanner.senses.Screen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first

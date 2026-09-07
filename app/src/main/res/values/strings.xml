@@ -32,6 +32,7 @@
     <string name="scan_stop">Stop</string>
 
     <string name="overlay_drag">Move</string>
+    <string name="kind_gear">Gear</string>
     <string name="overlay_scan">Scan</string>
     <string name="overlay_read">Read</string>
     <string name="overlay_app">App</string>

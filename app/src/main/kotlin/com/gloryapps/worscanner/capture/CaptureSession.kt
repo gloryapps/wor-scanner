@@ -1,6 +1,6 @@
 package com.gloryapps.worscanner.capture
 
-import com.gloryapps.worscanner.scanner.Screen
+import com.gloryapps.worscanner.scanner.senses.Screen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

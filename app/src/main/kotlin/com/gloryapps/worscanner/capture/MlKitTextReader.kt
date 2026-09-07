@@ -3,10 +3,10 @@ package com.gloryapps.worscanner.capture
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import com.gloryapps.worscanner.scanner.Frame
-import com.gloryapps.worscanner.scanner.TextReader
-import com.gloryapps.worscanner.scanner.reading.Box
-import com.gloryapps.worscanner.scanner.reading.Line
+import com.gloryapps.worscanner.scanner.senses.Frame
+import com.gloryapps.worscanner.scanner.senses.TextReader
+import com.gloryapps.worscanner.scanner.text.Box
+import com.gloryapps.worscanner.scanner.text.Line
 import kotlinx.coroutines.tasks.await
 
 /** ML Kit's Latin model, bundled in the APK: no Play services on the device, and none on an emulator. */

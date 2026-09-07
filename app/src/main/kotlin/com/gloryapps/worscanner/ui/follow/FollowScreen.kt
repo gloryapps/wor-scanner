@@ -80,7 +80,7 @@ fun FollowScreen(onView: (Kept) -> Unit, onBack: () -> Unit, viewModel: FollowVi
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(state.readings, key = { it.stamp }) { kept ->
                     Column(Modifier.fillMaxWidth()) {
-                        Text("${kept.at.format(SHOWN)} · ${kept.kind}", style = MaterialTheme.typography.titleMedium)
+                        Text("${kept.at.format(SHOWN)} · ${kept.form}", style = MaterialTheme.typography.titleMedium)
                         if (kept.pieces != null && kept.outcome != null) {
                             Text(stringResource(R.string.follow_pieces, kept.pieces, kept.outcome), style = MaterialTheme.typography.bodyMedium)
                         }

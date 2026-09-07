@@ -4,6 +4,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.FilterChip
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -16,7 +17,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -29,16 +33,19 @@ import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.capture.CaptureService
 import com.gloryapps.worscanner.capture.ReadScreen
-import com.gloryapps.worscanner.walk.ScanState
-import com.gloryapps.worscanner.walk.Scanning
+import com.gloryapps.worscanner.scanner.kind.Kind
+import com.gloryapps.worscanner.ui.label
+import com.gloryapps.worscanner.scan.ScanState
+import com.gloryapps.worscanner.scan.Scanning
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 /**
  * The floating strip over the game; the grip drags it.
  *
- * Idle, it scans the storage, reads one screen, goes back to the app or closes the session. While
- * a scan runs it shows how far the scan is and the one thing left to do, stop it.
+ * Idle, it scans the chosen kind's storage, reads one screen as that kind, goes back to the app or
+ * closes the session; the choice shows only once there is more than one kind. While a scan runs it
+ * shows how far the scan is and the one thing left to do, stop it.
  */
 @Composable
 fun OverlayContent(
@@ -52,6 +59,7 @@ fun OverlayContent(
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val state by scanning.state.collectAsStateWithLifecycle()
+    var kind by remember { mutableStateOf(Kind.entries.first()) }
 
     MaterialTheme {
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 4.dp) {
@@ -82,10 +90,15 @@ fun OverlayContent(
                         Button(onClick = { CaptureService.stopScan(context) }) { Text(stringResource(R.string.overlay_stop)) }
                     }
                     else -> {
-                        Button(onClick = { CaptureService.scan(context) }) { Text(stringResource(R.string.overlay_scan)) }
+                        if (Kind.entries.size > 1) {
+                            Kind.entries.forEach { each ->
+                                FilterChip(selected = each == kind, onClick = { kind = each }, label = { Text(each.label()) }, modifier = Modifier.padding(horizontal = 2.dp))
+                            }
+                        }
+                        Button(onClick = { CaptureService.scan(context, kind) }) { Text(stringResource(R.string.overlay_scan)) }
                         TextButton(onClick = {
                             scope.launch {
-                                val said = readScreen.now().fold(
+                                val said = readScreen.now(kind).fold(
                                     onSuccess = { resources.getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
                                     onFailure = { resources.getString(R.string.overlay_read_failed, it.message) },
                                 )

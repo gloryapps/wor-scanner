@@ -40,7 +40,7 @@
             android:foregroundServiceType="mediaProjection" />
 
         <service
-            android:name=".walk.TouchService"
+            android:name=".scan.TouchService"
             android:exported="false"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>

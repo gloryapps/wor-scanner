@@ -89,7 +89,7 @@ fun PrepareScreen(onFollow: () -> Unit, viewModel: PrepareViewModel = koinViewMo
     }
 }
 
-/* Android 14 offers "one app" by default and Unity games are one app, but the walk reads the display. */
+/* Android 14 offers "one app" by default and Unity games are one app, but the scan reads the display. */
 private fun MediaProjectionManager.wholeDisplayIntent(): Intent =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
         createScreenCaptureIntent(MediaProjectionConfig.createConfigForDefaultDisplay())

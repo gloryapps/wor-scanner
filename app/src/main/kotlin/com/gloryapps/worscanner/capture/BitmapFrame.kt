@@ -2,7 +2,7 @@ package com.gloryapps.worscanner.capture
 
 import android.graphics.Bitmap
 import android.graphics.Color
-import com.gloryapps.worscanner.scanner.Frame
+import com.gloryapps.worscanner.scanner.senses.Frame
 
 class BitmapFrame(val bitmap: Bitmap) : Frame {
     override val width: Int get() = bitmap.width

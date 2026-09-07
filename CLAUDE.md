@@ -1,8 +1,8 @@
 # wor-scanner
 
-A native Android app that walks the Watcher of Realms gear storage on the device it runs on,
-reads each piece off its panel and writes a JSON the azhor lab imports. Shipped as an APK on
-GitHub.
+A native Android app that scans a Watcher of Realms storage on the device it runs on, reads each
+tile off its panel and writes a JSON the azhor lab imports. Gear today, heroes and artifacts as
+kinds to come. Shipped as an APK on GitHub.
 
 | Area | Read before working there |
 | --- | --- |
@@ -13,8 +13,11 @@ GitHub.
 ## Rules
 
 - `scanner` imports nothing from Android. `app` implements its interfaces.
-- The catalogue in `scanner` is transcribed from the wiki's Gear page, spelled as the page spells
-  it. No code or data is shared with the azhor lab: the JSON the app writes is the whole contract.
+- A kind is a package under `scanner` behind one `Scannable` object; its reader is its own model,
+  written with `text/`'s instruments. The scan names no kind: `Kind.scannable()` and
+  `Kind.label()` are the only two places that do. Adding one is the checklist in
+  `bootstrap/architecture.md`.
+- A kind's words are transcribed from the wiki, spelled as the page spells them. No code or data is shared with the azhor lab: the JSON the app writes is the whole contract.
 - Use `resultOf { }`, never `runCatching`: it swallows `CancellationException`.
 - A piece's identity is its grid position, never its content.
 - Positions are fractions of the display, never pixels.

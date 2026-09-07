@@ -18,9 +18,10 @@ import androidx.lifecycle.lifecycleScope
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.overlay.OverlayWindow
-import com.gloryapps.worscanner.scanner.walk.Outcome
-import com.gloryapps.worscanner.walk.ScanState
-import com.gloryapps.worscanner.walk.Scanning
+import com.gloryapps.worscanner.scanner.kind.Kind
+import com.gloryapps.worscanner.scanner.scan.Outcome
+import com.gloryapps.worscanner.scan.ScanState
+import com.gloryapps.worscanner.scan.Scanning
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
@@ -47,7 +48,7 @@ class CaptureService : LifecycleService() {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_STOP -> stopSelf()
-            ACTION_SCAN -> startScan()
+            ACTION_SCAN -> startScan(Kind.valueOf(checkNotNull(intent.getStringExtra(EXTRA_KIND)) { "no kind to scan" }))
             ACTION_STOP_SCAN -> scan?.cancel()
             else -> intent?.consent()?.let(::open) ?: stopSelf()
         }
@@ -86,10 +87,10 @@ class CaptureService : LifecycleService() {
         overlay = null
     }
 
-    /* The overlay stays, showing the scan and its stop; the walk reads only the regions it knows, and the strip sits elsewhere. */
-    private fun startScan() {
+    /* The overlay stays, showing the scan and its stop; the scan reads only the regions it knows, and the strip sits elsewhere. */
+    private fun startScan(kind: Kind) {
         if (scan?.isActive == true) return
-        scan = lifecycleScope.launch { scanning.run() }
+        scan = lifecycleScope.launch { scanning.run(kind) }
     }
 
     private fun show(state: ScanState) {
@@ -97,9 +98,9 @@ class CaptureService : LifecycleService() {
             ScanState.Idle -> getString(R.string.capture_notification_title)
             is ScanState.Running -> getString(R.string.scan_running, state.progress.done, state.progress.held)
             is ScanState.Ended -> when (val outcome = state.outcome) {
-                is Outcome.Finished -> getString(R.string.scan_finished, outcome.entries.size)
-                is Outcome.Stopped -> getString(R.string.scan_stopped, outcome.detail, outcome.entries.size)
-                is Outcome.Failed -> getString(R.string.scan_failed, outcome.cause.toString())
+                is Outcome.Finished<*> -> getString(R.string.scan_finished, outcome.entries.size)
+                is Outcome.Stopped<*> -> getString(R.string.scan_stopped, outcome.detail, outcome.entries.size)
+                is Outcome.Failed<*> -> getString(R.string.scan_failed, outcome.cause.toString())
             }
         }
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text, stoppable = state is ScanState.Running))
@@ -164,6 +165,7 @@ class CaptureService : LifecycleService() {
         private const val ACTION_STOP_SCAN = "com.gloryapps.worscanner.STOP_SCAN"
         private const val EXTRA_RESULT_CODE = "resultCode"
         private const val EXTRA_RESULT_DATA = "resultData"
+        private const val EXTRA_KIND = "kind"
 
         /** Starts the service with the consent the projection dialog returned. */
         fun start(context: Context, resultCode: Int, data: Intent) {
@@ -177,14 +179,14 @@ class CaptureService : LifecycleService() {
             }
         }
 
-        fun scan(context: Context) = send(context, ACTION_SCAN)
+        fun scan(context: Context, kind: Kind) = send(context, ACTION_SCAN) { putExtra(EXTRA_KIND, kind.name) }
 
         fun stopScan(context: Context) = send(context, ACTION_STOP_SCAN)
 
         fun stop(context: Context) = send(context, ACTION_STOP)
 
-        private fun send(context: Context, action: String) {
-            context.startService(Intent(context, CaptureService::class.java).setAction(action))
+        private fun send(context: Context, action: String, extras: Intent.() -> Intent = { this }) {
+            context.startService(Intent(context, CaptureService::class.java).setAction(action).extras())
         }
     }
 }
