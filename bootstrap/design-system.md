@@ -1,11 +1,49 @@
 # Design system
 
-Deferred 2026-09-06: the functionality comes first. Until settled, screens use Material 3 defaults
-and name colours and text styles by role, never by value.
+Settled 2026-09-07 from the `Scanner App` and `Scanner Overlay C` boards of the WoR Lab design
+project. One theme, dark: the app and the strip drawn over the game share it, so looking away from
+one and back at the other reads as one thing. There is no light variant.
 
-## Open decisions
+Values live in `ui/Colors.kt` and `ui/Lettering.kt`, one role per name. `ui/Theme.kt`'s `ScannerTheme`
+is the same two objects as Material reads them, for the components that ask Material rather than the
+roles. A screen names a role, never a value and never a size.
 
-- Interview the user to define the colour roles' values (primary/onPrimary, text tiers, the
-  screen → card → sheet stack, border, error).
-- Interview the user to define the typography roles (screenTitle, sectionTitle, header, body,
-  label, caption) and the font family.
+## Colour roles
+
+| Role | Value | Where |
+| --- | --- | --- |
+| `screen` | `#0B0D12` | the screen itself |
+| `raised` | `#14171F` | a card on the screen |
+| `sunken` | `#0E1117` | a JSON block, an input, a segmented track |
+| `lifted` | `#242A36` | the chosen half of a segmented control |
+| `accent` | `#9EC5FF` | the one accent: a primary button, a link, progress, a mark |
+| `onAccent` | `#0B0D12` | text on the accent |
+| `accentWash` | `#9EC5FF` 8% | the ground of a selected row, or of a card that leads |
+| `accentEdge` | `#9EC5FF` 28% | the border of the same |
+| `text` / `muted` / `faint` | `#E9EDF5` at 100 / 62 / 58% | read, said beside it, found when looked for |
+| `warning` | `#E8B34A` | a grant not given, a piece read badly |
+| `failure` | `#E08585` | a scan that failed |
+| `hairline` / `edge` | white 9% / 14% | a rule between rows, a border on a control |
+| `glass` / `glassEdge` | `#0C0E14` 80% / white 13% | the strip over the game |
+| `Colors.Json` key/string/number/punctuation | accent / `#B7C7A8` / warning / faint | the reading screen's JSON |
+
+## Type roles
+
+Three families, in `Fonts`: `serif` Newsreader names a thing, `sans` Space Grotesk talks about it,
+`mono` DM Mono shows data. The files are in `res/font`, not fetched at run time.
+
+| Role | Family, size | Where |
+| --- | --- | --- |
+| `title` | serif 22 | what a card or a screen is called |
+| `subtitle` | serif 19 | a reading's piece, a sheet's heading |
+| `brand` | sans 16 medium | the app's name in the header |
+| `section` | sans 11, tracked, upper-cased by the caller | the line above a group |
+| `body` | sans 13 | prose |
+| `caption` | sans 12 | what is said under a line of prose |
+| `action` | sans 14 medium | a button |
+| `data` / `dataSmall` | mono 13 / 11 | a stamp, a count, an id, a file name |
+
+## Shapes
+
+6, 8, 10, 12, 14 dp, in Material's five slots from `extraSmall`; a pill is fully rounded. The strip
+over the game and its close target are pills; a card is 10, a screen-sized panel 12, a sheet 12.

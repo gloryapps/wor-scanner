@@ -14,7 +14,7 @@ Distributed as an APK on GitHub, not on the Play Store.
 - `app` — Android. Implements those interfaces with MediaProjection (frames), an
   `AccessibilityService` using `dispatchGesture` (taps and swipes, blind: the game is Unity and
   exposes no view tree), ML Kit (text) and the file writer; holds the foreground service that runs
-  the scan, the floating strip drawn over the game, and the two screens.
+  the scan, the hairline and capsule drawn over the game, and the two screens.
 - The words (sets, slots, attribute names, variants, factions) are `scanner`'s own, transcribed
   from the wiki's Gear page. The app depends on no other repository: what it shares with the azhor
   lab is the JSON it writes, not code. A word the catalogue lacks reads as `null` beside the raw
@@ -98,13 +98,19 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
 - No database. A scan is a JSON file in the app's external files directory, `version` 2 with the
   `kind` it scanned; a new scan is a new file, never a merge. The user takes it out through the share sheet or saves it to Downloads via
   MediaStore. Sending straight to the lab is a later option.
+- What leaves the app is named `wor-<kind>-<stamp>`: `wor-gear-20260907-130812.json`, with a scan's
+  kept panels beside it as `wor-gear-20260907-130812-<tile>.png`. On disk the names stay `scan.json`
+  and `<tile>.png`; `Exports` copies each file under the name its caller gives, which is what keeps
+  two exports of the same kind apart in one Downloads folder. The share sheet stages its copies in
+  the cache so the other app is shown those same names.
 - Every entry in the JSON carries the raw OCR lines it was read from.
 - The panel PNG is kept only for a piece the reader did not close: set or slot null, or the card
   refused. A full run keeps no other image.
 - A scan leaves an emulator by the folder it shares with the PC: LDPlayer mounts `/mnt/shared/Pictures`
   inside Android and shows it under the Windows Documents folder, so "Save to Pictures" writes there.
   The clipboard does not cross that border, and the two apps are not linked over the network.
-- Preferences in DataStore.
+- Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, which
+  the home screen picks and the overlay obeys.
 - Room enters only if scan history inside the app is ever wanted, and brings the no-destructive-
   migration rule with it.
 
@@ -112,7 +118,9 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
 
 - One Activity, Compose, Navigation 3 from the start: the back stack is a state list the app owns,
   which lets the service push the follow-up screen when a scan ends.
-- The overlay belongs to the service, not the Activity, and is drawn in Compose too.
+- The overlay belongs to the service, not the Activity, and is drawn in Compose too. It is three
+  windows: the hairline pinned to the top, the capsule a finger drags, and the close target that
+  appears under it while it is held.
 
 ## Error handling
 

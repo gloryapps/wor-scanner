@@ -7,26 +7,21 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.gloryapps.worscanner.ui.follow.FollowScreen
-import com.gloryapps.worscanner.ui.follow.ViewScreen
-import com.gloryapps.worscanner.ui.prepare.PrepareScreen
+import com.gloryapps.worscanner.ui.home.HomeScreen
+import com.gloryapps.worscanner.ui.reading.ReadingScreen
 import kotlinx.serialization.Serializable
 
-/** Where the reader ties the game to the app: accessibility on, capture allowed. */
+/** Where a scan is started and what it left is found. */
 @Serializable
-data object Prepare : NavKey
+data object Home : NavKey
 
-/** What was kept: readings and scans, to look at, share, save or delete. */
+/** One reading, piece by piece. */
 @Serializable
-data object Follow : NavKey
-
-/** One kept JSON, shown as written. */
-@Serializable
-data class View(val stamp: String) : NavKey
+data class Reading(val stamp: String) : NavKey
 
 @Composable
 fun Navigation() {
-    val backStack = rememberNavBackStack(Prepare)
+    val backStack = rememberNavBackStack(Home)
 
     NavDisplay(
         backStack = backStack,
@@ -36,9 +31,8 @@ fun Navigation() {
             rememberViewModelStoreNavEntryDecorator(),
         ),
         entryProvider = entryProvider {
-            entry<Prepare> { PrepareScreen(onFollow = { backStack.add(Follow) }) }
-            entry<Follow> { FollowScreen(onView = { backStack.add(View(it.stamp)) }, onBack = { backStack.removeLastOrNull() }) }
-            entry<View> { ViewScreen(it.stamp, onBack = { backStack.removeLastOrNull() }) }
+            entry<Home> { HomeScreen(onReading = { backStack.add(Reading(it.stamp)) }) }
+            entry<Reading> { ReadingScreen(it.stamp, onBack = { backStack.removeLastOrNull() }) }
         },
     )
 }

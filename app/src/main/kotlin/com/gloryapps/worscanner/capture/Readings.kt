@@ -10,6 +10,8 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -24,7 +26,7 @@ data class Kept(
     /** `reading` or `scan`. */
     val form: String,
     val files: List<File>,
-    /** What a scan scanned; null for a reading, whose JSON says. */
+    /** What was read; null where the JSON names a kind this app does not know, or will not read at all. */
     val kind: Kind? = null,
     val entries: Int? = null,
     val outcome: String? = null,
@@ -49,11 +51,14 @@ class Readings(private val context: Context) {
         png.outputStream().use { frame.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         text.writeText(json.encodeToString(Reading.serializer(card), reading))
 
-        return Kept(stamp, "reading", listOf(text, png))
+        return Kept(stamp, "reading", listOf(text, png), kindOf(reading.kind))
     }
 
     /** The JSON of a kept thing, as written. */
     fun text(kept: Kept): String = kept.files.first { it.extension == "json" }.readText()
+
+    /** A kept scan opened, every card left as the JSON it is; null for a reading, and for a file that will not read. */
+    fun opened(kept: Kept): ScanFile<JsonElement>? = kept.files.firstOrNull { it.name == "scan.json" }?.let(::scanIn)
 
     fun delete(kept: Kept) {
         kept.files.forEach { it.delete() }
@@ -63,14 +68,23 @@ class Readings(private val context: Context) {
     /** Newest first, which is the one the reader came to look at. */
     fun list(): List<Kept> {
         val read = readings.listFiles { file -> file.extension == "json" }.orEmpty().map {
-            Kept(it.nameWithoutExtension, "reading", listOf(it, File(readings, "${it.nameWithoutExtension}.png")))
+            Kept(it.nameWithoutExtension, "reading", listOf(it, File(readings, "${it.nameWithoutExtension}.png")), kindIn(it))
         }
         /* The list wants the count and the outcome, not the cards, so the card stays whatever JSON it is. */
         val scanned = scans.listFiles { file -> file.isDirectory }.orEmpty().map { folder ->
-            val scan = File(folder, "scan.json").takeIf { it.exists() }?.let { resultOf { json.decodeFromString(ScanFile.serializer(JsonElement.serializer()), it.readText()) }.getOrNull() }
-            Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name }, Kind.entries.firstOrNull { it.id == scan?.kind }, scan?.entries?.size, scan?.outcome, scan?.detail)
+            val scan = File(folder, "scan.json").takeIf { it.exists() }?.let(::scanIn)
+            Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name }, kindOf(scan?.kind), scan?.entries?.size, scan?.outcome, scan?.detail)
         }
 
         return (read + scanned).sortedByDescending { it.stamp }
     }
+
+    private fun scanIn(file: File): ScanFile<JsonElement>? =
+        resultOf { json.decodeFromString(ScanFile.serializer(JsonElement.serializer()), file.readText()) }.getOrNull()
+
+    /** The kind a reading names, which is all the list wants of a file it does not otherwise open. */
+    private fun kindIn(file: File): Kind? =
+        kindOf(resultOf { json.parseToJsonElement(file.readText()).jsonObject["kind"]?.jsonPrimitive?.content }.getOrNull())
+
+    private fun kindOf(id: String?): Kind? = Kind.entries.firstOrNull { it.id == id }
 }

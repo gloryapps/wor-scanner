@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.ui.prepare
+package com.gloryapps.worscanner.ui.home
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** The two grants the system holds, re-read whenever the screen comes back from its settings. */
+/** The grants the system holds, re-read whenever the screen comes back from the settings that give them. */
 class Permissions(private val context: Context) {
     private val _overlayAllowed = MutableStateFlow(overlay())
     val overlayAllowed: StateFlow<Boolean> = _overlayAllowed.asStateFlow()

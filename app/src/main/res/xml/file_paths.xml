@@ -2,4 +2,5 @@
 <paths>
     <external-files-path name="readings" path="readings/" />
     <external-files-path name="scans" path="scans/" />
+    <cache-path name="outgoing" path="outgoing/" />
 </paths>

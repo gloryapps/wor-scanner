@@ -1,32 +1,79 @@
 package com.gloryapps.worscanner.overlay
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gloryapps.worscanner.R
+import com.gloryapps.worscanner.ui.Colors
+import com.gloryapps.worscanner.ui.ScannerTheme
+import com.gloryapps.worscanner.ui.Lettering
 
-/** The circle with an X at the foot of the screen that a dragged strip is let go on to close. */
+/**
+ * What appears at the foot of the screen while the capsule is held, and closes the session when the
+ * capsule is let go on it. It takes the accent once the capsule is over it, so the finger is told
+ * before it lifts.
+ */
 @Composable
-fun CloseTarget() {
-    MaterialTheme {
-        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer, tonalElevation = 6.dp) {
-            Box(Modifier.size(CloseTarget.SIZE_DP.dp), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.overlay_close), Modifier.size(36.dp))
+fun CloseTarget(over: Boolean) {
+    val size by animateDpAsState(if (over) CloseTarget.OVER_DP.dp else CloseTarget.SIZE_DP.dp, label = "target")
+
+    ScannerTheme {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Box(
+                Modifier
+                    .size(CloseTarget.OVER_DP.dp + RING)
+                    .background(if (over) Colors.accentWash else Color.Transparent, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .size(size)
+                        .background(Colors.glass, CircleShape)
+                        .border(if (over) 2.dp else 1.dp, if (over) Colors.accent else Colors.glassEdge, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.overlay_close),
+                        Modifier.size(if (over) 18.dp else 15.dp),
+                        tint = if (over) Colors.accent else Colors.text,
+                    )
+                }
             }
+            Text(
+                stringResource(R.string.overlay_drop),
+                Modifier
+                    .background(Colors.glass, CircleShape)
+                    .border(1.dp, if (over) Colors.accentEdge else Colors.glassEdge, CircleShape)
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                style = Lettering.dataSmall,
+                color = if (over) Colors.accent else Colors.text,
+            )
         }
     }
 }
 
 object CloseTarget {
-    const val SIZE_DP = 72
+    const val SIZE_DP = 34
+    const val OVER_DP = 40
 }
+
+/** How far the ring around the target reaches past it once the capsule is over it. */
+private val RING = 10.dp

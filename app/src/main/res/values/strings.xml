@@ -3,25 +3,56 @@
     <string name="app_name">WoR Scanner</string>
     <string name="touch_service_description">Taps through a Watcher of Realms storage while a scan runs. Nothing is read from other apps.</string>
 
-    <string name="prepare_title">Before a scan</string>
-    <string name="prepare_accessibility">Accessibility service on</string>
-    <string name="prepare_overlay">Draw over other apps</string>
-    <string name="prepare_open_settings">Open settings</string>
-    <string name="prepare_start">Start</string>
-    <string name="prepare_stop">Stop</string>
-    <string name="prepare_running">Capturing. Open the storage to scan in the game and press Scan on the floating buttons.</string>
-    <string name="prepare_follow">Readings</string>
+    <string name="kind_gear">Gear</string>
+
+    <string name="home_permissions">Permissions</string>
+    <string name="home_accessibility">Accessibility service</string>
+    <string name="home_overlay">Draw over other apps</string>
+    <string name="home_on">on</string>
+    <string name="home_grant">grant</string>
+    <string name="home_scan_title">Scan your %1$s</string>
+    <string name="home_scan_said">Open Storage → %1$s in the game. The overlay sits at the top of the screen and reads as you scroll the grid. It stops on its own once it stops finding new pieces.</string>
+    <string name="home_start">Start</string>
+    <string name="home_to_game">→ game</string>
+    <string name="home_capturing">Capturing. Open the storage in the game and press Scan on the capsule.</string>
+    <string name="home_stop">Stop capturing</string>
+    <string name="home_kinds">types</string>
+    <string name="home_readings">Readings</string>
+    <string name="home_export_all">export all</string>
+    <string name="home_export">export</string>
+    <string name="home_delete">delete</string>
+    <string name="home_delete_title">Delete this reading?</string>
+    <string name="home_delete_said">Its JSON and the panels beside it go from the device. Whatever you have already exported stays where you saved it.</string>
+    <string name="home_delete_yes">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="home_empty">No reading yet. Start a scan, or press Read over the game.</string>
+    <string name="home_note">Export from any row — no need to open the reading first.</string>
+    <string name="home_reading">Reading</string>
+    <string name="home_complete">complete</string>
+    <string name="home_stopped">stopped</string>
+    <string name="home_failed">failed</string>
+
+    <string name="export_title">Export reading</string>
+    <string name="export_close">Close</string>
+    <string name="export_file">File name</string>
+    <string name="export_beside">+%1$d beside it</string>
+    <string name="export_holds">What goes out</string>
+    <string name="export_kind">Kind</string>
+    <string name="export_entries">Pieces</string>
+    <string name="export_outcome">Scan</string>
+    <string name="export_size">Size</string>
+    <string name="export_readings">Readings</string>
+    <string name="export_shared">Save to Shared Folder</string>
+    <string name="export_share">Share…</string>
+    <string name="export_note">This is the file you open in Import a Scan in WoR Lab.</string>
 
     <string name="back">Back</string>
-    <string name="follow_title">Readings</string>
-    <string name="view_title">JSON</string>
-    <string name="follow_empty">No reading yet. Press Read over the game.</string>
-    <string name="follow_entries">%1$d read · %2$s</string>
-    <string name="follow_view">View</string>
-    <string name="follow_share">Share</string>
-    <string name="follow_delete">Delete</string>
-    <string name="follow_download">Downloads</string>
-    <string name="follow_pictures">Save to Pictures</string>
+    <string name="reading_data">Data</string>
+    <string name="reading_json">JSON</string>
+    <string name="reading_export">Export reading</string>
+    <string name="reading_not_closed">not closed</string>
+    <string name="reading_at">#%1$d · %2$d,%3$d</string>
+    <string name="reading_copy">copy</string>
 
     <string name="capture_channel">Screen capture</string>
     <string name="capture_notification_title">Capturing the screen. Open the storage to scan and press Scan.</string>
@@ -31,14 +62,37 @@
     <string name="scan_failed">%1$s scan failed: %2$s</string>
     <string name="scan_stop">Stop</string>
 
-    <string name="overlay_drag">Move</string>
-    <string name="kind_gear">Gear</string>
     <string name="overlay_scan">Scan</string>
     <string name="overlay_read">Read</string>
-    <string name="overlay_app">App</string>
-    <string name="overlay_scanning">Scanning %1$s %2$d read, %3$d in storage</string>
+    <string name="overlay_app">Open the app</string>
     <string name="overlay_stop">Stop</string>
-    <string name="overlay_close">Close</string>
+    <string name="overlay_close">Close overlay</string>
+    <string name="overlay_running">running</string>
+    <string name="overlay_held">/%1$d</string>
+    <string name="overlay_kept">%1$d read</string>
+    <string name="overlay_view">view →</string>
+    <string name="overlay_drop">drop to close</string>
     <string name="overlay_read_kept">Kept %1$s, %2$d lines</string>
     <string name="overlay_read_failed">Reading failed: %1$s</string>
+
+    <plurals name="reading_lines">
+        <item quantity="one">%1$d line</item>
+        <item quantity="other">%1$d lines</item>
+    </plurals>
+    <plurals name="reading_pieces">
+        <item quantity="one">%1$d piece</item>
+        <item quantity="other">%1$d pieces</item>
+    </plurals>
+    <plurals name="reading_open">
+        <item quantity="one">%1$d piece the reader did not close</item>
+        <item quantity="other">%1$d pieces the reader did not close</item>
+    </plurals>
+    <plurals name="export_saved">
+        <item quantity="one">Saved, %1$d file</item>
+        <item quantity="other">Saved, %1$d files</item>
+    </plurals>
+    <plurals name="export_all_name">
+        <item quantity="one">%1$d reading</item>
+        <item quantity="other">%1$d readings</item>
+    </plurals>
 </resources>
