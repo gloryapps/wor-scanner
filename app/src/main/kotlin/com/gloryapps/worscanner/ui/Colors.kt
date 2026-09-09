@@ -39,7 +39,6 @@ object Colors {
     val glass = Color(0xDB0C0E14)
     val glassSolid = Color(0xEB0C0E14)
     val glassThin = Color(0xB80C0E14)
-    val glassFaint = Color(0x730C0E14)
     val glassEdge = Color(0x21FFFFFF)
     val glassEdgeStrong = Color(0x38FFFFFF)
 

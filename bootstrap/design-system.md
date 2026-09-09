@@ -24,7 +24,7 @@ roles. A screen names a role, never a value and never a size.
 | `warning` | `#E8B34A` | a grant not given, a piece read badly |
 | `failure` | `#E08585` | a scan that failed |
 | `hairline` / `edge` | white 9% / 14% | a rule between rows, a border on a control |
-| `glass` / `glassSolid` / `glassThin` / `glassFaint` | `#0C0E14` at 86 / 92 / 72 / 45% | the capsule over the game; its menu; the close target; a snap zone |
+| `glass` / `glassSolid` / `glassThin` | `#0C0E14` at 86 / 92 / 72% | the capsule over the game; its menu; the close target |
 | `glassEdge` / `glassEdgeStrong` | white 13% / 22% | the capsule's edge; the stop's and the close target's |
 | `glassAccentEdge` / `glassWash` / `accentGlow` | `#9EC5FF` at 40 / 14 / 70% | the idle capsule's edge; the row under way and the ring over the target; under the hairline |
 | `Colors.Json` key/string/number/punctuation | accent / `#B7C7A8` / warning / faint | the reading screen's JSON |

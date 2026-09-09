@@ -7,45 +7,37 @@ import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
-import androidx.core.view.doOnLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.gloryapps.worscanner.ui.ScannerTheme
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlin.math.hypot
 
 /**
  * What the service draws over every other app: the progress hairline pinned to the top, the capsule
- * the finger moves, and, while it is held, the corners it can land in and the close target under it.
+ * the finger moves, and the close target that appears under it while it is held.
  *
  * Compose needs a lifecycle and a saved-state owner on the view tree; a service has neither, so
  * this window carries its own. They run once: a window is shown once and hidden once, and the
- * service makes a new one to show the overlay again.
+ * service makes a new one to show the overlay again. Its windows ask for hardware drawing, which a
+ * service's are not given by default and which Compose's layers need below Android 10.
  */
-class OverlayWindow(private val context: Context, private val parked: Parked, private val onClose: () -> Unit) : LifecycleOwner, SavedStateRegistryOwner {
+class OverlayWindow(private val context: Context, private val onClose: () -> Unit) : LifecycleOwner, SavedStateRegistryOwner {
     private val registry = LifecycleRegistry(this)
     private val savedState = SavedStateRegistryController.create(this)
     private val manager = context.getSystemService(WindowManager::class.java)
     private var hairline: ComposeView? = null
     private var strip: ComposeView? = null
     private var sheet: ComposeView? = null
-    private var zones: ComposeView? = null
     private var target: ComposeView? = null
     private val over = mutableStateOf(false)
     private val params = layout(Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { y = INSET_PX - PAD }
     private val hairlineParams = layout(Gravity.TOP, touchable = false).apply { width = WindowManager.LayoutParams.MATCH_PARENT }
-    private val zonesParams = layout(Gravity.TOP, touchable = false).apply {
-        width = WindowManager.LayoutParams.MATCH_PARENT
-        height = WindowManager.LayoutParams.MATCH_PARENT
-    }
     private val targetParams = layout(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { y = TARGET_MARGIN }
 
     override val lifecycle: Lifecycle get() = registry
@@ -58,14 +50,10 @@ class OverlayWindow(private val context: Context, private val parked: Parked, pr
         strip = compose {
             OverlayContent(onOpen = ::toggleSheet, onDrag = ::moveBy, onDragStart = ::held, onDragEnd = ::dropped)
         }.also { manager.addView(it, params) }
-        lifecycleScope.launch {
-            parked.corner.first()?.let { corner -> strip?.doOnLayout { place(corner) } }
-        }
     }
 
     fun hide() {
         hideTarget()
-        hideZones()
         hideSheet()
         strip?.let(manager::removeView)
         strip = null
@@ -77,7 +65,6 @@ class OverlayWindow(private val context: Context, private val parked: Parked, pr
     private fun held() {
         hideSheet()
         pin()
-        showZones()
         showTarget()
     }
 
@@ -126,16 +113,6 @@ class OverlayWindow(private val context: Context, private val parked: Parked, pr
         over.value = nearTarget()
     }
 
-    private fun showZones() {
-        if (zones != null) return
-        zones = compose { SnapZones() }.also { manager.addView(it, zonesParams) }
-    }
-
-    private fun hideZones() {
-        zones?.let(manager::removeView)
-        zones = null
-    }
-
     private fun showTarget() {
         if (target != null) return
         target = compose { CloseTarget(over.value) }.also { manager.addView(it, targetParams) }
@@ -149,14 +126,13 @@ class OverlayWindow(private val context: Context, private val parked: Parked, pr
 
     /*
      * Let go over the target, the strip is closed with the session, the way a bubble is; let go
-     * anywhere else, it settles into the nearest corner. Both are measured where the screen shows
-     * them, since the system places an overlay window under the status bar and the params do not say so.
+     * anywhere else, it stays there. Both are measured where the screen shows them, since the system
+     * places an overlay window under the status bar and the params do not say so.
      */
     private fun dropped() {
         val near = nearTarget()
         hideTarget()
-        hideZones()
-        if (near) onClose() else snap()
+        if (near) onClose()
     }
 
     private fun nearTarget(): Boolean {
@@ -172,27 +148,6 @@ class OverlayWindow(private val context: Context, private val parked: Parked, pr
         return distance < TARGET_SIZE
     }
 
-    /** The corner the capsule was let go nearest to, kept for the next session; the sheet opens on that side too. */
-    private fun snap() {
-        val strip = strip ?: return
-        val metrics = context.resources.displayMetrics
-        val top = params.y + strip.height / 2 < metrics.heightPixels / 2
-        val start = params.x + strip.width / 2 < metrics.widthPixels / 2
-        val corner = Corner.entries.first { it.top == top && it.start == start }
-        place(corner)
-        lifecycleScope.launch { parked.park(corner) }
-    }
-
-    /* The window is taller than the capsule it paints, so its inset is the band's less that padding. */
-    private fun place(corner: Corner) {
-        val strip = strip ?: return
-        val metrics = context.resources.displayMetrics
-        params.gravity = Gravity.TOP or Gravity.START
-        params.x = if (corner.start) INSET_PX else metrics.widthPixels - strip.width - INSET_PX
-        params.y = if (corner.top) INSET_PX - PAD else metrics.heightPixels - strip.height - INSET_PX + PAD
-        manager.updateViewLayout(strip, params)
-    }
-
     private fun ComposeView.onScreen(): IntArray = IntArray(2).also(::getLocationOnScreen)
 
     private fun compose(content: @Composable () -> Unit) = ComposeView(context).apply {
@@ -206,14 +161,17 @@ class OverlayWindow(private val context: Context, private val parked: Parked, pr
         WindowManager.LayoutParams.WRAP_CONTENT,
         WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED or
             if (touchable) 0 else WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
         PixelFormat.TRANSLUCENT,
     ).apply { this.gravity = gravity }
 
-    private val INSET_PX get() = (INSET.value * context.resources.displayMetrics.density).toInt()
+    private val INSET_PX get() = (INSET * context.resources.displayMetrics.density).toInt()
     private val PAD get() = ((TARGET.value - IDLE.value) / 2 * context.resources.displayMetrics.density).toInt()
     private val GAP get() = (6 * context.resources.displayMetrics.density).toInt()
     private val SHEET_WIDTH get() = (180 * context.resources.displayMetrics.density).toInt()
+    /** How far in from the screen's edges the capsule starts and the sheet is kept. */
+    private val INSET = 34
     private val TARGET_MARGIN get() = (30 * context.resources.displayMetrics.density).toInt()
     private val TARGET_SIZE get() = (CloseTarget.SIZE_DP * context.resources.displayMetrics.density).toInt()
 }

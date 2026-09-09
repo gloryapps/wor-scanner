@@ -85,14 +85,6 @@ private fun SheetIdlePreview() {
     }
 }
 
-@Preview(name = "Snap zones · while the capsule is held", widthDp = 640, heightDp = 360)
-@Composable
-private fun SnapZonesPreview() {
-    ScannerTheme {
-        Box(Modifier.fillMaxSize().background(GAME)) { SnapZones() }
-    }
-}
-
 @Preview(name = "Close target · waiting and under the capsule", widthDp = 320, heightDp = 180)
 @Composable
 private fun CloseTargetPreview() {

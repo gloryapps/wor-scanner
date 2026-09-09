@@ -40,9 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -200,7 +198,11 @@ internal fun Capsule(state: ScanState, onOpen: () -> Unit, onStop: () -> Unit, o
 private fun Modifier.pill(height: Dp, edge: Color): Modifier =
     height(height).background(Colors.glass, CircleShape).border(1.dp, edge, CircleShape)
 
-/** The scan is alive: the dot fades and shrinks and comes back, at the pace of a slow breath. */
+/**
+ * The scan is alive: the dot fades and shrinks and comes back, at the pace of a slow breath. Drawn
+ * by colour and radius rather than `alpha` and `scale`: an overlay window on Android 9 has no
+ * canvas for the layer those would make.
+ */
 @Composable
 private fun Breathing() {
     val breath = rememberInfiniteTransition(label = "breath")
@@ -211,7 +213,11 @@ private fun Breathing() {
         label = "breath",
     )
 
-    Box(Modifier.size(6.dp).alpha(1f - taken * 0.65f).scale(1f - taken * 0.18f).background(Colors.accent, CircleShape))
+    Box(
+        Modifier.size(6.dp).drawBehind {
+            drawCircle(Colors.accent.copy(alpha = 1f - taken * 0.65f), radius = size.minDimension / 2 * (1f - taken * 0.18f))
+        },
+    )
 }
 
 /** Painted 18dp, touched at 44: the target overflows its slot into the window's own height. */
@@ -225,7 +231,7 @@ private fun Stop(onStop: () -> Unit) {
             contentAlignment = Alignment.Center,
         ) {
             Box(
-                Modifier.size(STOP).clip(RoundedCornerShape(5.dp)).border(1.dp, Colors.glassEdgeStrong, RoundedCornerShape(5.dp)),
+                Modifier.size(STOP).border(1.dp, Colors.glassEdgeStrong, RoundedCornerShape(5.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 Box(Modifier.size(6.dp).background(Colors.text))
@@ -268,9 +274,8 @@ private fun Action(label: String, said: String? = null, colour: Color = Colors.t
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .background(if (said == null) Color.Transparent else Colors.glassWash)
-            .clickable(onClick = onClick)
+            .background(if (said == null) Color.Transparent else Colors.glassWash, RoundedCornerShape(6.dp))
+            .clickable(interactionSource = null, indication = null, onClick = onClick)
             .padding(horizontal = 9.dp, vertical = 7.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
