@@ -49,18 +49,18 @@ sealed interface Saved {
 
 /** The sheet over whichever screen pressed export, wired to the doors out; nothing while nothing is on its way. */
 @Composable
-fun ExportSheet(exporting: Exporting) {
-    val outgoing by exporting.outgoing.collectAsStateWithLifecycle()
-    val saved by exporting.saved.collectAsStateWithLifecycle()
+fun ExportSheet(export: ExportDelegate) {
+    val outgoing by export.outgoing.collectAsStateWithLifecycle()
+    val saved by export.saved.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val leaving = outgoing ?: return
 
     ExportSheet(
         outgoing = leaving,
         saved = saved,
-        onShared = { exporting.toShared(leaving.files) },
-        onShare = { context.startActivity(exporting.shareIntent(leaving.files)) },
-        onClose = exporting::forget,
+        onShared = { export.toShared(leaving.files) },
+        onShare = { context.startActivity(export.shareIntent(leaving.files)) },
+        onClose = export::forget,
     )
 }
 

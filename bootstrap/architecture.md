@@ -82,7 +82,9 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
 
 ## State
 
-- Unidirectional per screen: one `StateFlow` of a single state, user intents in.
+- Unidirectional per screen, in one contract file: a `UiState` out on one `StateFlow`, `Event`s in through
+  `on(event)`, one-shot `Effect`s back out through a channel the screen collects. What a screen shares
+  with another, such as exporting, is a delegate the ViewModel holds, not a base class.
 - The scan runs in a foreground service, because the Activity is gone once the game is in front.
   The service exposes progress as a flow; the overlay and the screens only render it.
 

@@ -16,7 +16,7 @@ private const val WIDE_H = 720
 private const val TALL_W = 412
 private const val TALL_H = 915
 
-private val READY = HomeState(
+private val READY = HomeUiState(
     accessibilityOn = true,
     overlayAllowed = true,
     kind = Kind.GEAR,
@@ -39,7 +39,7 @@ private fun HomeScanningPreview() {
 @Preview(name = "Home · nothing granted, nothing kept", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun HomeEmptyPreview() {
-    ScannerTheme { Home(HomeState()) { } }
+    ScannerTheme { Home(HomeUiState()) { } }
 }
 
 @Preview(name = "Home · portrait", widthDp = TALL_W, heightDp = TALL_H)

@@ -1,23 +1,29 @@
 package com.gloryapps.worscanner.ui
 
+import android.content.Context
 import android.content.Intent
 import com.gloryapps.worscanner.capture.Exports
+import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.capture.Outbound
 import com.gloryapps.worscanner.scanner.resultOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** What a screen has on its way out, the two doors it can leave by and what the last one said. */
-class Exporting(private val exports: Exports) {
+/** The slice of a screen's ViewModel that exports: what is on its way out, the two doors, and what the last one said. */
+class ExportDelegate(private val exports: Exports, private val context: Context) {
     private val _outgoing = MutableStateFlow<Outgoing?>(null)
     val outgoing: StateFlow<Outgoing?> = _outgoing.asStateFlow()
 
     private val _saved = MutableStateFlow<Saved?>(null)
     val saved: StateFlow<Saved?> = _saved.asStateFlow()
 
-    fun begin(outgoing: Outgoing) {
-        _outgoing.value = outgoing
+    fun begin(kept: Kept) {
+        _outgoing.value = kept.outgoing(context)
+    }
+
+    fun begin(readings: List<Kept>) {
+        _outgoing.value = readings.outgoing(context)
     }
 
     fun toShared(files: List<Outbound>) = save { exports.toShared(files) }

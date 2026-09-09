@@ -8,66 +8,37 @@ import com.gloryapps.worscanner.capture.Readings
 import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
-import com.gloryapps.worscanner.scanner.kinds.Kind
-import com.gloryapps.worscanner.ui.Exporting
+import com.gloryapps.worscanner.ui.ExportDelegate
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class HomeState(
-    val accessibilityOn: Boolean = false,
-    val overlayAllowed: Boolean = false,
-    val capturing: Boolean = false,
-    val kind: Kind = Chosen.FIRST,
-    /** The scan under way, for the header; null when none is running. */
-    val running: ScanState.Running? = null,
-    val readings: List<Kept> = emptyList(),
-) {
-    /** A scan can only start once the system lets the app both see the screen and touch it. */
-    val ready: Boolean get() = accessibilityOn && overlayAllowed
-}
-
-/** What the home screen is asked for; the screen routes each to the system, the service, the store or the stack. */
-sealed interface HomeIntent {
-    data object GrantAccessibility : HomeIntent
-
-    data object GrantOverlay : HomeIntent
-
-    data object Start : HomeIntent
-
-    data object Stop : HomeIntent
-
-    data class Choose(val kind: Kind) : HomeIntent
-
-    data class Open(val kept: Kept) : HomeIntent
-
-    data class Export(val kept: Kept) : HomeIntent
-
-    data object ExportAll : HomeIntent
-
-    data class Delete(val kept: Kept) : HomeIntent
-}
-
-class HomeViewModel(
+internal class HomeViewModel(
     session: CaptureSession,
     scanning: Scanning,
     private val chosen: Chosen,
     private val permissions: Permissions,
     private val readings: Readings,
-    val exporting: Exporting,
+    val export: ExportDelegate,
 ) : ViewModel() {
     private val kept = MutableStateFlow(readings.list())
+    private val deleting = MutableStateFlow<Kept?>(null)
+    private val _effects = Channel<HomeEffect>(Channel.BUFFERED)
+    val effects: Flow<HomeEffect> = _effects.receiveAsFlow()
 
-    val state: StateFlow<HomeState> = combine(
+    val state: StateFlow<HomeUiState> = combine(
         permissions.accessibilityOn,
         permissions.overlayAllowed,
         session.screen,
         scanning.state,
     ) { accessibility, overlay, screen, scan ->
-        HomeState(
+        HomeUiState(
             accessibilityOn = accessibility,
             overlayAllowed = overlay,
             capturing = screen != null,
@@ -76,20 +47,35 @@ class HomeViewModel(
     }
         .combine(chosen.kind) { state, kind -> state.copy(kind = kind) }
         .combine(kept) { state, readings -> state.copy(readings = readings) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
+        .combine(deleting) { state, kept -> state.copy(deleting = kept) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+
+    fun on(event: HomeEvent) {
+        when (event) {
+            HomeEvent.GrantAccessibility -> send(HomeEffect.OpenAccessibilitySettings)
+            HomeEvent.GrantOverlay -> send(HomeEffect.OpenOverlaySettings)
+            HomeEvent.Start -> send(HomeEffect.LaunchProjection)
+            HomeEvent.Stop -> send(HomeEffect.StopCapture)
+            is HomeEvent.Choose -> viewModelScope.launch { chosen.choose(event.kind) }
+            is HomeEvent.Open -> send(HomeEffect.OpenReading(event.kept))
+            is HomeEvent.Export -> export.begin(event.kept)
+            HomeEvent.ExportAll -> export.begin(kept.value)
+            is HomeEvent.Delete -> deleting.value = event.kept
+            HomeEvent.ConfirmDelete -> {
+                deleting.value?.let(readings::delete)
+                deleting.value = null
+                kept.value = readings.list()
+            }
+            HomeEvent.CancelDelete -> deleting.value = null
+        }
+    }
 
     fun returned() {
         permissions.refresh()
         kept.value = readings.list()
     }
 
-    fun choose(kind: Kind) {
-        viewModelScope.launch { chosen.choose(kind) }
-    }
-
-    fun delete(kept: Kept) {
-        readings.delete(kept)
-        this.kept.value = readings.list()
+    private fun send(effect: HomeEffect) {
+        viewModelScope.launch { _effects.send(effect) }
     }
 }
-

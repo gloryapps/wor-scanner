@@ -6,7 +6,7 @@ import com.gloryapps.worscanner.capture.MlKitTextReader
 import com.gloryapps.worscanner.capture.ReadScreen
 import com.gloryapps.worscanner.capture.Readings
 import com.gloryapps.worscanner.scanner.senses.TextReader
-import com.gloryapps.worscanner.ui.Exporting
+import com.gloryapps.worscanner.ui.ExportDelegate
 import com.gloryapps.worscanner.ui.home.HomeViewModel
 import com.gloryapps.worscanner.ui.home.Permissions
 import com.gloryapps.worscanner.ui.reading.ReadingViewModel
@@ -27,7 +27,7 @@ val appModule = module {
     single { Scanning(androidContext(), get(), get(), get()) }
     single { Chosen(androidContext()) }
     single { Permissions(androidContext()) }
-    factory { Exporting(get()) }
+    factory { ExportDelegate(get(), androidContext()) }
     viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { (stamp: String) -> ReadingViewModel(stamp, get(), get()) }
 }

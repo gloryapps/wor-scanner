@@ -31,8 +31,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,7 +47,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.ui.Accented
 import com.gloryapps.worscanner.ui.Colors
-import com.gloryapps.worscanner.ui.outgoing
 import com.gloryapps.worscanner.ui.ended
 import com.gloryapps.worscanner.ui.ExportSheet
 import com.gloryapps.worscanner.ui.Link
@@ -62,21 +63,22 @@ import org.koin.core.parameter.parametersOf
  * which knows neither.
  */
 @Composable
-fun ReadingScreen(stamp: String, onBack: () -> Unit, viewModel: ReadingViewModel = koinViewModel { parametersOf(stamp) }) {
+internal fun ReadingScreen(stamp: String, onBack: () -> Unit, viewModel: ReadingViewModel = koinViewModel { parametersOf(stamp) }) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val back by rememberUpdatedState(onBack)
 
-    Reading(state) { intent ->
-        when (intent) {
-            ReadingIntent.Back -> onBack()
-            ReadingIntent.Close -> viewModel.close()
-            is ReadingIntent.Choose -> viewModel.choose(intent.at)
-            is ReadingIntent.Show -> viewModel.show(intent.showing)
-            ReadingIntent.Export -> state.kept?.let { viewModel.exporting.begin(it.outgoing(context)) }
-            is ReadingIntent.Copy -> context.copy(intent.label, intent.text)
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                ReadingEffect.NavigateBack -> back()
+                is ReadingEffect.Copy -> context.copy(effect.label, effect.text)
+            }
         }
     }
-    ExportSheet(viewModel.exporting)
+
+    Reading(state, viewModel::on)
+    ExportSheet(viewModel.export)
 }
 
 /**
@@ -85,30 +87,30 @@ fun ReadingScreen(stamp: String, onBack: () -> Unit, viewModel: ReadingViewModel
  * reach a piece.
  */
 @Composable
-internal fun Reading(state: ReadingState, onIntent: (ReadingIntent) -> Unit) {
+internal fun Reading(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) {
         val wide = maxWidth >= WIDE
         /* Narrow, the arrow first returns the piece to its list; the file is always one tap deep. */
         val within = !wide && state.opened && state.showing == Showing.PIECE
 
         Column(Modifier.fillMaxSize()) {
-            Header(state, back = if (within) ReadingIntent.Close else ReadingIntent.Back, onIntent)
+            Header(state, back = if (within) ReadingEvent.Close else ReadingEvent.Back, onEvent)
             Rule()
 
             /* What the segmented switches: the list beside it is the reading's spine and stays put. */
             val beside: @Composable (Modifier) -> Unit = {
-                if (state.showing == Showing.FILE) Written(state, onIntent, it) else Detail(state, onIntent, it)
+                if (state.showing == Showing.FILE) Written(state, onEvent, it) else Detail(state, onEvent, it)
             }
 
             when {
-                state.pieces.isEmpty() -> Written(state, onIntent, Modifier.fillMaxSize())
+                state.pieces.isEmpty() -> Written(state, onEvent, Modifier.fillMaxSize())
                 wide -> Row(Modifier.fillMaxSize()) {
-                    Pieces(state, onIntent, Modifier.width(PIECES))
+                    Pieces(state, onEvent, Modifier.width(PIECES))
                     Box(Modifier.width(1.dp).fillMaxHeight().background(Colors.hairline))
                     beside(Modifier.weight(1f))
                 }
                 within || state.showing == Showing.FILE -> beside(Modifier.fillMaxSize())
-                else -> Pieces(state, onIntent, Modifier.fillMaxSize())
+                else -> Pieces(state, onEvent, Modifier.fillMaxSize())
             }
         }
     }
@@ -116,7 +118,7 @@ internal fun Reading(state: ReadingState, onIntent: (ReadingIntent) -> Unit) {
 
 /** What the reading is called and how it ended, the two ways to see it, and the way out. */
 @Composable
-private fun Header(state: ReadingState, back: ReadingIntent, onIntent: (ReadingIntent) -> Unit) {
+private fun Header(state: ReadingUiState, back: ReadingEvent, onEvent: (ReadingEvent) -> Unit) {
     val context = LocalContext.current
 
     Row(
@@ -125,7 +127,7 @@ private fun Header(state: ReadingState, back: ReadingIntent, onIntent: (ReadingI
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { onIntent(back) }) {
+            IconButton(onClick = { onEvent(back) }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Colors.muted)
             }
             Text(state.kept?.shown().orEmpty(), style = Lettering.data, color = Colors.text, maxLines = 1)
@@ -136,14 +138,14 @@ private fun Header(state: ReadingState, back: ReadingIntent, onIntent: (ReadingI
                 Segmented(
                     labels = listOf(stringResource(R.string.reading_data), stringResource(R.string.reading_json)),
                     chosen = if (state.showing == Showing.PIECE) 0 else 1,
-                    onChoose = { onIntent(ReadingIntent.Show(if (it == 0) Showing.PIECE else Showing.FILE)) },
+                    onChoose = { onEvent(ReadingEvent.Show(if (it == 0) Showing.PIECE else Showing.FILE)) },
                 )
             }
             if (state.kept != null) {
                 Accented(
                     stringResource(R.string.reading_export),
                     said = state.pieces.size.takeIf { it > 0 }?.toString(),
-                    onClick = { onIntent(ReadingIntent.Export) },
+                    onClick = { onEvent(ReadingEvent.Export) },
                 )
             }
         }
@@ -152,7 +154,7 @@ private fun Header(state: ReadingState, back: ReadingIntent, onIntent: (ReadingI
 
 /** Every tile the scan read, in the order it read them. */
 @Composable
-private fun Pieces(state: ReadingState, onIntent: (ReadingIntent) -> Unit, modifier: Modifier) {
+private fun Pieces(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
     Column(modifier) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
@@ -168,7 +170,7 @@ private fun Pieces(state: ReadingState, onIntent: (ReadingIntent) -> Unit, modif
                     Modifier
                         .fillMaxWidth()
                         .background(if (at == state.chosen) Colors.accentWash else Color.Transparent)
-                        .clickable { onIntent(ReadingIntent.Choose(at)) },
+                        .clickable { onEvent(ReadingEvent.Choose(at)) },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Spacer(
@@ -209,7 +211,7 @@ private fun Pieces(state: ReadingState, onIntent: (ReadingIntent) -> Unit, modif
 
 /** The card the reader made of the chosen tile, and where on the grid that tile was. */
 @Composable
-private fun Detail(state: ReadingState, onIntent: (ReadingIntent) -> Unit, modifier: Modifier) {
+private fun Detail(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
     val piece = state.piece ?: return
 
     Column(modifier) {
@@ -217,7 +219,7 @@ private fun Detail(state: ReadingState, onIntent: (ReadingIntent) -> Unit, modif
             name = { Text(piece.name, style = Lettering.subtitle, color = Colors.text, maxLines = 1) },
             mark = { if (!piece.closed) Pill(stringResource(R.string.reading_not_closed)) },
             said = stringResource(R.string.reading_at, piece.index, piece.row, piece.column),
-            onCopy = { onIntent(ReadingIntent.Copy(piece.name, piece.card)) },
+            onCopy = { onEvent(ReadingEvent.Copy(piece.name, piece.card)) },
         )
         Code(piece.card)
     }
@@ -225,13 +227,13 @@ private fun Detail(state: ReadingState, onIntent: (ReadingIntent) -> Unit, modif
 
 /** The file as it was written, which is what the lab reads and what `copy` hands over whole. */
 @Composable
-private fun Written(state: ReadingState, onIntent: (ReadingIntent) -> Unit, modifier: Modifier) {
+private fun Written(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
     Column(modifier) {
         Above(
             name = { Text(state.name, style = Lettering.data, color = Colors.text, maxLines = 1) },
             mark = { },
             said = pluralStringResource(R.plurals.reading_lines, state.file.lines().size, state.file.lines().size),
-            onCopy = { onIntent(ReadingIntent.Copy(state.name, state.file)) },
+            onCopy = { onEvent(ReadingEvent.Copy(state.name, state.file)) },
         )
         Code(state.file)
     }

@@ -32,9 +32,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -61,7 +60,6 @@ import com.gloryapps.worscanner.ui.Panel
 import com.gloryapps.worscanner.ui.Pill
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
-import com.gloryapps.worscanner.ui.outgoing
 import com.gloryapps.worscanner.ui.said
 import com.gloryapps.worscanner.ui.shown
 import com.gloryapps.worscanner.ui.Lettering
@@ -73,10 +71,10 @@ import org.koin.compose.viewmodel.koinViewModel
  * What it draws is `Home`, which knows none of them.
  */
 @Composable
-fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = koinViewModel()) {
+internal fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var deleting by remember { mutableStateOf<Kept?>(null) }
+    val open by rememberUpdatedState(onReading)
 
     LifecycleResumeEffect(Unit) {
         viewModel.returned()
@@ -87,35 +85,22 @@ fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = koinViewMod
         val data = it.data
         if (it.resultCode == Activity.RESULT_OK && data != null) CaptureService.start(context, it.resultCode, data)
     }
-    Home(state) { intent ->
-        when (intent) {
-            HomeIntent.GrantAccessibility -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            HomeIntent.GrantOverlay -> context.startActivity(
-                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
-            )
-            HomeIntent.Start -> projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
-            HomeIntent.Stop -> CaptureService.stop(context)
-            is HomeIntent.Choose -> viewModel.choose(intent.kind)
-            is HomeIntent.Open -> onReading(intent.kept)
-            is HomeIntent.Export -> viewModel.exporting.begin(intent.kept.outgoing(context))
-            HomeIntent.ExportAll -> viewModel.exporting.begin(state.readings.outgoing(context))
-            is HomeIntent.Delete -> deleting = intent.kept
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                HomeEffect.OpenAccessibilitySettings -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                HomeEffect.OpenOverlaySettings -> context.startActivity(
+                    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
+                )
+                HomeEffect.LaunchProjection -> projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
+                HomeEffect.StopCapture -> CaptureService.stop(context)
+                is HomeEffect.OpenReading -> open(effect.kept)
+            }
         }
     }
 
-    deleting?.let { kept ->
-        Confirm(
-            title = stringResource(R.string.home_delete_title),
-            said = stringResource(R.string.home_delete_said),
-            confirm = stringResource(R.string.home_delete_yes),
-            onConfirm = {
-                viewModel.delete(kept)
-                deleting = null
-            },
-            onCancel = { deleting = null },
-        )
-    }
-    ExportSheet(viewModel.exporting)
+    Home(state, viewModel::on)
+    ExportSheet(viewModel.export)
 }
 
 /**
@@ -123,12 +108,12 @@ fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = koinViewMod
  * screen is wide enough for them, one where it is not.
  */
 @Composable
-internal fun Home(state: HomeState, onIntent: (HomeIntent) -> Unit) {
+internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     Column(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) {
         Header(state.running)
         BoxWithConstraints(Modifier.weight(1f)) {
-            val start: @Composable () -> Unit = { Start(state, onIntent) }
-            val kept: @Composable () -> Unit = { Readings(state.readings, onIntent) }
+            val start: @Composable () -> Unit = { Start(state, onEvent) }
+            val kept: @Composable () -> Unit = { Readings(state.readings, onEvent) }
 
             if (maxWidth >= WIDE) {
                 Row(Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 22.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -145,6 +130,16 @@ internal fun Home(state: HomeState, onIntent: (HomeIntent) -> Unit) {
                 }
             }
         }
+    }
+
+    if (state.deleting != null) {
+        Confirm(
+            title = stringResource(R.string.home_delete_title),
+            said = stringResource(R.string.home_delete_said),
+            confirm = stringResource(R.string.home_delete_yes),
+            onConfirm = { onEvent(HomeEvent.ConfirmDelete) },
+            onCancel = { onEvent(HomeEvent.CancelDelete) },
+        )
     }
 }
 
@@ -175,13 +170,13 @@ private fun Header(running: ScanState.Running?) {
 
 /** The grants, the scan and the kind it will read: everything that happens before a scan runs. */
 @Composable
-private fun Start(state: HomeState, onIntent: (HomeIntent) -> Unit) {
+private fun Start(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Section(stringResource(R.string.home_permissions))
         Card(Modifier.fillMaxWidth()) {
-            Given(stringResource(R.string.home_accessibility), state.accessibilityOn) { onIntent(HomeIntent.GrantAccessibility) }
+            Given(stringResource(R.string.home_accessibility), state.accessibilityOn) { onEvent(HomeEvent.GrantAccessibility) }
             Rule()
-            Given(stringResource(R.string.home_overlay), state.overlayAllowed) { onIntent(HomeIntent.GrantOverlay) }
+            Given(stringResource(R.string.home_overlay), state.overlayAllowed) { onEvent(HomeEvent.GrantOverlay) }
         }
     }
 
@@ -192,13 +187,13 @@ private fun Start(state: HomeState, onIntent: (HomeIntent) -> Unit) {
         }
         if (state.capturing) {
             Text(stringResource(R.string.home_capturing), style = Lettering.body, color = Colors.accent)
-            Edged(stringResource(R.string.home_stop), onClick = { onIntent(HomeIntent.Stop) })
+            Edged(stringResource(R.string.home_stop), onClick = { onEvent(HomeEvent.Stop) })
         } else {
             Accented(
                 stringResource(R.string.home_start),
                 said = stringResource(R.string.home_to_game),
                 enabled = state.ready,
-                onClick = { onIntent(HomeIntent.Start) },
+                onClick = { onEvent(HomeEvent.Start) },
             )
         }
     }
@@ -206,7 +201,7 @@ private fun Start(state: HomeState, onIntent: (HomeIntent) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.home_kinds), style = Lettering.dataSmall, color = Colors.muted)
         Kind.entries.forEach { each ->
-            Pill(stringResource(each.label), chosen = each == state.kind, onClick = { onIntent(HomeIntent.Choose(each)) })
+            Pill(stringResource(each.label), chosen = each == state.kind, onClick = { onEvent(HomeEvent.Choose(each)) })
         }
     }
 }
@@ -233,11 +228,11 @@ private fun Given(label: String, given: Boolean, onGrant: () -> Unit) {
 
 /** Everything kept on the device, newest first, each with the way out beside it. */
 @Composable
-private fun Readings(readings: List<Kept>, onIntent: (HomeIntent) -> Unit) {
+private fun Readings(readings: List<Kept>, onEvent: (HomeEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Section(stringResource(R.string.home_readings))
-            if (readings.isNotEmpty()) Link(stringResource(R.string.home_export_all), onClick = { onIntent(HomeIntent.ExportAll) })
+            if (readings.isNotEmpty()) Link(stringResource(R.string.home_export_all), onClick = { onEvent(HomeEvent.ExportAll) })
         }
 
         Panel(Modifier.fillMaxWidth()) {
@@ -246,7 +241,7 @@ private fun Readings(readings: List<Kept>, onIntent: (HomeIntent) -> Unit) {
             }
             readings.forEachIndexed { at, kept ->
                 if (at > 0) Rule()
-                Reading(kept, newest = at == 0, onIntent)
+                Reading(kept, newest = at == 0, onEvent)
             }
             if (readings.isNotEmpty()) {
                 Rule()
@@ -257,13 +252,13 @@ private fun Readings(readings: List<Kept>, onIntent: (HomeIntent) -> Unit) {
 }
 
 @Composable
-private fun Reading(kept: Kept, newest: Boolean, onIntent: (HomeIntent) -> Unit) {
+private fun Reading(kept: Kept, newest: Boolean, onEvent: (HomeEvent) -> Unit) {
     val context = LocalContext.current
     Row(
         Modifier
             .fillMaxWidth()
             .background(if (newest) Colors.accentWash else Colors.raised)
-            .clickable { onIntent(HomeIntent.Open(kept)) }
+            .clickable { onEvent(HomeEvent.Open(kept)) }
             .padding(horizontal = 16.dp, vertical = 13.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -274,11 +269,11 @@ private fun Reading(kept: Kept, newest: Boolean, onIntent: (HomeIntent) -> Unit)
             kept.detail?.let { Text(it, style = Lettering.caption, color = Colors.warning, maxLines = 2) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Link(stringResource(R.string.home_delete), onClick = { onIntent(HomeIntent.Delete(kept)) })
+            Link(stringResource(R.string.home_delete), onClick = { onEvent(HomeEvent.Delete(kept)) })
             if (newest) {
-                Inline(stringResource(R.string.home_export), accented = true, onClick = { onIntent(HomeIntent.Export(kept)) })
+                Inline(stringResource(R.string.home_export), accented = true, onClick = { onEvent(HomeEvent.Export(kept)) })
             } else {
-                Link(stringResource(R.string.home_export), onClick = { onIntent(HomeIntent.Export(kept)) })
+                Link(stringResource(R.string.home_export), onClick = { onEvent(HomeEvent.Export(kept)) })
             }
             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, Modifier.size(15.dp), tint = Colors.muted)
         }

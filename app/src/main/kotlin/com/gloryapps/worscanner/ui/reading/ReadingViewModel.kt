@@ -1,90 +1,47 @@
 package com.gloryapps.worscanner.ui.reading
 
 import androidx.lifecycle.ViewModel
-import com.gloryapps.worscanner.capture.Kept
+import androidx.lifecycle.viewModelScope
 import com.gloryapps.worscanner.capture.Readings
-import com.gloryapps.worscanner.scanner.kinds.Kind
-import com.gloryapps.worscanner.ui.Exporting
-import com.gloryapps.worscanner.ui.outgoingName
+import com.gloryapps.worscanner.ui.ExportDelegate
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
-/** One tile of a scan as the screen shows it: what the reader saw, and what it made of it. */
-data class Piece(
-    val index: Int,
-    val row: Int,
-    val column: Int,
-    /** The first row of the panel, which is what the tile is called. */
-    val name: String,
-    /** The rest of the rows, in one line. */
-    val said: String,
-    val card: String,
-    /** False where the reader kept the panel as an image because it could not close the card. */
-    val closed: Boolean,
-)
-
-/** Which of the two the screen is showing: the piece the reader picked, or the file as written. */
-enum class Showing { PIECE, FILE }
-
-data class ReadingState(
-    val kept: Kept? = null,
-    val kind: Kind? = null,
-    val pieces: List<Piece> = emptyList(),
-    val file: String = "",
-    val chosen: Int = 0,
-    val showing: Showing = Showing.PIECE,
-    /** Where the screen is too narrow for both, whether the piece has taken the list's place. */
-    val opened: Boolean = false,
-) {
-    val piece: Piece? get() = pieces.getOrNull(chosen)
-
-    /** The name the file leaves under, which is what the screen calls it. */
-    val name: String get() = kept?.outgoingName().orEmpty()
-
-    /** How many tiles the reader could not close, which is what the foot of the list counts. */
-    val open: Int get() = pieces.count { !it.closed }
-}
-
-/** What the reading screen is asked for; the screen routes each to the state, the clipboard, the sheet or the stack. */
-sealed interface ReadingIntent {
-    data object Back : ReadingIntent
-
-    /** Leave the piece for the list it was chosen from. */
-    data object Close : ReadingIntent
-
-    data class Choose(val at: Int) : ReadingIntent
-
-    data class Show(val showing: Showing) : ReadingIntent
-
-    data object Export : ReadingIntent
-
-    data class Copy(val label: String, val text: String) : ReadingIntent
-}
-
-class ReadingViewModel(stamp: String, readings: Readings, val exporting: Exporting) : ViewModel() {
+internal class ReadingViewModel(stamp: String, readings: Readings, val export: ExportDelegate) : ViewModel() {
     private val _state = MutableStateFlow(read(stamp, readings))
-    val state: StateFlow<ReadingState> = _state.asStateFlow()
+    val state: StateFlow<ReadingUiState> = _state.asStateFlow()
 
-    fun choose(at: Int) {
-        _state.value = _state.value.copy(chosen = at, showing = Showing.PIECE, opened = true)
+    private val _effects = Channel<ReadingEffect>(Channel.BUFFERED)
+    val effects: Flow<ReadingEffect> = _effects.receiveAsFlow()
+
+    fun on(event: ReadingEvent) {
+        when (event) {
+            ReadingEvent.Back -> send(ReadingEffect.NavigateBack)
+            ReadingEvent.Close -> _state.update { it.copy(opened = false) }
+            is ReadingEvent.Choose -> _state.update { it.copy(chosen = event.at, showing = Showing.PIECE, opened = true) }
+            is ReadingEvent.Show -> _state.update { it.copy(showing = event.showing) }
+            ReadingEvent.Export -> _state.value.kept?.let(export::begin)
+            is ReadingEvent.Copy -> send(ReadingEffect.Copy(event.label, event.text))
+        }
     }
 
-    fun close() {
-        _state.value = _state.value.copy(opened = false)
+    private fun send(effect: ReadingEffect) {
+        viewModelScope.launch { _effects.send(effect) }
     }
 
-    fun show(showing: Showing) {
-        _state.value = _state.value.copy(showing = showing)
-    }
-
-    private fun read(stamp: String, readings: Readings): ReadingState {
-        val kept = readings.list().firstOrNull { it.stamp == stamp } ?: return ReadingState()
+    private fun read(stamp: String, readings: Readings): ReadingUiState {
+        val kept = readings.list().firstOrNull { it.stamp == stamp } ?: return ReadingUiState()
         val scan = readings.opened(kept)
 
-        return ReadingState(
+        return ReadingUiState(
             kept = kept,
             kind = kept.kind,
             pieces = scan?.entries.orEmpty().map { entry ->
