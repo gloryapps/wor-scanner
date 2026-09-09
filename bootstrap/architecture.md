@@ -111,8 +111,9 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
 - A scan leaves an emulator by the folder it shares with the PC: LDPlayer mounts `/mnt/shared/Pictures`
   inside Android and shows it under the Windows Documents folder, so "Save to Pictures" writes there.
   The clipboard does not cross that border, and the two apps are not linked over the network.
-- Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, which
-  the home screen picks and the overlay obeys.
+- Preferences in DataStore, one store shared through `Context.preferences`: `Chosen`, which kind the
+  next scan reads, picked by the home screen and obeyed by the overlay; `Parked`, the corner the
+  capsule was last let go in, so it comes back there.
 - Room enters only if scan history inside the app is ever wanted, and brings the no-destructive-
   migration rule with it.
 
@@ -120,9 +121,9 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
 
 - One Activity, Compose, Navigation 3 from the start: the back stack is a state list the app owns,
   which lets the service push the follow-up screen when a scan ends.
-- The overlay belongs to the service, not the Activity, and is drawn in Compose too. It is three
-  windows: the hairline pinned to the top, the capsule a finger drags, and the close target that
-  appears under it while it is held.
+- The overlay belongs to the service, not the Activity, and is drawn in Compose too. It is five
+  windows: the hairline pinned to the top, the capsule a finger drags, the sheet its tap opens beside
+  it, and, while it is held, the corners it can land in and the close target under it.
 
 ## Error handling
 

@@ -285,7 +285,7 @@ private fun android.content.Context.openApp() =
 
 /** The least a finger is given, whatever is painted inside it. */
 internal val TARGET = 44.dp
-private val IDLE = 22.dp
+internal val IDLE = 22.dp
 private val CAPTURING = 26.dp
 private val ENDED = 24.dp
 private val STOP = 18.dp

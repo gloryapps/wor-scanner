@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.overlay.OverlayWindow
+import com.gloryapps.worscanner.overlay.Parked
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.ui.label
@@ -36,6 +37,7 @@ import org.koin.android.ext.android.inject
 class CaptureService : LifecycleService() {
     private val session: CaptureSession by inject()
     private val scanning: Scanning by inject()
+    private val parked: Parked by inject()
     private var screen: ProjectionScreen? = null
     private var overlay: OverlayWindow? = null
     private var scan: Job? = null
@@ -80,7 +82,7 @@ class CaptureService : LifecycleService() {
     }
 
     private fun showOverlay() {
-        overlay = OverlayWindow(this, onClose = ::stopSelf).also { it.show() }
+        overlay = OverlayWindow(this, parked, onClose = ::stopSelf).also { it.show() }
     }
 
     private fun hideOverlay() {
