@@ -8,17 +8,18 @@
 
 ## Release
 
-The version lives in the `v<major>.<minor>.<patch>` tags, nowhere in the tree. `.github/workflows/release.yml`
-is run by hand (Actions → Release → Run workflow, or `gh workflow run Release -f bump=minor`) with the
-part to bump, `patch` by default:
+`dev` is always on the version it is building: `versionName` in `app/build.gradle.kts`, which debug
+builds show with a `-dev` suffix. `versionCode` derives from it (`0.1.0` → `100`).
+`.github/workflows/release.yml` is run by hand (Actions → Release → Run workflow, or
+`gh workflow run Release -f next=patch`), telling it which part of the version `dev` moves to
+afterwards, `minor` by default:
 
-1. Checks out `dev` and computes the version from the latest `v*` tag.
-2. Runs the tests and builds the release APK, R8-optimized and signed, passing the version as
-   `-PversionName`; `app/build.gradle.kts` derives `versionCode` from it (`0.1.0` → `100`) and uses
-   `0.0.0` when the property is absent, which is every local build.
+1. Checks out `dev`, reads its version and fails if the tag `v<version>` already exists.
+2. Runs the tests and builds the release APK, R8-optimized and signed.
 3. Fast-forwards `main` to the `dev` commit, failing if `main` holds commits `dev` does not.
 4. Creates the tag and a GitHub release holding `wor-scanner-<version>.apk` and
    `mapping-<version>.txt`, with notes generated from the commits since the previous tag.
+5. Commits `Start <next version>` to `dev` with the bumped `versionName`: pull `dev` before working on.
 
 Crashes reported against a release are retraced with that release's `mapping-<version>.txt`.
 
