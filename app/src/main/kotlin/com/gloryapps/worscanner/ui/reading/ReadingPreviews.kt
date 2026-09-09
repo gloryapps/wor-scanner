@@ -1,8 +1,15 @@
 package com.gloryapps.worscanner.ui.reading
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.gloryapps.worscanner.scanner.kinds.Kind
+import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.SCANNED
 import com.gloryapps.worscanner.ui.STOPPED
 import com.gloryapps.worscanner.ui.ScannerTheme
@@ -74,4 +81,27 @@ private fun ReadingPortraitPreview() {
 @Composable
 private fun ReadingPortraitPiecePreview() {
     ScannerTheme { Reading(OPENED.copy(chosen = 4, opened = true)) { } }
+}
+
+@Preview(name = "Pieces", widthDp = 396, heightDp = 480)
+@Composable
+private fun PiecesPreview() {
+    ScannerTheme { Pieces(OPENED, { }, Modifier.width(LIST).fillMaxHeight().background(Colors.screen)) }
+}
+
+@Preview(name = "Detail · closed beside one the reader did not close", widthDp = 900, heightDp = 480)
+@Composable
+private fun DetailPreview() {
+    ScannerTheme {
+        Row(Modifier.fillMaxSize().background(Colors.screen)) {
+            Detail(OPENED, { }, Modifier.weight(1f))
+            Detail(OPENED.copy(chosen = 4), { }, Modifier.weight(1f))
+        }
+    }
+}
+
+@Preview(name = "Written", widthDp = 560, heightDp = 480)
+@Composable
+private fun WrittenPreview() {
+    ScannerTheme { Written(OPENED, { }, Modifier.fillMaxSize().background(Colors.screen)) }
 }

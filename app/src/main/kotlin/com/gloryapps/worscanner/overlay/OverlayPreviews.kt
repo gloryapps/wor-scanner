@@ -70,6 +70,21 @@ private fun SheetPreview() {
     }
 }
 
+@Preview(name = "Sheet · nothing running", widthDp = 320, heightDp = 200)
+@Composable
+private fun SheetIdlePreview() {
+    ScannerTheme {
+        Column(
+            Modifier.fillMaxSize().background(GAME).padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Capsule(ScanState.Idle, { }, { }, { }, Modifier)
+            Sheet(running = false, onScan = { }, onRead = { }, onApp = { }, onClose = { })
+        }
+    }
+}
+
 @Preview(name = "Close target · waiting and under the capsule", widthDp = 320, heightDp = 180)
 @Composable
 private fun CloseTargetPreview() {

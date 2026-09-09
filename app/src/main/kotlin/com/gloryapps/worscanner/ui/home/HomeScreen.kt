@@ -170,7 +170,7 @@ private fun Header(running: ScanState.Running?) {
 
 /** The grants, the scan and the kind it will read: everything that happens before a scan runs. */
 @Composable
-private fun Start(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
+internal fun Start(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Section(stringResource(R.string.home_permissions))
         Card(Modifier.fillMaxWidth()) {
@@ -228,7 +228,7 @@ private fun Given(label: String, given: Boolean, onGrant: () -> Unit) {
 
 /** Everything kept on the device, newest first, each with the way out beside it. */
 @Composable
-private fun Readings(readings: List<Kept>, onEvent: (HomeEvent) -> Unit) {
+internal fun Readings(readings: List<Kept>, onEvent: (HomeEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Section(stringResource(R.string.home_readings))

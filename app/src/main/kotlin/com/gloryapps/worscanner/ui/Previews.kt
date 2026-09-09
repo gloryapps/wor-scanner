@@ -154,3 +154,21 @@ private fun ExportSheetSavedPreview() {
         )
     }
 }
+
+@Preview(name = "Export sheet · failed", widthDp = 560, heightDp = 620)
+@Composable
+private fun ExportSheetFailedPreview() {
+    ScannerTheme {
+        ExportSheet(
+            outgoing = Outgoing(
+                name = "wor-gear-20260907-130841.json",
+                files = SCANNED.outbound(),
+                holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Size" to "318 kB"),
+            ),
+            saved = Saved.Failed("Pictures is not writable on this device"),
+            onShared = { },
+            onShare = { },
+            onClose = { },
+        )
+    }
+}

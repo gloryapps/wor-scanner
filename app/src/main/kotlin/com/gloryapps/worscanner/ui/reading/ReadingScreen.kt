@@ -105,7 +105,7 @@ internal fun Reading(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit) {
             when {
                 state.pieces.isEmpty() -> Written(state, onEvent, Modifier.fillMaxSize())
                 wide -> Row(Modifier.fillMaxSize()) {
-                    Pieces(state, onEvent, Modifier.width(PIECES))
+                    Pieces(state, onEvent, Modifier.width(LIST))
                     Box(Modifier.width(1.dp).fillMaxHeight().background(Colors.hairline))
                     beside(Modifier.weight(1f))
                 }
@@ -154,7 +154,7 @@ private fun Header(state: ReadingUiState, back: ReadingEvent, onEvent: (ReadingE
 
 /** Every tile the scan read, in the order it read them. */
 @Composable
-private fun Pieces(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
+internal fun Pieces(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
     Column(modifier) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
@@ -211,7 +211,7 @@ private fun Pieces(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modif
 
 /** The card the reader made of the chosen tile, and where on the grid that tile was. */
 @Composable
-private fun Detail(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
+internal fun Detail(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
     val piece = state.piece ?: return
 
     Column(modifier) {
@@ -227,12 +227,14 @@ private fun Detail(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modif
 
 /** The file as it was written, which is what the lab reads and what `copy` hands over whole. */
 @Composable
-private fun Written(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
+internal fun Written(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
+    val lines = remember(state.file) { state.file.lines().size }
+
     Column(modifier) {
         Above(
             name = { Text(state.name, style = Lettering.data, color = Colors.text, maxLines = 1) },
             mark = { },
-            said = pluralStringResource(R.plurals.reading_lines, state.file.lines().size, state.file.lines().size),
+            said = pluralStringResource(R.plurals.reading_lines, lines, lines),
             onCopy = { onEvent(ReadingEvent.Copy(state.name, state.file)) },
         )
         Code(state.file)
@@ -300,4 +302,4 @@ private fun Context.copy(label: String, text: String) =
     getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(label, text))
 
 private val WIDE = 720.dp
-private val PIECES = 396.dp
+internal val LIST = 396.dp
