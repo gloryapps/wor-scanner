@@ -71,6 +71,16 @@ class ScanTest {
     }
 
     @Test
+    fun `a drag the game dropped mid-grid is tried again, not taken for the grid's end`() = runTest {
+        val storage = FakeStorage(pieces = 42, droppedDrags = setOf(1, 3))
+
+        val outcome = scanOver(storage).run()
+
+        assertIs<Outcome.Finished<Int>>(outcome)
+        assertEquals((0 until 42).toList(), outcome.pieces())
+    }
+
+    @Test
     fun `the last rows settle on the viewport's floor and are still read, the partial one included`() = runTest {
         val outcome = scanOver(FakeStorage(pieces = 29)).run()
 

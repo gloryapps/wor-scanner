@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.pm.ServiceInfo
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -36,6 +37,7 @@ import org.koin.android.ext.android.inject
 class CaptureService : LifecycleService() {
     private val session: CaptureSession by inject()
     private val scanning: Scanning by inject()
+    private val readScreen: ReadScreen by inject()
     private var screen: ProjectionScreen? = null
     private var overlay: OverlayWindow? = null
     private var scan: Job? = null
@@ -49,12 +51,20 @@ class CaptureService : LifecycleService() {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_STOP -> stopSelf()
-            ACTION_SCAN -> startScan(Kind.valueOf(checkNotNull(intent.getStringExtra(EXTRA_KIND)) { "no kind to scan" }))
+            ACTION_SCAN -> startScan(intent.kind())
             ACTION_STOP_SCAN -> scan?.cancel()
+            ACTION_READ -> read(intent.kind())
             else -> intent?.consent()?.let(::open) ?: stopSelf()
         }
 
         return START_NOT_STICKY
+    }
+
+    /* The game turns the phone to landscape once it is in front; the mirror must show that, not the app's portrait. */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val metrics = realMetrics()
+        screen?.resize(metrics.widthPixels, metrics.heightPixels, metrics.densityDpi)
     }
 
     override fun onDestroy() {
@@ -97,6 +107,17 @@ class CaptureService : LifecycleService() {
             return
         }
         scan = lifecycleScope.launch { scanning.run(kind) }
+    }
+
+    /* Read here, not in the sheet that asked: the sheet closes on the tap and takes its coroutines with it. */
+    private fun read(kind: Kind) {
+        lifecycleScope.launch {
+            val said = readScreen.now(kind).fold(
+                onSuccess = { getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
+                onFailure = { getString(R.string.overlay_read_failed, it.message) },
+            )
+            Toast.makeText(this@CaptureService, said, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun show(state: ScanState) {
@@ -146,6 +167,8 @@ class CaptureService : LifecycleService() {
         getSystemService(WindowManager::class.java).defaultDisplay.getRealMetrics(it)
     }
 
+    private fun Intent.kind(): Kind = Kind.valueOf(checkNotNull(getStringExtra(EXTRA_KIND)) { "no kind named" })
+
     private class Consent(val resultCode: Int, val data: Intent)
 
     private fun Intent.consent(): Consent? {
@@ -169,6 +192,7 @@ class CaptureService : LifecycleService() {
         private const val ACTION_STOP = "com.gloryapps.worscanner.STOP"
         private const val ACTION_SCAN = "com.gloryapps.worscanner.SCAN"
         private const val ACTION_STOP_SCAN = "com.gloryapps.worscanner.STOP_SCAN"
+        private const val ACTION_READ = "com.gloryapps.worscanner.READ"
         private const val EXTRA_RESULT_CODE = "resultCode"
         private const val EXTRA_RESULT_DATA = "resultData"
         private const val EXTRA_KIND = "kind"
@@ -186,6 +210,9 @@ class CaptureService : LifecycleService() {
         }
 
         fun scan(context: Context, kind: Kind) = send(context, ACTION_SCAN) { putExtra(EXTRA_KIND, kind.name) }
+
+        /** Reads the frame on screen as one kind and says what it kept. */
+        fun read(context: Context, kind: Kind) = send(context, ACTION_READ) { putExtra(EXTRA_KIND, kind.name) }
 
         fun stopScan(context: Context) = send(context, ACTION_STOP_SCAN)
 

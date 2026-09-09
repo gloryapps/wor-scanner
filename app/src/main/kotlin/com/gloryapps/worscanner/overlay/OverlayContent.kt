@@ -1,7 +1,6 @@
 package com.gloryapps.worscanner.overlay
 
 import android.content.Intent
-import android.widget.Toast
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -36,7 +35,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +42,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -52,14 +49,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.capture.CaptureService
-import com.gloryapps.worscanner.capture.ReadScreen
 import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Lettering
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 /**
@@ -113,13 +108,10 @@ private fun shownFor(state: ScanState): ScanState {
 @Composable
 fun SheetContent(
     onDone: () -> Unit,
-    readScreen: ReadScreen = koinInject(),
     scanning: Scanning = koinInject(),
     chosen: Chosen = koinInject(),
 ) {
     val context = LocalContext.current
-    val resources = LocalResources.current
-    val scope = rememberCoroutineScope()
     val state by scanning.state.collectAsStateWithLifecycle()
     val kind by chosen.kind.collectAsStateWithLifecycle(Chosen.FIRST)
 
@@ -130,14 +122,8 @@ fun SheetContent(
             onDone()
         },
         onRead = {
+            CaptureService.read(context, kind)
             onDone()
-            scope.launch {
-                val said = readScreen.now(kind).fold(
-                    onSuccess = { resources.getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
-                    onFailure = { resources.getString(R.string.overlay_read_failed, it.message) },
-                )
-                Toast.makeText(context, said, Toast.LENGTH_LONG).show()
-            }
         },
         onApp = { context.openApp() },
         onClose = { CaptureService.stop(context) },

@@ -70,9 +70,9 @@ class Readings(private val context: Context) {
         val read = readings.listFiles { file -> file.extension == "json" }.orEmpty().map {
             Kept(it.nameWithoutExtension, "reading", listOf(it, File(readings, "${it.nameWithoutExtension}.png")), kindIn(it))
         }
-        /* The list wants the count and the outcome, not the cards, so the card stays whatever JSON it is. */
-        val scanned = scans.listFiles { file -> file.isDirectory }.orEmpty().map { folder ->
-            val scan = File(folder, "scan.json").takeIf { it.exists() }?.let(::scanIn)
+        /* A folder without its JSON is a scan still running; the list wants the count and the outcome, not the cards, so the card stays whatever JSON it is. */
+        val scanned = scans.listFiles { file -> file.isDirectory && File(file, "scan.json").exists() }.orEmpty().map { folder ->
+            val scan = scanIn(File(folder, "scan.json"))
             Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name }, kindOf(scan?.kind), scan?.entries?.size, scan?.outcome, scan?.detail)
         }
 

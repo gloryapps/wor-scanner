@@ -39,6 +39,8 @@ class FakeStorage(
     private val glideRows: Double = 0.0,
     /** Whether every tile prints the same number, as a storage full of one stat does. */
     private val sameNumbers: Boolean = false,
+    /** Drags, counted from one, that the game drops: the finger moves, the grid does not. */
+    private val droppedDrags: Set<Int> = emptySet(),
 ) : Screen, Touch, TextReader, Scannable<Int> {
     override val serializer = Int.serializer()
     override val reader = object : Reader<Int> {
@@ -99,6 +101,7 @@ class FakeStorage(
     /* The grid stops where its last row sits on the viewport's floor, as a list does. */
     override suspend fun drag(fromX: Int, fromY: Int, toX: Int, toY: Int, millis: Long) {
         drags++
+        if (drags in droppedDrags) return
         scrolled = (scrolled + (rowsPerDrag * pitch).toInt()).coerceAtMost(floor)
         gliding = (glideRows * pitch).toInt()
     }

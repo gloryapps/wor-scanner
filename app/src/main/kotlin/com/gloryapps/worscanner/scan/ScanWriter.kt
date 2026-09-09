@@ -10,6 +10,7 @@ import com.gloryapps.worscanner.scanner.scan.Keeper
 import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.scanner.scan.ScanEntry
 import com.gloryapps.worscanner.scanner.senses.Frame
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -18,7 +19,7 @@ import java.time.LocalDateTime
 /** A scan as the lab reads it: what was scanned, the display it ran on, how it ended, and one entry per tile. */
 @Serializable
 data class ScanFile<T>(
-    val version: Int = 2,
+    @EncodeDefault val version: Int = 2,
     /** A `Kind` id; `entries[].card` is shaped by it. */
     val kind: String,
     val startedAt: String,

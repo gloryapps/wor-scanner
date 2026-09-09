@@ -74,6 +74,8 @@ class Scan<T>(
         var atEnd = false
         /* Drags since the last tile was read; a grid that keeps being dragged and never yields a row is lost. */
         var idleDrags = 0
+        /* Drags in a row that moved nothing; one may have been dropped by the game, two is the grid's end. */
+        var stillDrags = 0
 
         /*
          * The frame once the grid has stopped moving, and how far it moved: by the framed tile
@@ -122,7 +124,8 @@ class Scan<T>(
                 framed = framed?.let { (column, centre) -> column to centre - shift }
             }
             /* At the grid's end a drag overscrolls and springs back; what is left of that is no move. */
-            if (shift <= pitch / SPRING) {
+            stillDrags = if (shift <= pitch / SPRING) stillDrags + 1 else 0
+            if (stillDrags >= STILL_DRAGS) {
                 if (origin + row * pitch > lowestAtEnd) return Outcome.Finished(entries, rowsOf(lines))
                 atEnd = true
             }
@@ -202,6 +205,8 @@ class Scan<T>(
         const val TAPS = 2
         /** The share of a row's pitch under which a drag is taken to have moved nothing. */
         const val SPRING = 8
+        /** Drags in a row that moved nothing before the grid is taken to have ended. */
+        const val STILL_DRAGS = 2
         /** Settle times given to the spring-back after a drag before the first look. */
         const val SPRING_SETTLES = 3
         /** Drags without a tile read after which the grid is lost. */

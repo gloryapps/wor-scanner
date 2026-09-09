@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -31,6 +32,11 @@ internal class HomeViewModel(
     private val deleting = MutableStateFlow<Kept?>(null)
     private val _effects = Channel<HomeEffect>(Channel.BUFFERED)
     val effects: Flow<HomeEffect> = _effects.receiveAsFlow()
+
+    init {
+        /* A scan that ends while the screen is in front is listed without waiting for the next return. */
+        viewModelScope.launch { scanning.state.filterIsInstance<ScanState.Ended>().collect { kept.value = readings.list() } }
+    }
 
     val state: StateFlow<HomeUiState> = combine(
         permissions.accessibilityOn,
