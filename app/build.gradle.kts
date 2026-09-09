@@ -21,7 +21,9 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
-            isMinifyEnabled = false
+            optimization {
+                enable = true
+            }
         }
     }
 
