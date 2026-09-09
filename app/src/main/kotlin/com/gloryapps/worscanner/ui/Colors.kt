@@ -26,7 +26,7 @@ object Colors {
     /** What is read, what is said beside it, and what is only there for whoever looks for it. */
     val text = Color(0xFFE9EDF5)
     val muted = Color(0x9EE9EDF5)
-    val faint = Color(0x94E9EDF5)
+    val faint = Color(0x73E9EDF5)
 
     /** A grant not given, a piece read badly: something to look at, not a failure. */
     val warning = Color(0xFFE8B34A)
@@ -35,9 +35,18 @@ object Colors {
     val hairline = Color(0x17FFFFFF)
     val edge = Color(0x24FFFFFF)
 
-    /** The strip over the game: the same dark, thinned so the game stays legible under it. */
-    val glass = Color(0xCC0C0E14)
+    /** The strip over the game: the same dark, thinned so the game stays legible under it; solid where a menu is read. */
+    val glass = Color(0xDB0C0E14)
+    val glassSolid = Color(0xEB0C0E14)
+    val glassThin = Color(0xB80C0E14)
+    val glassFaint = Color(0x730C0E14)
     val glassEdge = Color(0x21FFFFFF)
+    val glassEdgeStrong = Color(0x38FFFFFF)
+
+    /** The accent over the game: the idle capsule's edge, the ground of the row under way, the hairline's glow. */
+    val glassAccentEdge = Color(0x669EC5FF)
+    val glassWash = Color(0x249EC5FF)
+    val accentGlow = Color(0xB39EC5FF)
 
     /** A JSON as the reading screen prints it. */
     object Json {

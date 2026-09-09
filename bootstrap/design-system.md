@@ -20,11 +20,13 @@ roles. A screen names a role, never a value and never a size.
 | `onAccent` | `#0B0D12` | text on the accent |
 | `accentWash` | `#9EC5FF` 8% | the ground of a selected row, or of a card that leads |
 | `accentEdge` | `#9EC5FF` 28% | the border of the same |
-| `text` / `muted` / `faint` | `#E9EDF5` at 100 / 62 / 58% | read, said beside it, found when looked for |
+| `text` / `muted` / `faint` | `#E9EDF5` at 100 / 62 / 45% | read, said beside it, found when looked for |
 | `warning` | `#E8B34A` | a grant not given, a piece read badly |
 | `failure` | `#E08585` | a scan that failed |
 | `hairline` / `edge` | white 9% / 14% | a rule between rows, a border on a control |
-| `glass` / `glassEdge` | `#0C0E14` 80% / white 13% | the strip over the game |
+| `glass` / `glassSolid` / `glassThin` / `glassFaint` | `#0C0E14` at 86 / 92 / 72 / 45% | the capsule over the game; its menu; the close target; a snap zone |
+| `glassEdge` / `glassEdgeStrong` | white 13% / 22% | the capsule's edge; the stop's and the close target's |
+| `glassAccentEdge` / `glassWash` / `accentGlow` | `#9EC5FF` at 40 / 14 / 70% | the idle capsule's edge; the row under way and the ring over the target; under the hairline |
 | `Colors.Json` key/string/number/punctuation | accent / `#B7C7A8` / warning / faint | the reading screen's JSON |
 
 ## Type roles
@@ -42,6 +44,7 @@ Three families, in `Fonts`: `serif` Newsreader names a thing, `sans` Space Grote
 | `caption` | sans 12 | what is said under a line of prose |
 | `action` | sans 14 medium | a button |
 | `data` / `dataSmall` | mono 13 / 11 | a stamp, a count, an id, a file name |
+| `label` / `mark` | mono 12 / mono 10 tracked | a row of the menu over the game; the one word on the idle capsule |
 
 ## Shapes
 

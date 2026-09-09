@@ -26,8 +26,8 @@ import com.gloryapps.worscanner.ui.Lettering
 
 /**
  * What appears at the foot of the screen while the capsule is held, and closes the session when the
- * capsule is let go on it. It takes the accent once the capsule is over it, so the finger is told
- * before it lifts.
+ * capsule is let go on it. It grows and takes the accent once the capsule is over it, so the finger
+ * is told before it lifts.
  */
 @Composable
 fun CloseTarget(over: Boolean) {
@@ -37,20 +37,20 @@ fun CloseTarget(over: Boolean) {
         Box(
             Modifier
                 .size(CloseTarget.OVER_DP.dp + RING)
-                .background(if (over) Colors.accentWash else Color.Transparent, CircleShape),
+                .background(if (over) Colors.glassWash else Color.Transparent, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Box(
                 Modifier
                     .size(size)
-                    .background(Colors.glass, CircleShape)
-                    .border(if (over) 2.dp else 1.dp, if (over) Colors.accent else Colors.glassEdge, CircleShape),
+                    .background(Colors.glassThin, CircleShape)
+                    .border(if (over) 2.dp else 1.dp, if (over) Colors.accent else Colors.glassEdgeStrong, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Default.Close,
                     contentDescription = stringResource(R.string.overlay_close),
-                    Modifier.size(if (over) 18.dp else 15.dp),
+                    Modifier.size(16.dp),
                     tint = if (over) Colors.accent else Colors.text,
                 )
             }
@@ -59,7 +59,7 @@ fun CloseTarget(over: Boolean) {
             stringResource(R.string.overlay_drop),
             Modifier
                 .background(Colors.glass, CircleShape)
-                .border(1.dp, if (over) Colors.accentEdge else Colors.glassEdge, CircleShape)
+                .border(1.dp, if (over) Colors.glassAccentEdge else Colors.glassEdge, CircleShape)
                 .padding(horizontal = 8.dp, vertical = 3.dp),
             style = Lettering.dataSmall,
             color = if (over) Colors.accent else Colors.text,
@@ -68,9 +68,9 @@ fun CloseTarget(over: Boolean) {
 }
 
 object CloseTarget {
-    const val SIZE_DP = 34
-    const val OVER_DP = 40
+    const val SIZE_DP = 44
+    const val OVER_DP = 52
 }
 
 /** How far the ring around the target reaches past it once the capsule is over it. */
-private val RING = 10.dp
+private val RING = 6.dp

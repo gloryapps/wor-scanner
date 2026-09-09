@@ -38,4 +38,8 @@ object Lettering {
     /** A stamp, a count, an id: anything the app read or wrote rather than said. */
     val data = TextStyle(fontFamily = Fonts.mono, fontSize = 13.sp, lineHeight = 18.sp)
     val dataSmall = TextStyle(fontFamily = Fonts.mono, fontSize = 11.sp, lineHeight = 15.sp)
+
+    /** A row of the menu over the game, and the one tracked word on its capsule. */
+    val label = TextStyle(fontFamily = Fonts.mono, fontSize = 12.sp, lineHeight = 16.sp)
+    val mark = TextStyle(fontFamily = Fonts.mono, fontSize = 10.sp, letterSpacing = 0.09.em)
 }
