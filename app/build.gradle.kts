@@ -12,8 +12,19 @@ android {
         applicationId = "com.gloryapps.worscanner"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
         versionName = "0.1.0"
+        versionCode = versionName!!.split('.').fold(0) { code, part -> code * 100 + part.toInt() }
+    }
+
+    signingConfigs {
+        System.getenv("KEYSTORE_FILE")?.let { keystore ->
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -21,6 +32,7 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
+            signingConfig = signingConfigs.findByName("release")
             optimization {
                 enable = true
             }
