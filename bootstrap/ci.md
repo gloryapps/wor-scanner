@@ -1,6 +1,6 @@
 # CI & release
 
-`main` is what is released; `dev` is where work lands. A release is a merge of `dev` into `main`.
+`main` is what is released; `dev` is where work lands. A release moves `main` to the head of `dev`.
 
 ## Verification
 
@@ -8,16 +8,19 @@
 
 ## Release
 
-`.github/workflows/release.yml` runs on every push to `main`:
+The version lives in the `v<major>.<minor>.<patch>` tags, nowhere in the tree. `.github/workflows/release.yml`
+is run by hand (Actions → Release → Run workflow, or `gh workflow run Release -f bump=minor`) with the
+part to bump, `patch` by default:
 
-1. Reads `versionName` from `app/build.gradle.kts`. `versionCode` derives from it (`0.1.0` → `100`),
-   so a version is bumped in that one field, on `dev`, before the merge.
-2. Fails if the tag `v<versionName>` already exists.
-3. Runs the tests and builds the release APK, R8-optimized and signed.
-4. Creates the tag and a GitHub release holding `wor-scanner-<versionName>.apk` and
-   `mapping-<versionName>.txt`, with notes generated from the commits since the previous tag.
+1. Checks out `dev` and computes the version from the latest `v*` tag.
+2. Runs the tests and builds the release APK, R8-optimized and signed, passing the version as
+   `-PversionName`; `app/build.gradle.kts` derives `versionCode` from it (`0.1.0` → `100`) and uses
+   `0.0.0` when the property is absent, which is every local build.
+3. Fast-forwards `main` to the `dev` commit, failing if `main` holds commits `dev` does not.
+4. Creates the tag and a GitHub release holding `wor-scanner-<version>.apk` and
+   `mapping-<version>.txt`, with notes generated from the commits since the previous tag.
 
-Crashes reported against a release are retraced with that release's `mapping-<versionName>.txt`.
+Crashes reported against a release are retraced with that release's `mapping-<version>.txt`.
 
 ## Signing
 

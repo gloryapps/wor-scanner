@@ -12,8 +12,8 @@ android {
         applicationId = "com.gloryapps.worscanner"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionName = "0.1.0"
-        versionCode = versionName!!.split('.').fold(0) { code, part -> code * 100 + part.toInt() }
+        versionName = providers.gradleProperty("versionName").getOrElse("0.0.0")
+        versionCode = versionName!!.split('.').fold(0) { code, part -> code * 100 + part.toInt() }.coerceAtLeast(1)
     }
 
     signingConfigs {
