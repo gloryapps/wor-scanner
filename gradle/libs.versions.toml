@@ -13,7 +13,7 @@ androidx-datastore = "1.2.1"
 koin = "4.2.2"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.10.0"
-mlkit-text = "16.0.1"
+mlkit-text = "19.0.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
@@ -39,7 +39,7 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-coroutines-playServices = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
-mlkit-textRecognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text" }
+mlkit-textRecognition = { module = "com.google.android.gms:play-services-mlkit-text-recognition", version.ref = "mlkit-text" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version = "4.13.2" }
