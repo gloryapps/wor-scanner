@@ -5,6 +5,7 @@ import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.capture.Readings
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Exporting
+import com.gloryapps.worscanner.ui.outgoingName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,11 +36,32 @@ data class ReadingState(
     val file: String = "",
     val chosen: Int = 0,
     val showing: Showing = Showing.PIECE,
+    /** Where the screen is too narrow for both, whether the piece has taken the list's place. */
+    val opened: Boolean = false,
 ) {
     val piece: Piece? get() = pieces.getOrNull(chosen)
 
+    /** The name the file leaves under, which is what the screen calls it. */
+    val name: String get() = kept?.outgoingName().orEmpty()
+
     /** How many tiles the reader could not close, which is what the foot of the list counts. */
     val open: Int get() = pieces.count { !it.closed }
+}
+
+/** What the reading screen is asked for; the screen routes each to the state, the clipboard, the sheet or the stack. */
+sealed interface ReadingIntent {
+    data object Back : ReadingIntent
+
+    /** Leave the piece for the list it was chosen from. */
+    data object Close : ReadingIntent
+
+    data class Choose(val at: Int) : ReadingIntent
+
+    data class Show(val showing: Showing) : ReadingIntent
+
+    data object Export : ReadingIntent
+
+    data class Copy(val label: String, val text: String) : ReadingIntent
 }
 
 class ReadingViewModel(stamp: String, readings: Readings, val exporting: Exporting) : ViewModel() {
@@ -47,7 +69,11 @@ class ReadingViewModel(stamp: String, readings: Readings, val exporting: Exporti
     val state: StateFlow<ReadingState> = _state.asStateFlow()
 
     fun choose(at: Int) {
-        _state.value = _state.value.copy(chosen = at, showing = Showing.PIECE)
+        _state.value = _state.value.copy(chosen = at, showing = Showing.PIECE, opened = true)
+    }
+
+    fun close() {
+        _state.value = _state.value.copy(opened = false)
     }
 
     fun show(showing: Showing) {

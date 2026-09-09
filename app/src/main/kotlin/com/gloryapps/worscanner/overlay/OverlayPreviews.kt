@@ -32,6 +32,14 @@ private val ENDED = ScanState.Ended(
     File("scan.json"),
 )
 
+@Preview(name = "Hairline · under way", widthDp = 320, heightDp = 24)
+@Composable
+private fun HairlinePreview() {
+    ScannerTheme {
+        Box(Modifier.fillMaxSize().background(GAME)) { Hairline(RUNNING) }
+    }
+}
+
 @Preview(name = "Capsule · every state", widthDp = 320, heightDp = 150)
 @Composable
 private fun CapsulePreview() {

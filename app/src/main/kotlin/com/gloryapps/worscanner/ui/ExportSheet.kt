@@ -23,14 +23,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Outbound
 
@@ -42,6 +45,23 @@ sealed interface Saved {
     data class Into(val folder: String, val files: Int) : Saved
 
     data class Failed(val why: String) : Saved
+}
+
+/** The sheet over whichever screen pressed export, wired to the doors out; nothing while nothing is on its way. */
+@Composable
+fun ExportSheet(exporting: Exporting) {
+    val outgoing by exporting.outgoing.collectAsStateWithLifecycle()
+    val saved by exporting.saved.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val leaving = outgoing ?: return
+
+    ExportSheet(
+        outgoing = leaving,
+        saved = saved,
+        onShared = { exporting.toShared(leaving.files) },
+        onShare = { context.startActivity(exporting.shareIntent(leaving.files)) },
+        onClose = exporting::forget,
+    )
 }
 
 /**

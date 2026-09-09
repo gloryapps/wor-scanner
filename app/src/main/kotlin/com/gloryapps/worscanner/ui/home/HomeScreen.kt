@@ -6,7 +6,6 @@ import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.provider.Settings
-import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -48,6 +47,7 @@ import com.gloryapps.worscanner.BuildConfig
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.CaptureService
 import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Accented
 import com.gloryapps.worscanner.ui.Card
@@ -57,7 +57,6 @@ import com.gloryapps.worscanner.ui.Edged
 import com.gloryapps.worscanner.ui.ExportSheet
 import com.gloryapps.worscanner.ui.Inline
 import com.gloryapps.worscanner.ui.Link
-import com.gloryapps.worscanner.ui.Outgoing
 import com.gloryapps.worscanner.ui.Panel
 import com.gloryapps.worscanner.ui.Pill
 import com.gloryapps.worscanner.ui.Rule
@@ -69,9 +68,6 @@ import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.label
 import org.koin.compose.viewmodel.koinViewModel
 
-/** What the home screen sends the reader to the system for. */
-enum class Grant { ACCESSIBILITY, OVERLAY }
-
 /**
  * Where a scan is started and what it left is found, wired to the service, the system and the store.
  * What it draws is `Home`, which knows none of them.
@@ -79,9 +75,8 @@ enum class Grant { ACCESSIBILITY, OVERLAY }
 @Composable
 fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val saved by viewModel.exporting.saved.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var exporting by remember { mutableStateOf<Outgoing?>(null) }
+    var deleting by remember { mutableStateOf<Kept?>(null) }
 
     LifecycleResumeEffect(Unit) {
         viewModel.returned()
@@ -92,37 +87,35 @@ fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = koinViewMod
         val data = it.data
         if (it.resultCode == Activity.RESULT_OK && data != null) CaptureService.start(context, it.resultCode, data)
     }
-    Home(
-        state = state,
-        onGrant = {
-            when (it) {
-                Grant.ACCESSIBILITY -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                Grant.OVERLAY -> context.startActivity(
-                    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
-                )
-            }
-        },
-        onStart = { projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent()) },
-        onStop = { CaptureService.stop(context) },
-        onKind = viewModel::choose,
-        onReading = onReading,
-        onExport = { exporting = it.outgoing(context) },
-        onExportAll = { exporting = state.readings.outgoing(context) },
-        onDelete = viewModel::delete,
-    )
+    Home(state) { intent ->
+        when (intent) {
+            HomeIntent.GrantAccessibility -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            HomeIntent.GrantOverlay -> context.startActivity(
+                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
+            )
+            HomeIntent.Start -> projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
+            HomeIntent.Stop -> CaptureService.stop(context)
+            is HomeIntent.Choose -> viewModel.choose(intent.kind)
+            is HomeIntent.Open -> onReading(intent.kept)
+            is HomeIntent.Export -> viewModel.exporting.begin(intent.kept.outgoing(context))
+            HomeIntent.ExportAll -> viewModel.exporting.begin(state.readings.outgoing(context))
+            is HomeIntent.Delete -> deleting = intent.kept
+        }
+    }
 
-    exporting?.let { outgoing ->
-        ExportSheet(
-            outgoing = outgoing,
-            saved = saved,
-            onShared = { viewModel.exporting.toShared(outgoing.files) },
-            onShare = { context.startActivity(viewModel.exporting.shareIntent(outgoing.files)) },
-            onClose = {
-                exporting = null
-                viewModel.exporting.forget()
+    deleting?.let { kept ->
+        Confirm(
+            title = stringResource(R.string.home_delete_title),
+            said = stringResource(R.string.home_delete_said),
+            confirm = stringResource(R.string.home_delete_yes),
+            onConfirm = {
+                viewModel.delete(kept)
+                deleting = null
             },
+            onCancel = { deleting = null },
         )
     }
+    ExportSheet(viewModel.exporting)
 }
 
 /**
@@ -130,26 +123,12 @@ fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = koinViewMod
  * screen is wide enough for them, one where it is not.
  */
 @Composable
-internal fun Home(
-    state: HomeState,
-    onGrant: (Grant) -> Unit,
-    onStart: () -> Unit,
-    onStop: () -> Unit,
-    onKind: (Kind) -> Unit,
-    onReading: (Kept) -> Unit,
-    onExport: (Kept) -> Unit,
-    onExportAll: () -> Unit,
-    onDelete: (Kept) -> Unit,
-) {
-    var deleting by remember { mutableStateOf<Kept?>(null) }
-
+internal fun Home(state: HomeState, onIntent: (HomeIntent) -> Unit) {
     Column(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) {
-        Header(state)
+        Header(state.running)
         BoxWithConstraints(Modifier.weight(1f)) {
-            val start: @Composable () -> Unit = { Start(state, onGrant, onStart, onStop, onKind) }
-            val kept: @Composable () -> Unit = {
-                Readings(state.readings, onReading, onExport, { deleting = it }, onExportAll)
-            }
+            val start: @Composable () -> Unit = { Start(state, onIntent) }
+            val kept: @Composable () -> Unit = { Readings(state.readings, onIntent) }
 
             if (maxWidth >= WIDE) {
                 Row(Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 22.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -167,23 +146,10 @@ internal fun Home(
             }
         }
     }
-
-    deleting?.let { kept ->
-        Confirm(
-            title = stringResource(R.string.home_delete_title),
-            said = stringResource(R.string.home_delete_said),
-            confirm = stringResource(R.string.home_delete_yes),
-            onConfirm = {
-                onDelete(kept)
-                deleting = null
-            },
-            onCancel = { deleting = null },
-        )
-    }
 }
 
 @Composable
-private fun Header(state: HomeState) {
+private fun Header(running: ScanState.Running?) {
     Column {
         Row(
             Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 24.dp),
@@ -195,7 +161,7 @@ private fun Header(state: HomeState) {
                 Text(stringResource(R.string.app_name), style = Lettering.brand, color = Colors.text)
                 Text(BuildConfig.VERSION_NAME, style = Lettering.dataSmall, color = Colors.muted)
             }
-            state.running?.let {
+            running?.let {
                 Text(
                     "${stringResource(it.kind.label)} ${it.progress.done}/${it.progress.held}",
                     style = Lettering.dataSmall,
@@ -209,13 +175,13 @@ private fun Header(state: HomeState) {
 
 /** The grants, the scan and the kind it will read: everything that happens before a scan runs. */
 @Composable
-private fun Start(state: HomeState, onGrant: (Grant) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onKind: (Kind) -> Unit) {
+private fun Start(state: HomeState, onIntent: (HomeIntent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Section(stringResource(R.string.home_permissions))
         Card(Modifier.fillMaxWidth()) {
-            Given(stringResource(R.string.home_accessibility), state.accessibilityOn) { onGrant(Grant.ACCESSIBILITY) }
+            Given(stringResource(R.string.home_accessibility), state.accessibilityOn) { onIntent(HomeIntent.GrantAccessibility) }
             Rule()
-            Given(stringResource(R.string.home_overlay), state.overlayAllowed) { onGrant(Grant.OVERLAY) }
+            Given(stringResource(R.string.home_overlay), state.overlayAllowed) { onIntent(HomeIntent.GrantOverlay) }
         }
     }
 
@@ -226,16 +192,21 @@ private fun Start(state: HomeState, onGrant: (Grant) -> Unit, onStart: () -> Uni
         }
         if (state.capturing) {
             Text(stringResource(R.string.home_capturing), style = Lettering.body, color = Colors.accent)
-            Edged(stringResource(R.string.home_stop), onClick = onStop)
+            Edged(stringResource(R.string.home_stop), onClick = { onIntent(HomeIntent.Stop) })
         } else {
-            Accented(stringResource(R.string.home_start), said = stringResource(R.string.home_to_game), enabled = state.ready, onClick = onStart)
+            Accented(
+                stringResource(R.string.home_start),
+                said = stringResource(R.string.home_to_game),
+                enabled = state.ready,
+                onClick = { onIntent(HomeIntent.Start) },
+            )
         }
     }
 
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.home_kinds), style = Lettering.dataSmall, color = Colors.muted)
         Kind.entries.forEach { each ->
-            Pill(stringResource(each.label), chosen = each == state.kind, onClick = { onKind(each) })
+            Pill(stringResource(each.label), chosen = each == state.kind, onClick = { onIntent(HomeIntent.Choose(each)) })
         }
     }
 }
@@ -262,17 +233,11 @@ private fun Given(label: String, given: Boolean, onGrant: () -> Unit) {
 
 /** Everything kept on the device, newest first, each with the way out beside it. */
 @Composable
-private fun Readings(
-    readings: List<Kept>,
-    onReading: (Kept) -> Unit,
-    onExport: (Kept) -> Unit,
-    onDelete: (Kept) -> Unit,
-    onExportAll: () -> Unit,
-) {
+private fun Readings(readings: List<Kept>, onIntent: (HomeIntent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Section(stringResource(R.string.home_readings))
-            if (readings.isNotEmpty()) Link(stringResource(R.string.home_export_all), onClick = onExportAll)
+            if (readings.isNotEmpty()) Link(stringResource(R.string.home_export_all), onClick = { onIntent(HomeIntent.ExportAll) })
         }
 
         Panel(Modifier.fillMaxWidth()) {
@@ -281,7 +246,7 @@ private fun Readings(
             }
             readings.forEachIndexed { at, kept ->
                 if (at > 0) Rule()
-                Reading(kept, newest = at == 0, onOpen = { onReading(kept) }, onExport = { onExport(kept) }, onDelete = { onDelete(kept) })
+                Reading(kept, newest = at == 0, onIntent)
             }
             if (readings.isNotEmpty()) {
                 Rule()
@@ -292,13 +257,13 @@ private fun Readings(
 }
 
 @Composable
-private fun Reading(kept: Kept, newest: Boolean, onOpen: () -> Unit, onExport: () -> Unit, onDelete: () -> Unit) {
+private fun Reading(kept: Kept, newest: Boolean, onIntent: (HomeIntent) -> Unit) {
     val context = LocalContext.current
     Row(
         Modifier
             .fillMaxWidth()
             .background(if (newest) Colors.accentWash else Colors.raised)
-            .clickable(onClick = onOpen)
+            .clickable { onIntent(HomeIntent.Open(kept)) }
             .padding(horizontal = 16.dp, vertical = 13.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -309,11 +274,11 @@ private fun Reading(kept: Kept, newest: Boolean, onOpen: () -> Unit, onExport: (
             kept.detail?.let { Text(it, style = Lettering.caption, color = Colors.warning, maxLines = 2) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Link(stringResource(R.string.home_delete), onClick = onDelete)
+            Link(stringResource(R.string.home_delete), onClick = { onIntent(HomeIntent.Delete(kept)) })
             if (newest) {
-                Inline(stringResource(R.string.home_export), accented = true, onClick = onExport)
+                Inline(stringResource(R.string.home_export), accented = true, onClick = { onIntent(HomeIntent.Export(kept)) })
             } else {
-                Link(stringResource(R.string.home_export), onClick = onExport)
+                Link(stringResource(R.string.home_export), onClick = { onIntent(HomeIntent.Export(kept)) })
             }
             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, Modifier.size(15.dp), tint = Colors.muted)
         }

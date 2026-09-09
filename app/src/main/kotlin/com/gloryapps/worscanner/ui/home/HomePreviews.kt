@@ -26,24 +26,24 @@ private val READY = HomeState(
 @Preview(name = "Home · before a scan", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun HomePreview() {
-    ScannerTheme { Home(READY, { }, { }, { }, { }, { }, { }, { }, { }) }
+    ScannerTheme { Home(READY) { } }
 }
 
 @Preview(name = "Home · scanning", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun HomeScanningPreview() {
     val state = READY.copy(capturing = true, running = ScanState.Running(Kind.GEAR, Progress(1204, 2500)))
-    ScannerTheme { Home(state, { }, { }, { }, { }, { }, { }, { }, { }) }
+    ScannerTheme { Home(state) { } }
 }
 
 @Preview(name = "Home · nothing granted, nothing kept", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun HomeEmptyPreview() {
-    ScannerTheme { Home(HomeState(), { }, { }, { }, { }, { }, { }, { }, { }) }
+    ScannerTheme { Home(HomeState()) { } }
 }
 
 @Preview(name = "Home · portrait", widthDp = TALL_W, heightDp = TALL_H)
 @Composable
 private fun HomePortraitPreview() {
-    ScannerTheme { Home(READY, { }, { }, { }, { }, { }, { }, { }, { }) }
+    ScannerTheme { Home(READY) { } }
 }

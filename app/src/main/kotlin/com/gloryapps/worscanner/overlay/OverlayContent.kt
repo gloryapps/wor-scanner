@@ -50,7 +50,6 @@ import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
 import com.gloryapps.worscanner.ui.Colors
-import com.gloryapps.worscanner.ui.ScannerTheme
 import com.gloryapps.worscanner.ui.Lettering
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -71,20 +70,18 @@ fun OverlayContent(
     val context = LocalContext.current
     val state by scanning.state.collectAsStateWithLifecycle()
 
-    ScannerTheme {
-        Capsule(
-            state = state,
-            onOpen = onOpen,
-            onStop = { CaptureService.stopScan(context) },
-            onView = { context.openApp() },
-            modifier = Modifier.pointerInput(Unit) {
-                detectDragGestures(onDragStart = { onDragStart() }, onDragEnd = onDragEnd, onDragCancel = onDragEnd) { change, dragged ->
-                    change.consume()
-                    onDrag(dragged.x, dragged.y)
-                }
-            },
-        )
-    }
+    Capsule(
+        state = state,
+        onOpen = onOpen,
+        onStop = { CaptureService.stopScan(context) },
+        onView = { context.openApp() },
+        modifier = Modifier.pointerInput(Unit) {
+            detectDragGestures(onDragStart = { onDragStart() }, onDragEnd = onDragEnd, onDragCancel = onDragEnd) { change, dragged ->
+                change.consume()
+                onDrag(dragged.x, dragged.y)
+            }
+        },
+    )
 }
 
 /**
@@ -104,27 +101,25 @@ fun SheetContent(
     val state by scanning.state.collectAsStateWithLifecycle()
     val kind by chosen.kind.collectAsStateWithLifecycle(Chosen.FIRST)
 
-    ScannerTheme {
-        Sheet(
-            running = state is ScanState.Running,
-            onScan = {
-                if (state is ScanState.Running) CaptureService.stopScan(context) else CaptureService.scan(context, kind)
-                onDone()
-            },
-            onRead = {
-                onDone()
-                scope.launch {
-                    val said = readScreen.now(kind).fold(
-                        onSuccess = { resources.getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
-                        onFailure = { resources.getString(R.string.overlay_read_failed, it.message) },
-                    )
-                    Toast.makeText(context, said, Toast.LENGTH_LONG).show()
-                }
-            },
-            onApp = { context.openApp() },
-            onClose = { CaptureService.stop(context) },
-        )
-    }
+    Sheet(
+        running = state is ScanState.Running,
+        onScan = {
+            if (state is ScanState.Running) CaptureService.stopScan(context) else CaptureService.scan(context, kind)
+            onDone()
+        },
+        onRead = {
+            onDone()
+            scope.launch {
+                val said = readScreen.now(kind).fold(
+                    onSuccess = { resources.getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
+                    onFailure = { resources.getString(R.string.overlay_read_failed, it.message) },
+                )
+                Toast.makeText(context, said, Toast.LENGTH_LONG).show()
+            }
+        },
+        onApp = { context.openApp() },
+        onClose = { CaptureService.stop(context) },
+    )
 }
 
 @Composable

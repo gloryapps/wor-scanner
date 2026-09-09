@@ -8,16 +8,24 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** The two doors out of the app and what the last one said, for every screen that can export. */
+/** What a screen has on its way out, the two doors it can leave by and what the last one said. */
 class Exporting(private val exports: Exports) {
+    private val _outgoing = MutableStateFlow<Outgoing?>(null)
+    val outgoing: StateFlow<Outgoing?> = _outgoing.asStateFlow()
+
     private val _saved = MutableStateFlow<Saved?>(null)
     val saved: StateFlow<Saved?> = _saved.asStateFlow()
+
+    fun begin(outgoing: Outgoing) {
+        _outgoing.value = outgoing
+    }
 
     fun toShared(files: List<Outbound>) = save { exports.toShared(files) }
 
     fun shareIntent(files: List<Outbound>): Intent = exports.shareIntent(files)
 
     fun forget() {
+        _outgoing.value = null
         _saved.value = null
     }
 

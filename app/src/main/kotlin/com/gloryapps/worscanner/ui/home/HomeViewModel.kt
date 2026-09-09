@@ -30,6 +30,27 @@ data class HomeState(
     val ready: Boolean get() = accessibilityOn && overlayAllowed
 }
 
+/** What the home screen is asked for; the screen routes each to the system, the service, the store or the stack. */
+sealed interface HomeIntent {
+    data object GrantAccessibility : HomeIntent
+
+    data object GrantOverlay : HomeIntent
+
+    data object Start : HomeIntent
+
+    data object Stop : HomeIntent
+
+    data class Choose(val kind: Kind) : HomeIntent
+
+    data class Open(val kept: Kept) : HomeIntent
+
+    data class Export(val kept: Kept) : HomeIntent
+
+    data object ExportAll : HomeIntent
+
+    data class Delete(val kept: Kept) : HomeIntent
+}
+
 class HomeViewModel(
     session: CaptureSession,
     scanning: Scanning,

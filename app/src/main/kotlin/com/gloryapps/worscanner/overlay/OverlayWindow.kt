@@ -15,6 +15,7 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.gloryapps.worscanner.ui.ScannerTheme
 import kotlin.math.hypot
 
 /**
@@ -44,7 +45,7 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
     fun show() {
         savedState.performRestore(null)
         registry.currentState = Lifecycle.State.RESUMED
-        hairline = compose { Hairline() }.also { manager.addView(it, hairlineParams) }
+        hairline = compose { HairlineContent() }.also { manager.addView(it, hairlineParams) }
         strip = compose {
             OverlayContent(onOpen = ::toggleSheet, onDrag = ::moveBy, onDragStart = ::held, onDragEnd = ::dropped)
         }.also { manager.addView(it, params) }
@@ -161,7 +162,7 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
     private fun compose(content: @Composable () -> Unit) = ComposeView(context).apply {
         setViewTreeLifecycleOwner(this@OverlayWindow)
         setViewTreeSavedStateRegistryOwner(this@OverlayWindow)
-        setContent(content)
+        setContent { ScannerTheme(content) }
     }
 
     private fun layout(gravity: Int, touchable: Boolean = true) = WindowManager.LayoutParams(

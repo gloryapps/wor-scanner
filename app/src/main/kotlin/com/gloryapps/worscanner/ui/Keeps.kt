@@ -24,7 +24,7 @@ fun Kept.outgoing(context: Context): Outgoing {
     val leaving = outbound()
 
     return Outgoing(
-        name = leaving.firstOrNull { it.file.extension == "json" }?.name ?: exportName(),
+        name = outgoingName(),
         files = leaving,
         holds = buildList {
             kind?.let { add(context.getString(R.string.export_kind) to context.getString(it.label)) }
@@ -34,6 +34,9 @@ fun Kept.outgoing(context: Context): Outgoing {
         },
     )
 }
+
+/** The name the JSON leaves under, which is what the reading screen calls the file. */
+fun Kept.outgoingName(): String = outbound().firstOrNull { it.file.extension == "json" }?.name ?: exportName()
 
 /** Every reading at once, which is what `export all` sends. */
 fun List<Kept>.outgoing(context: Context): Outgoing = Outgoing(

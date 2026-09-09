@@ -42,24 +42,36 @@ private val OPENED = ReadingState(kept = SCANNED, kind = Kind.GEAR, pieces = PIE
 @Preview(name = "Reading · a piece", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun ReadingPreview() {
-    ScannerTheme { Reading(OPENED, { }, { }, { }, { }) }
+    ScannerTheme { Reading(OPENED) { } }
 }
 
 @Preview(name = "Reading · the file as written", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun ReadingFilePreview() {
-    ScannerTheme { Reading(OPENED.copy(showing = Showing.FILE), { }, { }, { }, { }) }
+    ScannerTheme { Reading(OPENED.copy(showing = Showing.FILE)) { } }
 }
 
 @Preview(name = "Reading · a scan that read nothing", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun ReadingEmptyPreview() {
     val state = ReadingState(kept = STOPPED, kind = Kind.GEAR, file = CARD, showing = Showing.FILE)
-    ScannerTheme { Reading(state, { }, { }, { }, { }) }
+    ScannerTheme { Reading(state) { } }
+}
+
+@Preview(name = "Reading · a piece the reader did not close", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ReadingOpenPreview() {
+    ScannerTheme { Reading(OPENED.copy(chosen = 4)) { } }
 }
 
 @Preview(name = "Reading · portrait, the list", widthDp = TALL_W, heightDp = TALL_H)
 @Composable
 private fun ReadingPortraitPreview() {
-    ScannerTheme { Reading(OPENED, { }, { }, { }, { }) }
+    ScannerTheme { Reading(OPENED) { } }
+}
+
+@Preview(name = "Reading · portrait, a piece", widthDp = TALL_W, heightDp = TALL_H)
+@Composable
+private fun ReadingPortraitPiecePreview() {
+    ScannerTheme { Reading(OPENED.copy(chosen = 4, opened = true)) { } }
 }

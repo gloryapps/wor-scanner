@@ -17,16 +17,23 @@ import com.gloryapps.worscanner.scan.Scanning
 import com.gloryapps.worscanner.ui.Colors
 import org.koin.compose.koinInject
 
+/** The hairline's window, wired to the scan under way. */
+@Composable
+fun HairlineContent(scanning: Scanning = koinInject()) {
+    val state by scanning.state.collectAsStateWithLifecycle()
+
+    Hairline(state)
+}
+
 /**
  * How far the scan is, as a rule across the top of the screen. It reads, it is never touched, and
  * it stays at the top wherever the capsule is dragged.
  */
 @Composable
-fun Hairline(scanning: Scanning = koinInject()) {
-    val state by scanning.state.collectAsStateWithLifecycle()
-    val filled = when (val held = state) {
+internal fun Hairline(state: ScanState) {
+    val filled = when (state) {
         ScanState.Idle -> 0f
-        is ScanState.Running -> if (held.progress.held > 0) held.progress.done.toFloat() / held.progress.held else 0f
+        is ScanState.Running -> if (state.progress.held > 0) state.progress.done.toFloat() / state.progress.held else 0f
         is ScanState.Ended -> 1f
     }
     val grown by animateFloatAsState(filled, label = "hairline")
