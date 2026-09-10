@@ -1,7 +1,11 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinxSerialization)
+    alias(libs.plugins.googleServices)
+    alias(libs.plugins.firebaseCrashlytics)
 }
 
 android {
@@ -36,6 +40,9 @@ android {
             signingConfig = signingConfigs.findByName("release")
             optimization {
                 enable = true
+            }
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = true
             }
         }
     }
@@ -78,6 +85,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.playServices)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.mlkit.textRecognition)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.junit)

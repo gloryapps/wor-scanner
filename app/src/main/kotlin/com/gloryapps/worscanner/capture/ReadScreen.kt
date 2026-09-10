@@ -1,5 +1,6 @@
 package com.gloryapps.worscanner.capture
 
+import com.gloryapps.worscanner.report.CrashReports
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.kinds.Scannable
 import com.gloryapps.worscanner.scanner.resultOf
@@ -12,10 +13,11 @@ class ReadScreen(
     private val session: CaptureSession,
     private val reader: TextReader,
     private val readings: Readings,
+    private val reports: CrashReports,
 ) {
     class Read(val kept: Kept, val lines: Int)
 
-    suspend fun now(kind: Kind): Result<Read> = resultOf { now(kind, kind.scannable()) }
+    suspend fun now(kind: Kind): Result<Read> = resultOf { now(kind, kind.scannable()) }.onFailure { reports.failed("read of ${kind.id}", it) }
 
     private suspend fun <T> now(kind: Kind, scannable: Scannable<T>): Read {
         val screen = checkNotNull(session.screen.value) { "no capture session" }

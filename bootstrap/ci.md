@@ -4,7 +4,9 @@
 
 ## Verification
 
-`.github/workflows/ci.yml` runs `./gradlew test` on every push to `dev` and on every pull request.
+Tests run locally, `./gradlew test`, before a push; nothing runs on a push. The release workflow runs
+them again before it builds, so a release never ships over a red test, and Actions minutes are spent
+only there.
 
 ## Release
 
@@ -46,3 +48,12 @@ gh secret set KEYSTORE_PASSWORD
 gh secret set KEY_ALIAS --body wor-scanner
 gh secret set KEY_PASSWORD
 ```
+
+## Crashes
+
+Release builds report crashes to Firebase Crashlytics; debug builds do not (`WorScannerApp` turns
+collection off). The Firebase project is `wor-scanner`, with two Android apps registered, package
+`com.gloryapps.worscanner` and `com.gloryapps.worscanner.debug`, since the Google services plugin
+refuses a build whose application id the file does not name. Its `app/google-services.json` is
+committed: the keys in it are client keys, restricted by package. On `assembleRelease` the
+Crashlytics plugin uploads the R8 `mapping.txt`, so crashes arrive already retraced.

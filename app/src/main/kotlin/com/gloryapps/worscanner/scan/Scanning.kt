@@ -3,6 +3,7 @@ package com.gloryapps.worscanner.scan
 import android.content.Context
 import com.gloryapps.worscanner.capture.BitmapFrame
 import com.gloryapps.worscanner.capture.CaptureSession
+import com.gloryapps.worscanner.report.CrashReports
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.kinds.Scannable
 import com.gloryapps.worscanner.scanner.scan.Outcome
@@ -32,6 +33,7 @@ class Scanning(
     private val session: CaptureSession,
     private val touch: TouchState,
     private val reader: TextReader,
+    private val reports: CrashReports,
 ) {
     private val _state = MutableStateFlow<ScanState>(ScanState.Idle)
     val state: StateFlow<ScanState> = _state.asStateFlow()
@@ -44,6 +46,7 @@ class Scanning(
         val hand = checkNotNull(touch.hand.value) { "accessibility service not bound" }
         val writer = ScanWriter(context, kind, scannable)
         val first = screen.capture() as BitmapFrame
+        reports.scanning(kind, first)
 
         val entries = mutableListOf<ScanEntry<T>>()
         var outcome: Outcome<T>? = null
@@ -54,6 +57,7 @@ class Scanning(
         } finally {
             /* A cancelled scan ends by its exception; what it read before is still worth writing. */
             val ended = outcome ?: Outcome.Stopped(Outcome.Reason.CANCELLED, entries, "stopped by the user")
+            reports.ended(kind, ended)
             _state.value = ScanState.Ended(kind, ended, writer.write(first, ended))
         }
     }
