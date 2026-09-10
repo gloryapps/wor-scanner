@@ -52,7 +52,7 @@ gh secret set KEY_PASSWORD
 ## Crashes
 
 Release builds report crashes to Firebase Crashlytics; debug builds do not (`WorScannerApp` turns
-collection off). The Firebase project is `wor-scanner`, with two Android apps registered, package
+collection off). The Firebase project is `wor-scanner-9914f`, with two Android apps registered, package
 `com.gloryapps.worscanner` and `com.gloryapps.worscanner.debug`, since the Google services plugin
 refuses a build whose application id the file does not name. Its `app/google-services.json` is
 committed: the keys in it are client keys, restricted by package. On `assembleRelease` the
