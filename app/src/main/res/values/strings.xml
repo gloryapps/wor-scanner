@@ -41,6 +41,10 @@
     <string name="export_entries">Pieces</string>
     <string name="export_outcome">Scan</string>
     <string name="export_size">Size</string>
+    <string name="export_panels">Panels</string>
+    <string name="export_frame">Frame</string>
+    <string name="export_frame_read">the screen it was read from</string>
+    <string name="export_frame_first">the screen it looked at, nothing was read</string>
     <string name="export_readings">Readings</string>
     <string name="export_shared">Save to Shared Folder</string>
     <string name="export_share">Share…</string>
@@ -85,8 +89,12 @@
         <item quantity="other">%1$d pieces</item>
     </plurals>
     <plurals name="reading_open">
-        <item quantity="one">%1$d piece the reader did not close</item>
-        <item quantity="other">%1$d pieces the reader did not close</item>
+        <item quantity="one">%1$d piece not fully read</item>
+        <item quantity="other">%1$d pieces not fully read</item>
+    </plurals>
+    <plurals name="export_open">
+        <item quantity="one">%1$d, a panel the reader could not fully read</item>
+        <item quantity="other">%1$d, panels the reader could not fully read</item>
     </plurals>
     <plurals name="export_saved">
         <item quantity="one">Saved, %1$d file</item>

@@ -30,9 +30,22 @@ fun Kept.outgoing(context: Context): Outgoing {
             kind?.let { add(context.getString(R.string.export_kind) to context.getString(it.label)) }
             entries?.let { add(context.getString(R.string.export_entries) to "$it") }
             outcome?.let { add(context.getString(R.string.export_outcome) to ended(context)) }
+            images(context)?.let(::add)
             add(context.getString(R.string.export_size) to Formatter.formatShortFileSize(context, weight()))
         },
     )
+}
+
+/** Why images travel with the JSON, said in the sheet so nobody wonders what the PNGs beside it are. */
+private fun Kept.images(context: Context): Pair<String, String>? {
+    val panels = files.count { it.extension == "png" }
+
+    return when {
+        panels == 0 -> null
+        form == "reading" -> context.getString(R.string.export_frame) to context.getString(R.string.export_frame_read)
+        entries == 0 -> context.getString(R.string.export_frame) to context.getString(R.string.export_frame_first)
+        else -> context.getString(R.string.export_panels) to context.resources.getQuantityString(R.plurals.export_open, panels, panels)
+    }
 }
 
 /** The name the JSON leaves under, which is what the reading screen calls the file. */
