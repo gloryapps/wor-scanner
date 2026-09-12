@@ -1,5 +1,7 @@
 package com.gloryapps.worscanner.ui
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -17,18 +19,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -55,9 +56,15 @@ fun ExportSheet(export: ExportDelegate) {
     val context = LocalContext.current
     val leaving = outgoing ?: return
 
+    LaunchedEffect(saved) {
+        val landed = saved as? Saved.Into ?: return@LaunchedEffect
+        Toast.makeText(context, context.said(landed), Toast.LENGTH_LONG).show()
+        export.forget()
+    }
+
     ExportSheet(
         outgoing = leaving,
-        saved = saved,
+        failed = saved as? Saved.Failed,
         onShared = { export.toShared(leaving.files) },
         onShare = { context.startActivity(export.shareIntent(leaving.files)) },
         onClose = export::forget,
@@ -66,12 +73,12 @@ fun ExportSheet(export: ExportDelegate) {
 
 /**
  * The one way out of the app, wherever export was pressed: the file that goes, what it holds, and
- * the two doors it can leave by. It stays open after a save, saying where the file landed.
+ * the two doors it can leave by. It closes once the file has landed, and stays open to say why it did not.
  */
 @Composable
 fun ExportSheet(
     outgoing: Outgoing,
-    saved: Saved?,
+    failed: Saved.Failed?,
     onShared: () -> Unit,
     onShare: () -> Unit,
     onClose: () -> Unit,
@@ -135,12 +142,11 @@ fun ExportSheet(
                         }
                     }
                 }
-
-                if (saved != null) Landed(saved)
             }
             Rule()
 
             Column(Modifier.padding(horizontal = 22.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (failed != null) Landed(failed)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Accented(stringResource(R.string.export_shared), Modifier.weight(1f), onClick = onShared)
                     Edged(stringResource(R.string.export_share), onClick = onShare)
@@ -151,36 +157,24 @@ fun ExportSheet(
     }
 }
 
-/** Where the file went, said in the sheet rather than in a message that comes and goes. */
+private fun Context.said(landed: Saved.Into): String =
+    resources.getQuantityString(R.plurals.export_saved, landed.files, landed.files) + "\n" + landed.folder
+
+/** Why the file did not land, pinned beside the buttons so it is seen whether or not the sheet scrolls. */
 @Composable
-private fun Landed(saved: Saved) {
-    val failed = saved is Saved.Failed
+private fun Landed(failed: Saved.Failed) {
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .border(1.dp, if (failed) Colors.hairline else Colors.accentEdge, RoundedCornerShape(10.dp))
+            .border(1.dp, Colors.hairline, RoundedCornerShape(10.dp))
             .padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            Modifier.size(30.dp).border(1.dp, if (failed) Colors.warning else Colors.accent, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                if (failed) Icons.Default.Close else Icons.Default.Check,
-                contentDescription = null,
-                Modifier.size(15.dp),
-                tint = if (failed) Colors.warning else Colors.accent,
-            )
+        Box(Modifier.size(30.dp).border(1.dp, Colors.warning, CircleShape), contentAlignment = Alignment.Center) {
+            Icon(Icons.Default.Close, contentDescription = null, Modifier.size(15.dp), tint = Colors.warning)
         }
-        when (saved) {
-            is Saved.Into -> Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(pluralStringResource(R.plurals.export_saved, saved.files, saved.files), style = Lettering.body, color = Colors.text)
-                Text(saved.folder, style = Lettering.dataSmall, color = Colors.muted)
-            }
-            is Saved.Failed -> Text(saved.why, style = Lettering.body, color = Colors.muted)
-        }
+        Text(failed.why, style = Lettering.body, color = Colors.muted)
     }
 }

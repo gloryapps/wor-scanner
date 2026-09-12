@@ -115,7 +115,7 @@ private fun ExportSheetPreview() {
                 files = SCANNED.outbound(),
                 holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Scan" to "complete", "Size" to "318 kB"),
             ),
-            saved = null,
+            failed = null,
             onShared = { },
             onShare = { },
             onClose = { },
@@ -137,24 +137,6 @@ private fun ConfirmPreview() {
     }
 }
 
-@Preview(name = "Export sheet · saved", widthDp = 560, heightDp = 620)
-@Composable
-private fun ExportSheetSavedPreview() {
-    ScannerTheme {
-        ExportSheet(
-            outgoing = Outgoing(
-                name = "wor-gear-20260907-130841.json",
-                files = SCANNED.outbound(),
-                holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Size" to "318 kB"),
-            ),
-            saved = Saved.Into("/mnt/shared/Pictures/WoR Scanner", 2),
-            onShared = { },
-            onShare = { },
-            onClose = { },
-        )
-    }
-}
-
 @Preview(name = "Export sheet · failed", widthDp = 560, heightDp = 620)
 @Composable
 private fun ExportSheetFailedPreview() {
@@ -165,7 +147,7 @@ private fun ExportSheetFailedPreview() {
                 files = SCANNED.outbound(),
                 holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Size" to "318 kB"),
             ),
-            saved = Saved.Failed("Pictures is not writable on this device"),
+            failed = Saved.Failed("Pictures is not writable on this device"),
             onShared = { },
             onShare = { },
             onClose = { },
