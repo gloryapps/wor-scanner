@@ -5,6 +5,11 @@
 
     <string name="kind_gear">Gear</string>
 
+    <string name="emulator_ldplayer">LDPlayer</string>
+    <string name="emulator_ldplayer_pc">On Windows: Documents\\LDPlayer\\Pictures\\WoR Scanner</string>
+    <string name="emulator_bluestacks">BlueStacks</string>
+    <string name="emulator_bluestacks_pc">On Windows: ProgramData\\BlueStacks_nxt\\Engine\\UserData\\SharedFolder\\WoR Scanner</string>
+
     <string name="home_permissions">Permissions</string>
     <string name="home_accessibility">Accessibility service</string>
     <string name="home_overlay">Draw over other apps</string>
@@ -46,6 +51,8 @@
     <string name="export_frame_read">the screen it was read from</string>
     <string name="export_frame_first">the screen it looked at, nothing was read</string>
     <string name="export_readings">Readings</string>
+    <string name="export_where">Where it lands</string>
+    <string name="export_no_shared">No emulator folder on this device. Share… hands the file to another app.</string>
     <string name="export_shared">Save to Shared Folder</string>
     <string name="export_share">Share…</string>
     <string name="export_note">This is the file you open in Import a Scan in WoR Lab.</string>

@@ -37,6 +37,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Outbound
+import com.gloryapps.worscanner.capture.SharedFolder
 
 /** What one press of export puts on its way out, each file under the name it lands by, and what the sheet says it holds. */
 data class Outgoing(val name: String, val files: List<Outbound>, val holds: List<Pair<String, String>>)
@@ -53,6 +54,7 @@ sealed interface Saved {
 fun ExportSheet(export: ExportDelegate) {
     val outgoing by export.outgoing.collectAsStateWithLifecycle()
     val saved by export.saved.collectAsStateWithLifecycle()
+    val into by export.into.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val leaving = outgoing ?: return
 
@@ -65,6 +67,9 @@ fun ExportSheet(export: ExportDelegate) {
     ExportSheet(
         outgoing = leaving,
         failed = saved as? Saved.Failed,
+        shared = export.shared,
+        into = into,
+        onChoose = export::choose,
         onShared = { export.toShared(leaving.files) },
         onShare = { context.startActivity(export.shareIntent(leaving.files)) },
         onClose = export::forget,
@@ -79,6 +84,9 @@ fun ExportSheet(export: ExportDelegate) {
 fun ExportSheet(
     outgoing: Outgoing,
     failed: Saved.Failed?,
+    shared: List<SharedFolder>,
+    into: SharedFolder?,
+    onChoose: (SharedFolder) -> Unit,
     onShared: () -> Unit,
     onShare: () -> Unit,
     onClose: () -> Unit,
@@ -133,6 +141,11 @@ fun ExportSheet(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Section(stringResource(R.string.export_where))
+                    Landing(shared, into, onChoose)
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Section(stringResource(R.string.export_holds))
                     outgoing.holds.forEachIndexed { at, (label, value) ->
                         if (at > 0) Rule()
@@ -148,13 +161,30 @@ fun ExportSheet(
             Column(Modifier.padding(horizontal = 22.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (failed != null) Landed(failed)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Accented(stringResource(R.string.export_shared), Modifier.weight(1f), onClick = onShared)
+                    Accented(stringResource(R.string.export_shared), Modifier.weight(1f), enabled = into != null, onClick = onShared)
                     Edged(stringResource(R.string.export_share), onClick = onShare)
                 }
                 Text(stringResource(R.string.export_note), style = Lettering.caption, color = Colors.muted)
             }
         }
     }
+}
+
+/** The emulators this device shares a folder with, the chosen one saying where the PC shows it. */
+@Composable
+private fun Landing(shared: List<SharedFolder>, into: SharedFolder?, onChoose: (SharedFolder) -> Unit) {
+    if (shared.isEmpty()) {
+        Text(stringResource(R.string.export_no_shared), style = Lettering.body, color = Colors.muted)
+
+        return
+    }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        shared.forEach { folder ->
+            Pill(stringResource(folder.emulator.label), chosen = folder == into) { onChoose(folder) }
+        }
+    }
+    into?.let { Text(stringResource(it.emulator.onPc), style = Lettering.data, color = Colors.muted) }
 }
 
 private fun Context.said(landed: Saved.Into): String =

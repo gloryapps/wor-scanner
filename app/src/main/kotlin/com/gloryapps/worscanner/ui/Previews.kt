@@ -16,7 +16,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.gloryapps.worscanner.capture.Emulator
 import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import java.io.File
 
@@ -48,6 +50,9 @@ internal val READ = Kept(
     form = "reading",
     files = listOf(File("20260904-082442.json"), File("20260904-082442.png")),
 )
+
+private val LD_PLAYER = SharedFolder(Emulator.LD_PLAYER, "/mnt/shared/Pictures")
+private val BLUE_STACKS = SharedFolder(Emulator.BLUE_STACKS, "/sdcard/windows/BstSharedFolder")
 
 @Preview(name = "Controls", widthDp = 520, heightDp = 460)
 @Composable
@@ -116,6 +121,9 @@ private fun ExportSheetPreview() {
                 holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Scan" to "complete", "Size" to "318 kB"),
             ),
             failed = null,
+            shared = listOf(LD_PLAYER, BLUE_STACKS),
+            into = LD_PLAYER,
+            onChoose = { },
             onShared = { },
             onShare = { },
             onClose = { },
@@ -147,7 +155,10 @@ private fun ExportSheetFailedPreview() {
                 files = SCANNED.outbound(),
                 holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Size" to "318 kB"),
             ),
-            failed = Saved.Failed("Pictures is not writable on this device"),
+            failed = Saved.Failed("/mnt/shared/Pictures is not writable on this device"),
+            shared = emptyList(),
+            into = null,
+            onChoose = { },
             onShared = { },
             onShare = { },
             onClose = { },
