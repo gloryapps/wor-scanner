@@ -110,14 +110,15 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
   refused. A full run keeps no other image.
 - A scan leaves an emulator by the folder that emulator shares with the PC. `Emulator` holds the mounts
   each one is known by and the file system says which is running: LDPlayer mounts `/mnt/shared/Pictures`,
-  which Windows shows under `Documents\LDPlayer\Pictures`; BlueStacks keeps its Media Manager's Shared
-  Folder at `/sdcard/windows/BstSharedFolder`, shown under
-  `ProgramData\BlueStacks_nxt\Engine\UserData\SharedFolder`. Files land in a `WoR Scanner` folder inside
+  which Windows shows under `Documents\LDPlayer\Pictures`; BlueStacks mounts its Media Manager's Shared
+  Folder at `/mnt/windows/BstSharedFolder`, shown under
+  `ProgramData\BlueStacks_nxt\Engine\UserData\SharedFolder`; it has moved between versions, so the
+  paths under `/sdcard` it used follow, and its own `/mnt/windows` closes the list. Files land in a `WoR Scanner` folder inside
   it, and the export sheet names the emulator it found, says where the PC shows it, and lets a second one
   be chosen over the first.
-- BlueStacks' folder is inside the sdcard, so reaching it needs files access: `MANAGE_EXTERNAL_STORAGE`
-  from API 30, `WRITE_EXTERNAL_STORAGE` below it. LDPlayer's mount is outside the sdcard and needs
-  neither. The sheet asks for the grant only where it found no folder, and looks again on the way back.
+- Neither mount needs a grant, both sitting outside the sdcard. The files access the sheet offers where
+  it found nothing is for the `/sdcard` paths only: `MANAGE_EXTERNAL_STORAGE` from API 30,
+  `WRITE_EXTERNAL_STORAGE` below it.
 - The clipboard does not cross that border, and the two apps are not linked over the network.
 - Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, which
   the home screen picks and the overlay obeys.

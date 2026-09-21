@@ -4,12 +4,19 @@ import java.io.File
 
 /**
  * An emulator whose Android holds a folder the PC sees too: identity, and where that folder is
- * mounted, the current mount first. LDPlayer mounts it outside the sdcard, where the app writes with
- * no grant at all; BlueStacks puts its Shared Folder inside the sdcard, which needs files access.
+ * mounted, the likeliest mount first. Both mount outside the sdcard, where no grant is needed;
+ * BlueStacks moved its Shared Folder between versions, so its own mount `/mnt/windows` closes the list.
  */
 enum class Emulator(val mounts: List<String>) {
     LD_PLAYER(listOf("/mnt/shared/Pictures", "/mnt/shared/Picture")),
-    BLUE_STACKS(listOf("/sdcard/windows/BstSharedFolder", "/sdcard/bstfolder/BstSharedFolder")),
+    BLUE_STACKS(
+        listOf(
+            "/mnt/windows/BstSharedFolder",
+            "/sdcard/windows/BstSharedFolder",
+            "/sdcard/bstfolder/BstSharedFolder",
+            "/mnt/windows",
+        ),
+    ),
 }
 
 /** The folder an emulator shares with the PC as this device has it, which is the shortest way from a scan to the lab. */
