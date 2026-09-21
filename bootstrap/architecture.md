@@ -1,7 +1,7 @@
 # Architecture & code layout
 
 Settled 2026-09-06, kinds added 2026-09-07. A native Android app that scans a Watcher of Realms
-storage on the device it runs on (LDPlayer or a phone), captures each tile's panel, reads it and
+storage on the device it runs on (LDPlayer, BlueStacks or a phone), captures each tile's panel, reads it and
 writes a JSON the azhor lab imports. Gear today; heroes and artifacts are kinds still to add.
 Distributed as an APK on GitHub, not on the Play Store.
 
@@ -108,9 +108,17 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
 - Every entry in the JSON carries the raw OCR lines it was read from.
 - The panel PNG is kept only for a piece the reader did not close: set or slot null, or the card
   refused. A full run keeps no other image.
-- A scan leaves an emulator by the folder it shares with the PC: LDPlayer mounts `/mnt/shared/Pictures`
-  inside Android and shows it under the Windows Documents folder, so "Save to Pictures" writes there.
-  The clipboard does not cross that border, and the two apps are not linked over the network.
+- A scan leaves an emulator by the folder that emulator shares with the PC. `Emulator` holds the mounts
+  each one is known by and the file system says which is running: LDPlayer mounts `/mnt/shared/Pictures`,
+  which Windows shows under `Documents\LDPlayer\Pictures`; BlueStacks keeps its Media Manager's Shared
+  Folder at `/sdcard/windows/BstSharedFolder`, shown under
+  `ProgramData\BlueStacks_nxt\Engine\UserData\SharedFolder`. Files land in a `WoR Scanner` folder inside
+  it, and the export sheet names the emulator it found, says where the PC shows it, and lets a second one
+  be chosen over the first.
+- BlueStacks' folder is inside the sdcard, so reaching it needs files access: `MANAGE_EXTERNAL_STORAGE`
+  from API 30, `WRITE_EXTERNAL_STORAGE` below it. LDPlayer's mount is outside the sdcard and needs
+  neither. The sheet asks for the grant only where it found no folder, and looks again on the way back.
+- The clipboard does not cross that border, and the two apps are not linked over the network.
 - Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, which
   the home screen picks and the overlay obeys.
 - Room enters only if scan history inside the app is ever wanted, and brings the no-destructive-
@@ -157,5 +165,5 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
 - Interview the user to define which game languages the reader must know beyond English. Many
   players run the game in another language; the catalogue's ids stay English and each language
   adds its own words for the same entries.
-- Interview the user to define how a scan leaves the other emulators, BlueStacks first: LDPlayer's
-  shared `/mnt/shared/Pictures` is the only door wired today.
+- Interview the user to define which other emulators to wire. LDPlayer and BlueStacks are the two
+  `Emulator` knows; MEmu and Nox are mounts nobody has measured yet.
