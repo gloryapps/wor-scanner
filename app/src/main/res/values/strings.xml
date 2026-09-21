@@ -53,6 +53,8 @@
     <string name="export_readings">Readings</string>
     <string name="export_where">Where it lands</string>
     <string name="export_no_shared">No emulator folder on this device. Share… hands the file to another app.</string>
+    <string name="export_no_files">BlueStacks keeps the folder it shares with the PC inside the sdcard, where the app needs files access to reach it.</string>
+    <string name="export_grant_files">grant files access</string>
     <string name="export_shared">Save to Shared Folder</string>
     <string name="export_share">Share…</string>
     <string name="export_note">This is the file you open in Import a Scan in WoR Lab.</string>

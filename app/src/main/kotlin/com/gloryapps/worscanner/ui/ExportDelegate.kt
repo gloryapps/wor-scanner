@@ -16,11 +16,15 @@ class ExportDelegate(private val exports: Exports, private val context: Context)
     private val _outgoing = MutableStateFlow<Outgoing?>(null)
     val outgoing: StateFlow<Outgoing?> = _outgoing.asStateFlow()
 
-    /** The shared folders this device has, and the one the next save lands in: the first found until the user says otherwise. */
-    val shared: List<SharedFolder> = exports.shared()
+    private val _shared = MutableStateFlow(exports.shared())
+    val shared: StateFlow<List<SharedFolder>> = _shared.asStateFlow()
 
-    private val _into = MutableStateFlow(shared.firstOrNull())
+    /** The folder the next save lands in: the one found, until the user says otherwise. */
+    private val _into = MutableStateFlow(_shared.value.firstOrNull())
     val into: StateFlow<SharedFolder?> = _into.asStateFlow()
+
+    private val _filesAllowed = MutableStateFlow(exports.filesAllowed())
+    val filesAllowed: StateFlow<Boolean> = _filesAllowed.asStateFlow()
 
     private val _saved = MutableStateFlow<Saved?>(null)
     val saved: StateFlow<Saved?> = _saved.asStateFlow()
@@ -37,11 +41,20 @@ class ExportDelegate(private val exports: Exports, private val context: Context)
         _into.value = shared
     }
 
+    /** Looked at again whenever the sheet comes to the front: a folder appears the moment the system lets the app see it. */
+    fun look() {
+        _filesAllowed.value = exports.filesAllowed()
+        _shared.value = exports.shared()
+        if (_into.value !in _shared.value) _into.value = _shared.value.firstOrNull()
+    }
+
     fun toShared(files: List<Outbound>) = save {
         exports.toShared(_into.value ?: error("no emulator shared folder on this device"), files)
     }
 
     fun shareIntent(files: List<Outbound>): Intent = exports.shareIntent(files)
+
+    fun filesAccessIntent(): Intent = exports.filesAccessIntent()
 
     fun forget() {
         _outgoing.value = null

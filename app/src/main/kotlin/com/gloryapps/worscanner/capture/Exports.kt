@@ -1,10 +1,16 @@
 package com.gloryapps.worscanner.capture
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.MediaScannerConnection
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.Settings
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import java.io.File
 
 /** One file on its way out and the name it leaves under, which is the caller's to say, never this file's. */
@@ -14,6 +20,16 @@ data class Outbound(val file: File, val name: String)
 class Exports(private val context: Context) {
     /** The shared folders this device has, asked once a reading is on its way out rather than kept from start-up. */
     fun shared(): List<SharedFolder> = sharedFolders()
+
+    /** Whether the app may write outside its own folders, which is what BlueStacks' Shared Folder sits behind. */
+    fun filesAllowed(): Boolean = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> Environment.isExternalStorageManager()
+        else -> context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+    }
+
+    /** The settings page that grants it, which is where the system sends this one instead of a dialog. */
+    fun filesAccessIntent(): Intent =
+        Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, "package:${context.packageName}".toUri())
 
     /** Into the folder an emulator shares with the PC, under this app's own name so the PC side stays tidy. */
     fun toShared(shared: SharedFolder, files: List<Outbound>): List<String> {

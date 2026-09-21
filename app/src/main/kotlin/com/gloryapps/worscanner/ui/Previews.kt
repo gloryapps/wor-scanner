@@ -123,7 +123,9 @@ private fun ExportSheetPreview() {
             failed = null,
             shared = listOf(LD_PLAYER, BLUE_STACKS),
             into = LD_PLAYER,
+            filesAllowed = true,
             onChoose = { },
+            onGrantFiles = { },
             onShared = { },
             onShare = { },
             onClose = { },
@@ -155,10 +157,35 @@ private fun ExportSheetFailedPreview() {
                 files = SCANNED.outbound(),
                 holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Size" to "318 kB"),
             ),
-            failed = Saved.Failed("/mnt/shared/Pictures is not writable on this device"),
+            failed = Saved.Failed("/sdcard/windows/BstSharedFolder is not writable on this device"),
+            shared = listOf(BLUE_STACKS),
+            into = BLUE_STACKS,
+            filesAllowed = true,
+            onChoose = { },
+            onGrantFiles = { },
+            onShared = { },
+            onShare = { },
+            onClose = { },
+        )
+    }
+}
+
+@Preview(name = "Export sheet · no folder", widthDp = 560, heightDp = 560)
+@Composable
+private fun ExportSheetNoFolderPreview() {
+    ScannerTheme {
+        ExportSheet(
+            outgoing = Outgoing(
+                name = "wor-gear-20260907-130841.json",
+                files = SCANNED.outbound(),
+                holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Size" to "318 kB"),
+            ),
+            failed = null,
             shared = emptyList(),
             into = null,
+            filesAllowed = false,
             onChoose = { },
+            onGrantFiles = { },
             onShared = { },
             onShare = { },
             onClose = { },
