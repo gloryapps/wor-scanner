@@ -51,11 +51,11 @@
     <string name="export_frame_read">the screen it was read from</string>
     <string name="export_frame_first">the screen it looked at, nothing was read</string>
     <string name="export_readings">Readings</string>
-    <string name="export_where">Where it lands</string>
-    <string name="export_no_shared">No emulator folder on this device. Share… hands the file to another app.</string>
-    <string name="export_no_files">BlueStacks keeps the folder it shares with the PC inside the sdcard, where the app needs files access to reach it.</string>
+    <string name="export_no_shared">No emulator folder here. Use Share… instead.</string>
+    <string name="export_no_files">On BlueStacks the shared folder needs files access before it shows up here.</string>
     <string name="export_grant_files">grant files access</string>
-    <string name="export_shared">Save to Shared Folder</string>
+    <string name="export_save">Save</string>
+    <string name="export_to">→ %1$s</string>
     <string name="export_share">Share…</string>
     <string name="export_note">This is the file you open in Import a Scan in WoR Lab.</string>
 

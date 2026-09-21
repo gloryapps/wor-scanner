@@ -162,11 +162,6 @@ fun ExportSheet(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Section(stringResource(R.string.export_where))
-                    Landing(shared, into, filesAllowed, onChoose, onGrantFiles)
-                }
-
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Section(stringResource(R.string.export_holds))
                     outgoing.holds.forEachIndexed { at, (label, value) ->
                         if (at > 0) Rule()
@@ -180,9 +175,16 @@ fun ExportSheet(
             Rule()
 
             Column(Modifier.padding(horizontal = 22.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Landing(shared, into, filesAllowed, onChoose, onGrantFiles)
                 if (failed != null) Landed(failed)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Accented(stringResource(R.string.export_shared), Modifier.weight(1f), enabled = into != null, onClick = onShared)
+                    Accented(
+                        stringResource(R.string.export_save),
+                        Modifier.weight(1f),
+                        said = into?.let { stringResource(R.string.export_to, stringResource(it.emulator.label)) },
+                        enabled = into != null,
+                        onClick = onShared,
+                    )
                     Edged(stringResource(R.string.export_share), onClick = onShare)
                 }
                 Text(stringResource(R.string.export_note), style = Lettering.caption, color = Colors.muted)
@@ -191,7 +193,7 @@ fun ExportSheet(
     }
 }
 
-/** The emulators this device shares a folder with, the chosen one saying where the PC shows it. */
+/** The folder the save lands in, kept beside the button that does it: where the PC shows it, and who to pick when there are two. */
 @Composable
 private fun Landing(
     shared: List<SharedFolder>,
@@ -211,9 +213,12 @@ private fun Landing(
         return
     }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        shared.forEach { folder ->
-            Pill(stringResource(folder.emulator.label), chosen = folder == into) { onChoose(folder) }
+    /* One emulator is said by the button alone; a second one is what makes the pills worth drawing. */
+    if (shared.size > 1) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            shared.forEach { folder ->
+                Pill(stringResource(folder.emulator.label), chosen = folder == into) { onChoose(folder) }
+            }
         }
     }
     into?.let { Text(stringResource(it.emulator.onPc), style = Lettering.data, color = Colors.muted) }
