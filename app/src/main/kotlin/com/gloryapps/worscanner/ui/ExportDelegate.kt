@@ -5,6 +5,7 @@ import android.content.Intent
 import com.gloryapps.worscanner.capture.Exports
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.capture.Outbound
+import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scanner.resultOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,12 @@ import kotlinx.coroutines.flow.asStateFlow
 class ExportDelegate(private val exports: Exports, private val context: Context) {
     private val _outgoing = MutableStateFlow<Outgoing?>(null)
     val outgoing: StateFlow<Outgoing?> = _outgoing.asStateFlow()
+
+    /** The shared folders this device has, and the one the next save lands in: the first found until the user says otherwise. */
+    val shared: List<SharedFolder> = exports.shared()
+
+    private val _into = MutableStateFlow(shared.firstOrNull())
+    val into: StateFlow<SharedFolder?> = _into.asStateFlow()
 
     private val _saved = MutableStateFlow<Saved?>(null)
     val saved: StateFlow<Saved?> = _saved.asStateFlow()
@@ -26,7 +33,13 @@ class ExportDelegate(private val exports: Exports, private val context: Context)
         _outgoing.value = readings.outgoing(context)
     }
 
-    fun toShared(files: List<Outbound>) = save { exports.toShared(files) }
+    fun choose(shared: SharedFolder) {
+        _into.value = shared
+    }
+
+    fun toShared(files: List<Outbound>) = save {
+        exports.toShared(_into.value ?: error("no emulator shared folder on this device"), files)
+    }
 
     fun shareIntent(files: List<Outbound>): Intent = exports.shareIntent(files)
 
