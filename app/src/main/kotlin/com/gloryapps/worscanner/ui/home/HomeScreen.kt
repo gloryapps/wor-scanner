@@ -199,7 +199,7 @@ internal fun Start(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     }
 
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.home_kinds), style = Lettering.dataSmall, color = Colors.muted)
+        Text(stringResource(R.string.home_kinds), style = Lettering.caption, color = Colors.muted)
         Kind.entries.forEach { each ->
             Pill(stringResource(each.label), chosen = each == state.kind, onClick = { onEvent(HomeEvent.Choose(each)) })
         }
@@ -219,7 +219,7 @@ private fun Given(label: String, given: Boolean, onGrant: () -> Unit) {
             Text(label, style = Lettering.body, color = if (given) Colors.text else Colors.muted)
         }
         if (given) {
-            Text(stringResource(R.string.home_on), style = Lettering.dataSmall, color = Colors.muted)
+            Text(stringResource(R.string.home_on), style = Lettering.caption, color = Colors.muted)
         } else {
             Inline(stringResource(R.string.home_grant), onClick = onGrant)
         }
@@ -264,7 +264,7 @@ private fun Reading(kept: Kept, newest: Boolean, onEvent: (HomeEvent) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(kept.shown(), style = Lettering.data, color = Colors.text)
+            Text(kept.shown(), style = Lettering.subtitle, color = Colors.text)
             Text(kept.said(context), style = Lettering.caption, color = Colors.muted)
             kept.detail?.let { Text(it, style = Lettering.caption, color = Colors.warning, maxLines = 2) }
         }

@@ -130,7 +130,7 @@ private fun Header(state: ReadingUiState, back: ReadingEvent, onEvent: (ReadingE
             IconButton(onClick = { onEvent(back) }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Colors.muted)
             }
-            Text(state.kept?.shown().orEmpty(), style = Lettering.data, color = Colors.text, maxLines = 1)
+            Text(state.kept?.shown().orEmpty(), style = Lettering.subtitle, color = Colors.text, maxLines = 1)
             state.kept?.takeIf { it.outcome != null }?.let { Pill(it.ended(context)) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
