@@ -116,9 +116,8 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
   paths under `/sdcard` it used follow, and its own `/mnt/windows` closes the list. Files land in a `WoR Scanner` folder inside
   it, and the export sheet names the emulator it found, says where the PC shows it, and lets a second one
   be chosen over the first.
-- Neither mount needs a grant, both sitting outside the sdcard. The files access the sheet offers where
-  it found nothing is for the `/sdcard` paths only: `MANAGE_EXTERNAL_STORAGE` from API 30,
-  `WRITE_EXTERNAL_STORAGE` below it.
+- Neither mount needs a grant, both sitting outside the sdcard, so the app asks for no storage
+  permission at all; a device with no mount is told to use the share sheet instead.
 - The clipboard does not cross that border, and the two apps are not linked over the network.
 - Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, which
   the home screen picks and the overlay obeys.

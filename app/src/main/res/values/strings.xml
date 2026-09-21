@@ -52,8 +52,6 @@
     <string name="export_frame_first">the screen it looked at, nothing was read</string>
     <string name="export_readings">Readings</string>
     <string name="export_no_shared">No emulator folder here. Use Share… instead.</string>
-    <string name="export_no_files">On BlueStacks the shared folder needs files access before it shows up here.</string>
-    <string name="export_grant_files">grant files access</string>
     <string name="export_save">Save</string>
     <string name="export_to">→ %1$s</string>
     <string name="export_share">Share…</string>

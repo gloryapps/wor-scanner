@@ -23,17 +23,16 @@ class ExportDelegate(private val exports: Exports, private val context: Context)
     private val _into = MutableStateFlow(_shared.value.firstOrNull())
     val into: StateFlow<SharedFolder?> = _into.asStateFlow()
 
-    private val _filesAllowed = MutableStateFlow(exports.filesAllowed())
-    val filesAllowed: StateFlow<Boolean> = _filesAllowed.asStateFlow()
-
     private val _saved = MutableStateFlow<Saved?>(null)
     val saved: StateFlow<Saved?> = _saved.asStateFlow()
 
     fun begin(kept: Kept) {
+        look()
         _outgoing.value = kept.outgoing(context)
     }
 
     fun begin(readings: List<Kept>) {
+        look()
         _outgoing.value = readings.outgoing(context)
     }
 
@@ -41,9 +40,8 @@ class ExportDelegate(private val exports: Exports, private val context: Context)
         _into.value = shared
     }
 
-    /** Looked at again whenever the sheet comes to the front: a folder appears the moment the system lets the app see it. */
-    fun look() {
-        _filesAllowed.value = exports.filesAllowed()
+    /** Looked at again as the sheet opens: an emulator can mount its folder while the app is running. */
+    private fun look() {
         _shared.value = exports.shared()
         if (_into.value !in _shared.value) _into.value = _shared.value.firstOrNull()
     }
@@ -53,8 +51,6 @@ class ExportDelegate(private val exports: Exports, private val context: Context)
     }
 
     fun shareIntent(files: List<Outbound>): Intent = exports.shareIntent(files)
-
-    fun filesAccessIntent(): Intent = exports.filesAccessIntent()
 
     fun forget() {
         _outgoing.value = null

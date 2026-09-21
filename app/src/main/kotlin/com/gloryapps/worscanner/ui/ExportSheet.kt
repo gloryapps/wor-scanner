@@ -1,11 +1,7 @@
 package com.gloryapps.worscanner.ui
 
-import android.Manifest
 import android.content.Context
-import android.os.Build
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +34,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Outbound
@@ -61,16 +56,8 @@ fun ExportSheet(export: ExportDelegate) {
     val saved by export.saved.collectAsStateWithLifecycle()
     val shared by export.shared.collectAsStateWithLifecycle()
     val into by export.into.collectAsStateWithLifecycle()
-    val filesAllowed by export.filesAllowed.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val leaving = outgoing ?: return
-
-    /* The settings page that grants files access is another activity: what it granted is read on the way back. */
-    LifecycleResumeEffect(Unit) {
-        export.look()
-        onPauseOrDispose { }
-    }
-    val asking = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { export.look() }
 
     LaunchedEffect(saved) {
         val landed = saved as? Saved.Into ?: return@LaunchedEffect
@@ -83,12 +70,7 @@ fun ExportSheet(export: ExportDelegate) {
         failed = saved as? Saved.Failed,
         shared = shared,
         into = into,
-        filesAllowed = filesAllowed,
         onChoose = export::choose,
-        onGrantFiles = {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) context.startActivity(export.filesAccessIntent())
-            else asking.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        },
         onShared = { export.toShared(leaving.files) },
         onShare = { context.startActivity(export.shareIntent(leaving.files)) },
         onClose = export::forget,
@@ -105,9 +87,7 @@ fun ExportSheet(
     failed: Saved.Failed?,
     shared: List<SharedFolder>,
     into: SharedFolder?,
-    filesAllowed: Boolean,
     onChoose: (SharedFolder) -> Unit,
-    onGrantFiles: () -> Unit,
     onShared: () -> Unit,
     onShare: () -> Unit,
     onClose: () -> Unit,
@@ -175,7 +155,7 @@ fun ExportSheet(
             Rule()
 
             Column(Modifier.padding(horizontal = 22.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Landing(shared, into, filesAllowed, onChoose, onGrantFiles)
+                Landing(shared, into, onChoose)
                 if (failed != null) Landed(failed)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Accented(
@@ -195,20 +175,9 @@ fun ExportSheet(
 
 /** The folder the save lands in, kept beside the button that does it: where the PC shows it, and who to pick when there are two. */
 @Composable
-private fun Landing(
-    shared: List<SharedFolder>,
-    into: SharedFolder?,
-    filesAllowed: Boolean,
-    onChoose: (SharedFolder) -> Unit,
-    onGrantFiles: () -> Unit,
-) {
+private fun Landing(shared: List<SharedFolder>, into: SharedFolder?, onChoose: (SharedFolder) -> Unit) {
     if (shared.isEmpty()) {
-        Text(
-            stringResource(if (filesAllowed) R.string.export_no_shared else R.string.export_no_files),
-            style = Lettering.body,
-            color = Colors.muted,
-        )
-        if (!filesAllowed) Inline(stringResource(R.string.export_grant_files), accented = true, onClick = onGrantFiles)
+        Text(stringResource(R.string.export_no_shared), style = Lettering.body, color = Colors.muted)
 
         return
     }
