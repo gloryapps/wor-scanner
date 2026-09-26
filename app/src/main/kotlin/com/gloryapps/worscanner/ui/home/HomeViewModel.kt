@@ -29,7 +29,7 @@ internal class HomeViewModel(
     val export: ExportDelegate,
 ) : ViewModel() {
     private val kept = MutableStateFlow(readings.list())
-    private val deleting = MutableStateFlow<Kept?>(null)
+    private val deleting = MutableStateFlow<List<Kept>>(emptyList())
     private val _effects = Channel<HomeEffect>(Channel.BUFFERED)
     val effects: Flow<HomeEffect> = _effects.receiveAsFlow()
 
@@ -66,13 +66,14 @@ internal class HomeViewModel(
             is HomeEvent.Open -> send(HomeEffect.OpenReading(event.kept))
             is HomeEvent.Export -> export.begin(event.kept)
             HomeEvent.ExportAll -> export.begin(kept.value)
-            is HomeEvent.Delete -> deleting.value = event.kept
+            is HomeEvent.Delete -> deleting.value = listOf(event.kept)
+            HomeEvent.DeleteAll -> deleting.value = kept.value
             HomeEvent.ConfirmDelete -> {
-                deleting.value?.let(readings::delete)
-                deleting.value = null
+                deleting.value.forEach(readings::delete)
+                deleting.value = emptyList()
                 kept.value = readings.list()
             }
-            HomeEvent.CancelDelete -> deleting.value = null
+            HomeEvent.CancelDelete -> deleting.value = emptyList()
         }
     }
 

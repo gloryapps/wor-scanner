@@ -35,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,9 +54,12 @@ import com.gloryapps.worscanner.capture.CaptureService
 import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Lettering
+import com.gloryapps.worscanner.ui.label
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 /**
@@ -112,11 +117,14 @@ fun SheetContent(
     chosen: Chosen = koinInject(),
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val state by scanning.state.collectAsStateWithLifecycle()
     val kind by chosen.kind.collectAsStateWithLifecycle(Chosen.FIRST)
 
     Sheet(
+        kind = kind,
         running = state is ScanState.Running,
+        onChoose = { scope.launch { chosen.choose(it) } },
         onScan = {
             if (state is ScanState.Running) CaptureService.stopScan(context) else CaptureService.scan(context, kind)
             onDone()
@@ -125,7 +133,10 @@ fun SheetContent(
             CaptureService.read(context, kind)
             onDone()
         },
-        onApp = { context.openApp() },
+        onApp = {
+            context.openApp()
+            onDone()
+        },
         onClose = { CaptureService.stop(context) },
     )
 }
@@ -228,7 +239,9 @@ private fun Stop(onStop: () -> Unit) {
 
 @Composable
 internal fun Sheet(
+    kind: Kind,
     running: Boolean,
+    onChoose: (Kind) -> Unit,
     onScan: () -> Unit,
     onRead: () -> Unit,
     onApp: () -> Unit,
@@ -242,6 +255,7 @@ internal fun Sheet(
             .padding(6.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
+        Kinds(kind, onChoose)
         Action(
             label = stringResource(R.string.overlay_scan),
             said = if (running) stringResource(R.string.overlay_running) else null,
@@ -251,6 +265,29 @@ internal fun Sheet(
         Action(label = stringResource(R.string.overlay_app), onClick = onApp)
         Box(Modifier.padding(horizontal = 9.dp, vertical = 3.dp).fillMaxWidth().height(1.dp).background(Colors.hairline))
         Action(label = stringResource(R.string.overlay_close), colour = Colors.muted, onClick = onClose)
+    }
+}
+
+/** What Scan and Read take, the chosen kind lit; a choice lasts until the next, here or in the app. */
+@Composable
+private fun Kinds(kind: Kind, onChoose: (Kind) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Kind.entries.forEach { each ->
+            val chosen = each == kind
+            Text(
+                stringResource(each.label),
+                Modifier
+                    .weight(1f)
+                    .background(if (chosen) Colors.glassWash else Color.Transparent, RoundedCornerShape(6.dp))
+                    .border(1.dp, if (chosen) Colors.glassAccentEdge else Colors.hairline, RoundedCornerShape(6.dp))
+                    .clickable(interactionSource = null, indication = null, onClick = { onChoose(each) })
+                    .padding(vertical = 7.dp),
+                style = Lettering.mark,
+                color = if (chosen) Colors.accent else Colors.muted,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -280,6 +317,6 @@ internal val IDLE = 22.dp
 private val CAPTURING = 26.dp
 private val ENDED = 24.dp
 private val STOP = 18.dp
-private val SHEET = 180.dp
+internal val SHEET = 200.dp
 private const val BREATH_MS = 850
 private const val ENDED_SHOWN_MS = 8_000L

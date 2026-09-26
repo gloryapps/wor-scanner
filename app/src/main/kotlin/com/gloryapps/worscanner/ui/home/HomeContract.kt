@@ -13,8 +13,8 @@ internal data class HomeUiState(
     /** The scan under way, for the header; null when none is running. */
     val running: ScanState.Running? = null,
     val readings: List<Kept> = emptyList(),
-    /** The reading whose deletion is being asked about; null while none is. */
-    val deleting: Kept? = null,
+    /** The readings whose deletion is being asked about, one or every one; empty while none is. */
+    val deleting: List<Kept> = emptyList(),
 ) {
     /** A scan can only start once the system lets the app both see the screen and touch it. */
     val ready: Boolean get() = accessibilityOn && overlayAllowed
@@ -39,6 +39,8 @@ internal sealed interface HomeEvent {
     data object ExportAll : HomeEvent
 
     data class Delete(val kept: Kept) : HomeEvent
+
+    data object DeleteAll : HomeEvent
 
     data object ConfirmDelete : HomeEvent
 

@@ -65,7 +65,7 @@ private fun SheetPreview() {
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Capsule(RUNNING, { }, { }, { }, Modifier)
-            Sheet(running = true, onScan = { }, onRead = { }, onApp = { }, onClose = { })
+            Sheet(kind = Kind.GEAR, running = true, onChoose = { }, onScan = { }, onRead = { }, onApp = { }, onClose = { })
         }
     }
 }
@@ -80,7 +80,7 @@ private fun SheetIdlePreview() {
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Capsule(ScanState.Idle, { }, { }, { }, Modifier)
-            Sheet(running = false, onScan = { }, onRead = { }, onApp = { }, onClose = { })
+            Sheet(kind = Kind.ARTIFACTS, running = false, onChoose = { }, onScan = { }, onRead = { }, onApp = { }, onClose = { })
         }
     }
 }

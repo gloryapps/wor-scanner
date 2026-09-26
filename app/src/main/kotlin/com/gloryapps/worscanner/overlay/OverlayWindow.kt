@@ -169,7 +169,7 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
     private val INSET_PX get() = (INSET * context.resources.displayMetrics.density).toInt()
     private val PAD get() = ((TARGET.value - IDLE.value) / 2 * context.resources.displayMetrics.density).toInt()
     private val GAP get() = (6 * context.resources.displayMetrics.density).toInt()
-    private val SHEET_WIDTH get() = (180 * context.resources.displayMetrics.density).toInt()
+    private val SHEET_WIDTH get() = (SHEET.value * context.resources.displayMetrics.density).toInt()
     /** How far in from the screen's edges the capsule starts and the sheet is kept. */
     private val INSET = 34
     private val TARGET_MARGIN get() = (30 * context.resources.displayMetrics.density).toInt()

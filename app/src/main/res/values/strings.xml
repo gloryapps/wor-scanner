@@ -33,6 +33,10 @@
     <string name="home_delete_title">Delete this reading?</string>
     <string name="home_delete_said">Its JSON and the panels beside it go from the device. Whatever you have already exported stays where you saved it.</string>
     <string name="home_delete_yes">Delete</string>
+    <string name="home_delete_all">delete all</string>
+    <string name="home_delete_all_title">Delete all %1$d readings?</string>
+    <string name="home_delete_all_said">Every reading and scan kept on the device goes, JSON and panels. Whatever you have already exported stays where you saved it.</string>
+    <string name="home_delete_all_yes">Delete all</string>
     <string name="cancel">Cancel</string>
     <string name="home_empty">No reading yet. Start a scan, or press Read over the game.</string>
     <string name="home_note">Export from any row — no need to open the reading first.</string>

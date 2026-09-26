@@ -133,11 +133,12 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
         }
     }
 
-    if (state.deleting != null) {
+    if (state.deleting.isNotEmpty()) {
+        val one = state.deleting.size == 1
         Confirm(
-            title = stringResource(R.string.home_delete_title),
-            said = stringResource(R.string.home_delete_said),
-            confirm = stringResource(R.string.home_delete_yes),
+            title = if (one) stringResource(R.string.home_delete_title) else stringResource(R.string.home_delete_all_title, state.deleting.size),
+            said = stringResource(if (one) R.string.home_delete_said else R.string.home_delete_all_said),
+            confirm = stringResource(if (one) R.string.home_delete_yes else R.string.home_delete_all_yes),
             onConfirm = { onEvent(HomeEvent.ConfirmDelete) },
             onCancel = { onEvent(HomeEvent.CancelDelete) },
         )
@@ -233,7 +234,12 @@ internal fun Readings(readings: List<Kept>, onEvent: (HomeEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Section(stringResource(R.string.home_readings))
-            if (readings.isNotEmpty()) Link(stringResource(R.string.home_export_all), onClick = { onEvent(HomeEvent.ExportAll) })
+            if (readings.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Link(stringResource(R.string.home_delete_all), onClick = { onEvent(HomeEvent.DeleteAll) })
+                    Link(stringResource(R.string.home_export_all), onClick = { onEvent(HomeEvent.ExportAll) })
+                }
+            }
         }
 
         Panel(Modifier.fillMaxWidth()) {
