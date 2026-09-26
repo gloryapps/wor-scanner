@@ -1,0 +1,375 @@
+{
+    "width": 1280,
+    "height": 720,
+    "lines": [
+        {
+            "text": "Overview",
+            "box": {
+                "left": 17,
+                "top": 148,
+                "right": 106,
+                "bottom": 163
+            }
+        },
+        {
+            "text": "Gear",
+            "box": {
+                "left": 39,
+                "top": 251,
+                "right": 84,
+                "bottom": 265
+            }
+        },
+        {
+            "text": "Artifact",
+            "box": {
+                "left": 23,
+                "top": 352,
+                "right": 99,
+                "bottom": 368
+            }
+        },
+        {
+            "text": "Material",
+            "box": {
+                "left": 21,
+                "top": 454,
+                "right": 101,
+                "bottom": 470
+            }
+        },
+        {
+            "text": "STORAGE",
+            "box": {
+                "left": 105,
+                "top": 14,
+                "right": 248,
+                "bottom": 41
+            }
+        },
+        {
+            "text": "Shard",
+            "box": {
+                "left": 33,
+                "top": 557,
+                "right": 89,
+                "bottom": 572
+            }
+        },
+        {
+            "text": "Wt25",
+            "box": {
+                "left": 165,
+                "top": 351,
+                "right": 207,
+                "bottom": 364
+            }
+        },
+        {
+            "text": "+25",
+            "box": {
+                "left": 291,
+                "top": 480,
+                "right": 315,
+                "bottom": 491
+            }
+        },
+        {
+            "text": "25",
+            "box": {
+                "left": 395,
+                "top": 472,
+                "right": 438,
+                "bottom": 497
+            }
+        },
+        {
+            "text": "O Bullk Organize E Bulk Sell",
+            "box": {
+                "left": 160,
+                "top": 653,
+                "right": 481,
+                "bottom": 683
+            }
+        },
+        {
+            "text": "t25",
+            "box": {
+                "left": 624,
+                "top": 351,
+                "right": 645,
+                "bottom": 367
+            }
+        },
+        {
+            "text": "E",
+            "box": {
+                "left": 707,
+                "top": 85,
+                "right": 723,
+                "bottom": 115
+            }
+        },
+        {
+            "text": "+25",
+            "box": {
+                "left": 727,
+                "top": 480,
+                "right": 751,
+                "bottom": 490
+            }
+        },
+        {
+            "text": "423/650",
+            "box": {
+                "left": 811,
+                "top": 102,
+                "right": 898,
+                "bottom": 118
+            }
+        },
+        {
+            "text": "+25",
+            "box": {
+                "left": 836,
+                "top": 481,
+                "right": 861,
+                "bottom": 491
+            }
+        },
+        {
+            "text": "Forge",
+            "box": {
+                "left": 828,
+                "top": 678,
+                "right": 874,
+                "bottom": 694
+            }
+        },
+        {
+            "text": "0PEN",
+            "box": {
+                "left": 962,
+                "top": 29,
+                "right": 995,
+                "bottom": 39
+            }
+        },
+        {
+            "text": "Scan",
+            "box": {
+                "left": 952,
+                "top": 82,
+                "right": 989,
+                "bottom": 94
+            }
+        },
+        {
+            "text": "Read",
+            "box": {
+                "left": 952,
+                "top": 125,
+                "right": 990,
+                "bottom": 138
+            }
+        },
+        {
+            "text": "Open the app",
+            "box": {
+                "left": 951,
+                "top": 168,
+                "right": 1069,
+                "bottom": 185
+            }
+        },
+        {
+            "text": "EnharcemenT Le",
+            "box": {
+                "left": 1015,
+                "top": 97,
+                "right": 1173,
+                "bottom": 118
+            }
+        },
+        {
+            "text": "Close overlay",
+            "box": {
+                "left": 951,
+                "top": 226,
+                "right": 1079,
+                "bottom": 243
+            }
+        },
+        {
+            "text": "Mythic Artifact",
+            "box": {
+                "left": 1032,
+                "top": 307,
+                "right": 1162,
+                "bottom": 327
+            }
+        },
+        {
+            "text": "Spear of Leonidas",
+            "box": {
+                "left": 995,
+                "top": 328,
+                "right": 1200,
+                "bottom": 348
+            }
+        },
+        {
+            "text": "HP",
+            "box": {
+                "left": 985,
+                "top": 460,
+                "right": 1007,
+                "bottom": 472
+            }
+        },
+        {
+            "text": "+ 25/25t",
+            "box": {
+                "left": 954,
+                "top": 422,
+                "right": 1121,
+                "bottom": 441
+            }
+        },
+        {
+            "text": "ATK",
+            "box": {
+                "left": 984,
+                "top": 488,
+                "right": 1019,
+                "bottom": 501
+            }
+        },
+        {
+            "text": "96,487.4K+",
+            "box": {
+                "left": 1128,
+                "top": 23,
+                "right": 1250,
+                "bottom": 40
+            }
+        },
+        {
+            "text": "ATK Bonus",
+            "box": {
+                "left": 992,
+                "top": 513,
+                "right": 1073,
+                "bottom": 531
+            }
+        },
+        {
+            "text": "KASSANIDR",
+            "box": {
+                "left": 1084,
+                "top": 364,
+                "right": 1184,
+                "bottom": 386
+            }
+        },
+        {
+            "text": "Exclusive",
+            "box": {
+                "left": 1088,
+                "top": 385,
+                "right": 1185,
+                "bottom": 408
+            }
+        },
+        {
+            "text": "Artifact Skills",
+            "box": {
+                "left": 996,
+                "top": 561,
+                "right": 1119,
+                "bottom": 583
+            }
+        },
+        {
+            "text": "4650+1730",
+            "box": {
+                "left": 1132,
+                "top": 458,
+                "right": 1223,
+                "bottom": 471
+            }
+        },
+        {
+            "text": "1497+575",
+            "box": {
+                "left": 1147,
+                "top": 486,
+                "right": 1224,
+                "bottom": 500
+            }
+        },
+        {
+            "text": "+4.7%",
+            "box": {
+                "left": 1177,
+                "top": 516,
+                "right": 1225,
+                "bottom": 529
+            }
+        },
+        {
+            "text": "Lvl. 6",
+            "box": {
+                "left": 1181,
+                "top": 564,
+                "right": 1229,
+                "bottom": 580
+            }
+        },
+        {
+            "text": "Increases single-target DMG by",
+            "box": {
+                "left": 946,
+                "top": 596,
+                "right": 1210,
+                "bottom": 614
+            }
+        },
+        {
+            "text": "30%. Reduces the number of Basic",
+            "box": {
+                "left": 947,
+                "top": 617,
+                "right": 1233,
+                "bottom": 631
+            }
+        },
+        {
+            "text": "ATKs rennired to gain Snartan",
+            "box": {
+                "left": 954,
+                "top": 637,
+                "right": 1203,
+                "bottom": 653
+            }
+        },
+        {
+            "text": "Unequip",
+            "box": {
+                "left": 970,
+                "top": 660,
+                "right": 1060,
+                "bottom": 682
+            }
+        },
+        {
+            "text": "Workshop",
+            "box": {
+                "left": 1119,
+                "top": 656,
+                "right": 1229,
+                "bottom": 684
+            }
+        }
+    ]
+}

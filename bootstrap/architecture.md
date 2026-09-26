@@ -1,9 +1,9 @@
 # Architecture & code layout
 
-Settled 2026-09-06, kinds added 2026-09-07, heroes 2026-09-26. A native Android app that scans a
+Settled 2026-09-06, kinds added 2026-09-07, heroes and artifacts 2026-09-26. A native Android app that scans a
 Watcher of Realms storage on the device it runs on (LDPlayer, BlueStacks or a phone), captures each
-tile's panel, reads it and writes a JSON the azhor lab imports. Gear and legendary heroes today;
-artifacts are a kind still to add. Distributed as an APK on GitHub, not on the Play Store.
+tile's panel, reads it and writes a JSON the azhor lab imports: gear, legendary heroes and mythic
+artifacts. Distributed as an APK on GitHub, not on the Play Store.
 
 ## Modules
 
@@ -29,17 +29,18 @@ artifacts are a kind still to add. Distributed as an APK on GitHub, not on the P
 
 ## Kinds
 
-A kind is one thing the app scans: gear today, heroes and artifacts next. `scanner` is split so
+A kind is one thing the app scans: gear, heroes and artifacts. `scanner` is split so
 that the walk over a grid is written once and a kind says only what its tiles hold.
 
 | Package | Holds | Knows |
 | --- | --- | --- |
 | `senses/` | `Screen`, `Touch`, `TextReader`, `Frame`, `Colour` | nothing |
 | `text/` | `Line`, `Box`, `rowsOf`, matching, `numbersIn`, `wordIn`, `nameIn` | senses |
-| `game/` | `Attribute`, `FACTIONS`, `Named`, `ReadAttribute`: the words every kind shares | text |
+| `game/` | `Attribute`, `FACTIONS`, `Named`, `ReadAttribute`, `attributesIn`, `headOf`, `exclusiveIn`: the words every kind shares and the rows they are read off | text |
 | `scan/` | `Scan<T>`, `Walk`, `Seen`, `Tapped`, `Read<T>`, `GridLayout`, `Region`, `Spot`, `ScanEntry<T>`, `Outcome<T>`, tiles, registration, count | senses, text |
 | `kinds/gear/` | `ScannedGear`, its words, `GEAR_STORAGE`, `GearScan` | scan, text, game |
 | `kinds/hero/` | `ScannedHero`, `HeroSkills`, `SkillLevel`, `HERO_ROSTER` and its spots, `HeroScan` | scan, text, senses |
+| `kinds/artifact/` | `ScannedArtifact`, `ARTIFACT_STORAGE`, `ArtifactScan` | scan, text, game |
 | `kinds/` | `Kind`, `Kind.scan()` | every kind |
 
 - Arrows point down only. `scan/` knows no kind; each kind's package extends its `Scan<T>`;
@@ -48,8 +49,10 @@ that the walk over a grid is written once and a kind says only what its tiles ho
 - `Kind` is an enum: identity only. Its id is the JSON's `kind` and the scan folder's, `entries`
   is what the overlay lists, and a `when` over it is exhaustive.
 - `Scan<T>` is an abstract class: a kind's `GridLayout`, its serializer, `readTile` (what it reads
-  off the tile the walk just tapped) and `readScreen` (what it makes of a whole frame, for the
-  overlay's Read). One stateless `object` per kind extends it. Its `run` starts a `Walk`, created
+  off the tile the walk just tapped), `readScreen` (what it makes of a whole frame, for the
+  overlay's Read) and `tileAt` (whether a tile sits at a place, by default the word it prints
+  below its centre; an artifact's tile prints none and is told by the colour of its face). One
+  stateless `object` per kind extends it. Its `run` starts a `Walk`, created
   per scan with the senses of the moment, which holds where the grid is and taps, verifies,
   drags and registers for every kind.
 - `readTile` gets a `Tapped`: the frame the tap left, the tile's rectangle on it, `show(tab)`
@@ -63,30 +66,34 @@ that the walk over a grid is written once and a kind says only what its tiles ho
   hero panel is not a gear panel.
 - `text/` holds the instruments a reader is written with, model-free by construction: each takes
   a row or a block and a candidate list and knows nothing of what the row is part of. What a
-  second kind turns out to need from `GearScan`'s private helpers is lifted to `text/` before that
-  kind is written, never on a guess.
+  second kind turns out to need from `GearScan`'s private helpers is lifted to `text/` or `game/`
+  before that kind is written, never on a guess.
 - The records have no supertype. Generics carry `T` through `ScanEntry<T>`, `Outcome<T>` and
   `ScanFile<T>` to the writer, which encodes with the kind's serializer; the app holds
   `Outcome<*>` where it only counts entries. On the wire `kind` is the discriminator.
 - The walk assumes a grid with a side panel redrawn on tap, the tap verified by the framed tile.
+  It begins on the framed tile, found anywhere in the grid, and only where none is framed on the
+  first whole row by its words.
   What a tile's panel shows, and any tapping it takes to show it all, is the kind's `readTile`,
   with what `Tapped` lends it.
 
 ### Adding a kind
 
-Written after heroes; the same for artifacts. The compiler enforces step 5.
+Written after heroes and followed for artifacts. The compiler enforces step 5.
 
 1. Record the kind's screen inside LDPlayer through the overlay's Read, on every tab its panel is
-   read under, and keep one whole frame under the tests as `ldplayer-storage-1280x720.json` and
-   `ldplayer-heroes-1280x720.json` are kept. The panels' lines go inline into the kind's test;
-   colours the reading needs are measured then and written into the plan, not kept as images.
-   This is where the walk's assumption is checked: a grid with a side panel redrawn on tap.
+   read under, and keep one whole frame under the tests as `ldplayer-storage-1280x720.json`,
+   `ldplayer-heroes-1280x720.json` and `ldplayer-artifacts-1280x720.json` are kept. The panels'
+   lines go inline into the kind's test; colours the reading needs are measured then and written
+   into the plan, not kept as images. This is where the walk's assumption is checked: a grid with a
+   side panel redrawn on tap, and a word printed below each tile to find it by.
 2. `kinds/<kind>/Scanned<Kind>.kt`: the record, `@Serializable`, what the panel may fail to name
    nullable.
 3. `kinds/<kind>/<Kind>Roster.kt` (or `Storage`): its `GridLayout`, and any spot it taps or samples,
    measured off the recorded frame and tested the way `LdPlayerReadingTest` tests gear's.
 4. `kinds/<kind>/<Kind>Scan.kt`: one `object` extending `Scan<T>`, its `readTile` using what
-   `Tapped` lends and its model of the panel written with `text/`'s instruments. Words go in the
+   `Tapped` lends and its model of the panel written with `text/`'s instruments and `game/`'s
+   readings; its `tileAt` where its tiles print no word below them, as the artifacts' face. Words go in the
    kind's package where the record names catalogue entries, as gear's sets do, transcribed from the
    wiki as it spells them; where the lab can identify from what is printed, it is kept as printed.
 5. `Kind.<KIND>`; the compiler then asks for its branch in `Kind.scan()` and in the app's

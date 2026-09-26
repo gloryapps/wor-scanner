@@ -1,7 +1,9 @@
 package com.gloryapps.worscanner.scanner.kinds.gear
 
-import com.gloryapps.worscanner.scanner.game.Attribute
 import com.gloryapps.worscanner.scanner.game.ReadAttribute
+import com.gloryapps.worscanner.scanner.game.attributesIn
+import com.gloryapps.worscanner.scanner.game.exclusiveIn
+import com.gloryapps.worscanner.scanner.game.headOf
 import com.gloryapps.worscanner.scanner.scan.Read
 import com.gloryapps.worscanner.scanner.scan.Scan
 import com.gloryapps.worscanner.scanner.scan.Seen
@@ -9,7 +11,6 @@ import com.gloryapps.worscanner.scanner.scan.Tapped
 import com.gloryapps.worscanner.scanner.text.ValueUnit
 import com.gloryapps.worscanner.scanner.text.flatten
 import com.gloryapps.worscanner.scanner.text.holdsName
-import com.gloryapps.worscanner.scanner.text.nameIn
 import com.gloryapps.worscanner.scanner.text.numbersIn
 import com.gloryapps.worscanner.scanner.text.rowsOf
 import com.gloryapps.worscanner.scanner.text.wordIn
@@ -37,7 +38,7 @@ object GearScan : Scan<ScannedGear>() {
 
     internal fun read(rows: List<String>): ScannedGear {
         val set = setIn(rows)
-        val read = attributesIn(rows)
+        val read = attributesIn(ownRows(rows), extras = 1)
         val slot = slotIn(rows, set, read)
         val primary = primaryIn(rows, slot, read)
 
@@ -56,42 +57,11 @@ object GearScan : Scan<ScannedGear>() {
 
     private fun setBlockAt(rows: List<String>): Int = rows.indexOfFirst { SET_BLOCK.containsMatchIn(it) }
 
-    private fun attributeIn(row: String): Attribute? = nameIn(row, Attribute.entries) { it.word }
+    /** The piece's own rows, above the set block. */
+    private fun ownRows(rows: List<String>): List<String> {
+        val ends = setBlockAt(rows)
 
-    /**
-     * Attribute rows in the order the card shows them, the first being the primary.
-     *
-     * A value the recogniser set apart from its name lands on the row below, which is taken unless
-     * that row names an attribute of its own.
-     */
-    private fun attributesIn(read: List<String>): List<ReadAttribute> {
-        val ends = setBlockAt(read)
-        val rows = if (ends < 0) read else read.subList(0, ends)
-        val held = mutableListOf<ReadAttribute>()
-
-        for ((at, row) in rows.withIndex()) {
-            val name = attributeIn(row) ?: continue
-            if (held.any { it.name == name }) continue
-
-            val below = rows.getOrNull(at + 1) ?: ""
-            val own = numbersIn(row)
-            val spilled = if (attributeIn(below) != null) emptyList() else numbersIn(below)
-            val numbers = own.ifEmpty { spilled }
-            val value = numbers.firstOrNull() ?: continue
-
-            /* Only the first row carries a green extra, so a second number below is the reader's noise. */
-            val bonus = if (held.isEmpty()) numbers.getOrNull(1)?.value else null
-            held += ReadAttribute(name, value.value, value.unit, bonus)
-        }
-
-        return held
-    }
-
-    /** Everything above the first attribute row: the banner, the title, the exclusive's name. */
-    private fun headOf(rows: List<String>): List<String> {
-        val first = rows.indexOfFirst { attributeIn(it) != null }
-
-        return if (first < 0) rows else rows.subList(0, first)
+        return if (ends < 0) rows else rows.subList(0, ends)
     }
 
     /** The set, off the block at the foot of the card, which is the one part that always reads. */
@@ -105,26 +75,6 @@ object GearScan : Scan<ScannedGear>() {
     }
 
     private fun bannerHas(rows: List<String>, word: String): Boolean = headOf(rows).any { flatten(it).contains(word) }
-
-    /**
-     * What the card names above the word `Exclusive`, as read.
-     *
-     * The word sits on its own row under the name; the icon leaves single letters in front of it.
-     */
-    private fun exclusiveIn(rows: List<String>): String? {
-        val head = headOf(rows)
-        val at = head.indexOfFirst { holdsName(it, "Exclusive") }
-        if (at < 0) return null
-
-        val named = "${head[at].replace(Regex("exclusive", RegexOption.IGNORE_CASE), "")} ${head.getOrNull(at - 1) ?: ""}"
-            .replace(Regex("[^A-Za-z' ]"), " ")
-            .split(Regex("\\s+"))
-            .filter { it.length > 1 }
-            .joinToString(" ")
-            .trim()
-
-        return named.ifEmpty { null }
-    }
 
     /**
      * The slot: a word of the head narrowed to the side its set is worn in, or the attribute the

@@ -11,6 +11,7 @@ private val Kind.named: Named
     get() = when (this) {
         Kind.GEAR -> Named(R.string.kind_gear, R.string.home_scan_said_gear)
         Kind.HEROES -> Named(R.string.kind_heroes, R.string.home_scan_said_heroes)
+        Kind.ARTIFACTS -> Named(R.string.kind_artifacts, R.string.home_scan_said_artifacts)
     }
 
 /** What its button, its notification and its list entry call it. */

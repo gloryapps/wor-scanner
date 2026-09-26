@@ -48,6 +48,8 @@ class FakeStorage(
     private val leavesOnTabTap: Int? = null,
     /** Captures after a switch in which the panel is still blank, the game drawing it. */
     private val drawsTabsOver: Int = 0,
+    /** Whether tiles print no word and show only a coloured face, as the artifacts' do. */
+    private val wordless: Boolean = false,
 ) : Screen, Touch, TextReader {
     val tabs = (0 until tabCount).map { Spot(TAB_X, 0.10 + 0.08 * it) }
     val taps = mutableListOf<Pair<Int, Int>>()
@@ -86,15 +88,28 @@ class FakeStorage(
         private val place = if (away) null else selectedPlace()
         private val centres = (0 until rows).map { rowCentre(it) }
 
-        override fun colourAt(x: Int, y: Int): Colour {
-            val chosen = place ?: return DARK
-            val cx = layout.tileX(chosen % layout.columns, 1000)
-            val cy = centres[chosen / layout.columns]
-            val halfW = (layout.tileWidth * pitchX / 2).toInt()
-            val halfH = (layout.tileHeight * pitch / 2).toInt()
-            val onEdge = (abs(abs(x - cx) - halfW) <= 2 && abs(y - cy) <= halfH) || (abs(abs(y - cy) - halfH) <= 2 && abs(x - cx) <= halfW)
+        private val halfW = (layout.tileWidth * pitchX / 2).toInt()
+        private val halfH = (layout.tileHeight * pitch / 2).toInt()
 
-            return if (onEdge) FRAME else DARK
+        override fun colourAt(x: Int, y: Int): Colour = when {
+            place?.let { onEdgeOf(it, x, y) } == true -> FRAME
+            wordless && faceAt(x, y) -> FACE
+            else -> DARK
+        }
+
+        private fun onEdgeOf(index: Int, x: Int, y: Int): Boolean {
+            val cx = layout.tileX(index % layout.columns, 1000)
+            val cy = centres[index / layout.columns]
+
+            return (abs(abs(x - cx) - halfW) <= 2 && abs(y - cy) <= halfH) || (abs(abs(y - cy) - halfH) <= 2 && abs(x - cx) <= halfW)
+        }
+
+        /* Inside a listed tile, clear of the edge its frame is drawn on and of the grid's viewport. */
+        private fun faceAt(x: Int, y: Int): Boolean {
+            if (y < layout.gridTop * 1000 || y > layout.gridBottom * 1000) return false
+            val column = ((x - layout.firstTileX * 1000) / pitchX).roundToInt()
+            val row = centres.indexOfFirst { abs(y - it) < halfH - 3 }
+            return column in 0 until layout.columns && row >= 0 && abs(x - layout.tileX(column, 1000)) < halfW - 3 && row * layout.columns + column < pieces - skipped
         }
     }
 
@@ -150,6 +165,7 @@ class FakeStorage(
         }
         /* Every tile in view carries its badge and its number, the way the game prints them. */
         for (row in 0 until rows) {
+            if (wordless) break
             val centre = rowCentre(row)
             if (centre < layout.gridTop * 1000 || centre > layout.gridBottom * 1000) continue
             val labelTop = centre + (layout.labelBelowCentre * pitch).toInt()
@@ -178,6 +194,8 @@ class FakeStorage(
         /* Greys, each channel the same. */
         val DARK = Colour(40 * 0x010101)
         val FRAME = Colour(230 * 0x010101)
+        /** A tile's face where tiles print no word: a saturated red. */
+        val FACE = Colour(0xFFB03030.toInt())
     }
 }
 
@@ -193,6 +211,11 @@ open class PieceScan(override val layout: GridLayout = FAKE_GRID) : Scan<Int>() 
     }
 
     override fun readScreen(seen: Seen): Int = pieceIn(seen.rowsIn(layout.panel).single())
+}
+
+/** A kind whose tiles print no word, found by the colour of their face as the artifacts' are. */
+class FacedPieceScan : PieceScan() {
+    override fun tileAt(seen: Seen, column: Int, centreY: Int): Boolean = seen.frame.colourAt(layout.tileX(column, seen.frame.width), centreY).saturation > 0.5
 }
 
 /** A kind whose panel is read under every tab of a fake storage, as the heroes' is, and which may end at a piece. */

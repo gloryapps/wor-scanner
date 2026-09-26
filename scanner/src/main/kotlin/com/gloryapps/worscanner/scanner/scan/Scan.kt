@@ -25,6 +25,9 @@ abstract class Scan<T> {
     /** What the kind makes of a whole frame, as the overlay's Read keeps it. */
     abstract fun readScreen(seen: Seen): T
 
+    /** Whether a tile sits at this column and row centre, the grid ending where none does; by default, by the word it prints below its centre. */
+    open fun tileAt(seen: Seen, column: Int, centreY: Int): Boolean = labelledTileAt(seen.lines, layout, seen.frame, column, centreY)
+
     /**
      * Scans the grid from where it stands to its end, filling `entries` as it goes.
      *

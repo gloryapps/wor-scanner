@@ -2,7 +2,7 @@ package com.gloryapps.worscanner.scanner.kinds.hero
 
 import com.gloryapps.worscanner.scanner.scan.Seen
 import com.gloryapps.worscanner.scanner.scan.countIn
-import com.gloryapps.worscanner.scanner.scan.tileAt
+import com.gloryapps.worscanner.scanner.scan.labelledTileAt
 import com.gloryapps.worscanner.scanner.scan.topRowCentre
 import com.gloryapps.worscanner.scanner.senses.Colour
 import com.gloryapps.worscanner.scanner.senses.Frame
@@ -47,7 +47,7 @@ class LdPlayerHeroReadingTest {
         val top = topRowCentre(reading.lines, layout, frame)!!
 
         for (column in 0 until layout.columns) {
-            assertTrue(tileAt(reading.lines, layout, frame, column, top), "no tile at column $column")
+            assertTrue(labelledTileAt(reading.lines, layout, frame, column, top), "no tile at column $column")
         }
     }
 

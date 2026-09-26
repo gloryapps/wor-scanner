@@ -1,5 +1,6 @@
 package com.gloryapps.worscanner.scanner.kinds
 
+import com.gloryapps.worscanner.scanner.kinds.artifact.ArtifactScan
 import com.gloryapps.worscanner.scanner.kinds.gear.GearScan
 import com.gloryapps.worscanner.scanner.kinds.hero.HeroScan
 import com.gloryapps.worscanner.scanner.scan.Scan
@@ -8,6 +9,7 @@ import com.gloryapps.worscanner.scanner.scan.Scan
 enum class Kind {
     GEAR,
     HEROES,
+    ARTIFACTS,
     ;
 
     val id: String get() = name.lowercase()
@@ -17,4 +19,5 @@ enum class Kind {
 fun Kind.scan(): Scan<*> = when (this) {
     Kind.GEAR -> GearScan
     Kind.HEROES -> HeroScan
+    Kind.ARTIFACTS -> ArtifactScan
 }

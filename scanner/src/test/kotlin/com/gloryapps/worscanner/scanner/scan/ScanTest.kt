@@ -123,6 +123,30 @@ class ScanTest {
     }
 
     @Test
+    fun `tiles that print no word are found by the kind's own sight of them, to the grid's last row`() = runTest {
+        val outcome = scanOver(FakeStorage(pieces = 31, selected = 0, wordless = true), FacedPieceScan())
+
+        assertIs<Outcome.Finished<Int>>(outcome)
+        assertEquals((0 until 31).toList(), outcome.pieces())
+    }
+
+    @Test
+    fun `a framed tile is begun on though no tile prints a word`() = runTest {
+        val outcome = scanOver(FakeStorage(pieces = 42, scrolledRows = 2.0, selected = 18, wordless = true), FacedPieceScan())
+
+        assertIs<Outcome.Finished<Int>>(outcome)
+        assertEquals((18 until 42).toList(), outcome.pieces())
+    }
+
+    @Test
+    fun `with no tile framed and no word printed there is nowhere to begin`() = runTest {
+        val outcome = scanOver(FakeStorage(pieces = 30, wordless = true), FacedPieceScan())
+
+        assertIs<Outcome.Stopped<Int>>(outcome)
+        assertEquals(Outcome.Reason.STORAGE_NOT_OPEN, outcome.reason)
+    }
+
+    @Test
     fun `a row whose numbers come back as one line still has every tile`() = runTest {
         val outcome = scanOver(FakeStorage(pieces = 30, runsNumbersTogether = true))
 

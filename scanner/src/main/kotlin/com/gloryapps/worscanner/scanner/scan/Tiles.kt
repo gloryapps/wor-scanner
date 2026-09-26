@@ -31,7 +31,7 @@ fun topRowCentre(lines: List<Line>, layout: GridLayout, frame: Frame): Int? {
  * The recogniser runs neighbouring numbers into one line when they sit level, so a line counts
  * for every column its box reaches over, not only the one it is centred on.
  */
-fun tileAt(lines: List<Line>, layout: GridLayout, frame: Frame, column: Int, centreY: Int): Boolean {
+fun labelledTileAt(lines: List<Line>, layout: GridLayout, frame: Frame, column: Int, centreY: Int): Boolean {
     val grid = layout.gridBox(frame)
     val x = layout.tileX(column, frame.width)
     val labelY = centreY + (layout.labelBelowCentre * layout.pitchY(frame.height)).toInt()
@@ -44,24 +44,12 @@ fun tileAt(lines: List<Line>, layout: GridLayout, frame: Frame, column: Int, cen
 }
 
 /**
- * The tile the game has selected, by the pale frame it draws on that tile's edge: the one whose
- * edge is far paler than every other's. Every tile has a coloured border of its own, red or gold,
- * as bright as the frame, so brightness tells nothing and paleness everything. Null where no tile
- * stands out.
+ * The framed tile anywhere between `highest` and `lowest`, by its column and its centre's height:
+ * the one column where [framedCentre] finds the frame. Null where none does, or where several do
+ * and the frame cannot be told from the art.
  */
-fun selectedTile(frame: Frame, layout: GridLayout, rowCentres: List<Int>): Pair<Int, Int>? {
-    val edges = rowCentres.indices.flatMap { row ->
-        (0 until layout.columns).map { column ->
-            Triple(row, column, edgePaleness(frame, layout.tileBox(frame, column, rowCentres[row])))
-        }
-    }
-    if (edges.isEmpty()) return null
-    val brightest = edges.maxBy { it.third }
-    val others = edges.filter { it !== brightest }.map { it.third }.sorted()
-    val usual = others.getOrElse(others.size / 2) { 0 }
-
-    return if (brightest.third >= FRAMED && brightest.third > usual * STANDS_OUT) brightest.first to brightest.second else null
-}
+fun framedTile(frame: Frame, layout: GridLayout, highest: Int, lowest: Int): Pair<Int, Int>? =
+    (0 until layout.columns).mapNotNull { column -> framedCentre(frame, layout, column, highest, lowest)?.let { column to it } }.singleOrNull()
 
 /**
  * Where the framed tile's centre now sits in its column, between `highest` and `lowest`: the

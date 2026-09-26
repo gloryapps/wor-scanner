@@ -77,14 +77,12 @@ internal class Walk<T>(
         }
     }
 
-    /* Finds the tile to begin on: the one the game has selected, else the first of the first whole row in view. */
+    /* Finds the tile to begin on: the one the game has framed, found anywhere a whole tile sits, else the first of the first whole row by its words. */
     private fun begin(): Outcome<T>? {
-        val top = topRowCentre(seen.lines, layout, seen.frame) ?: return stopped(Outcome.Reason.STORAGE_NOT_OPEN, "no tile numbers in the grid")
-        val selected = selectedTile(seen.frame, layout, metrics.wholeRows(top))
-        val (startRow, column) = selected ?: (0 to 0)
-        origin = top + startRow * metrics.pitch
-        startColumn = column
-        framed = if (selected != null) column to origin else null
+        val selected = framedTile(seen.frame, layout, metrics.grid.top + metrics.halfTile, metrics.floor)
+        origin = selected?.second ?: topRowCentre(seen.lines, layout, seen.frame) ?: return stopped(Outcome.Reason.STORAGE_NOT_OPEN, "no tile framed and no tile numbers in the grid")
+        startColumn = selected?.first ?: 0
+        framed = selected
 
         return null
     }
@@ -231,7 +229,7 @@ internal class Walk<T>(
         override suspend fun regrip(): Seen? = this@Walk.regrip()
     }
 
-    private fun tilesOn(centreY: Int): List<Int> = (0 until layout.columns).filter { tileAt(seen.lines, layout, seen.frame, it, centreY) }
+    private fun tilesOn(centreY: Int): List<Int> = (0 until layout.columns).filter { scan.tileAt(seen, it, centreY) }
 
     /* Whether the row below this one would print its numbers inside the grid, were it there. */
     private fun rowBelowInView(centreY: Int): Boolean =
@@ -251,9 +249,6 @@ internal class Walk<T>(
         val lowest = floor - pitch / 2
         val lowestAtEnd = floor - pitch / 4
         val halfTile = (layout.tileHeight * pitch / 2).toInt()
-
-        /** The centres of the rows whose tiles sit whole in view, from the row centred at `top` down. */
-        fun wholeRows(top: Int): List<Int> = (0..(floor - top) / pitch).map { top + it * pitch }.filter { it - halfTile >= grid.top }
     }
 
     private companion object {

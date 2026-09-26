@@ -2,7 +2,7 @@ package com.gloryapps.worscanner.scanner.kinds.gear
 
 import com.gloryapps.worscanner.scanner.scan.countIn
 import com.gloryapps.worscanner.scanner.scan.holds
-import com.gloryapps.worscanner.scanner.scan.tileAt
+import com.gloryapps.worscanner.scanner.scan.labelledTileAt
 import com.gloryapps.worscanner.scanner.scan.topRowCentre
 import com.gloryapps.worscanner.scanner.senses.Colour
 import com.gloryapps.worscanner.scanner.senses.Frame
@@ -51,7 +51,7 @@ class LdPlayerReadingTest {
 
         for (row in 0..2) {
             for (column in 0 until layout.columns) {
-                assertTrue(tileAt(reading.lines, layout, frame, column, top + row * pitch), "no tile at row $row column $column")
+                assertTrue(labelledTileAt(reading.lines, layout, frame, column, top + row * pitch), "no tile at row $row column $column")
             }
         }
     }

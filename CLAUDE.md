@@ -1,8 +1,8 @@
 # wor-scanner
 
 A native Android app that scans a Watcher of Realms storage on the device it runs on, reads each
-tile off its panel and writes a JSON the azhor lab imports. Gear today, heroes and artifacts as
-kinds to come. Shipped as an APK on GitHub.
+tile off its panel and writes a JSON the azhor lab imports: gear, legendary heroes and mythic
+artifacts. Shipped as an APK on GitHub.
 
 | Area | Read before working there |
 | --- | --- |
