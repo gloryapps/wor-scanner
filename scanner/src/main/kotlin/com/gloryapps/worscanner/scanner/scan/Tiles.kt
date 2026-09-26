@@ -1,7 +1,5 @@
 package com.gloryapps.worscanner.scanner.scan
 
-import com.gloryapps.worscanner.scanner.kinds.GridLayout
-import com.gloryapps.worscanner.scanner.kinds.holds
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.text.Box
 import com.gloryapps.worscanner.scanner.text.Line
@@ -52,11 +50,9 @@ fun tileAt(lines: List<Line>, layout: GridLayout, frame: Frame, column: Int, cen
  * stands out.
  */
 fun selectedTile(frame: Frame, layout: GridLayout, rowCentres: List<Int>): Pair<Int, Int>? {
-    val halfW = (layout.tileWidth * layout.pitchX(frame.width) / 2).toInt()
-    val halfH = (layout.tileHeight * layout.pitchY(frame.height) / 2).toInt()
     val edges = rowCentres.indices.flatMap { row ->
         (0 until layout.columns).map { column ->
-            Triple(row, column, edgePaleness(frame, layout.tileX(column, frame.width), rowCentres[row], halfW, halfH))
+            Triple(row, column, edgePaleness(frame, layout.tileBox(frame, column, rowCentres[row])))
         }
     }
     if (edges.isEmpty()) return null
@@ -75,13 +71,11 @@ fun selectedTile(frame: Frame, layout: GridLayout, rowCentres: List<Int>): Pair<
  * tiles' numbers can. Null where no height shows a frame.
  */
 fun framedCentre(frame: Frame, layout: GridLayout, column: Int, highest: Int, lowest: Int): Int? {
-    val halfW = (layout.tileWidth * layout.pitchX(frame.width) / 2).toInt()
-    val halfH = (layout.tileHeight * layout.pitchY(frame.height) / 2).toInt()
     var best: Pair<Int, Int>? = null
     for (y in highest..lowest step SCAN_STEP) {
-        val paleness = edgePaleness(frame, layout.tileX(column, frame.width), y, halfW, halfH)
+        val paleness = edgePaleness(frame, layout.tileBox(frame, column, y))
         if (paleness < FRAMED || best != null && paleness <= best.second) continue
-        val others = (0 until layout.columns).filter { it != column }.map { edgePaleness(frame, layout.tileX(it, frame.width), y, halfW, halfH) }.sorted()
+        val others = (0 until layout.columns).filter { it != column }.map { edgePaleness(frame, layout.tileBox(frame, it, y)) }.sorted()
         val usual = others.getOrElse(others.size / 2) { 0 }
         if (paleness > usual * STANDS_OUT) best = y to paleness
     }
@@ -90,15 +84,15 @@ fun framedCentre(frame: Frame, layout: GridLayout, column: Int, highest: Int, lo
 }
 
 /* The frame is a line a few pixels wide, so each sample takes the palest pixel across the edge. */
-private fun edgePaleness(frame: Frame, centreX: Int, centreY: Int, halfW: Int, halfH: Int): Int {
+private fun edgePaleness(frame: Frame, tile: Box): Int {
     var sum = 0
     var count = 0
     for (step in 0 until EDGE_SAMPLES) {
         val along = (2 * step + 1).toDouble() / (2 * EDGE_SAMPLES)
-        val x = centreX - halfW + (2 * halfW * along).toInt()
-        val y = centreY - halfH + (2 * halfH * along).toInt()
-        for ((sx, sy, across) in listOf(Sample(x, centreY - halfH, 0 to 1), Sample(x, centreY + halfH, 0 to 1), Sample(centreX - halfW, y, 1 to 0), Sample(centreX + halfW, y, 1 to 0))) {
-            sum += (-ACROSS..ACROSS).maxOf { frame.palenessAt((sx + across.first * it).coerceIn(0, frame.width - 1), (sy + across.second * it).coerceIn(0, frame.height - 1)) }
+        val x = tile.left + ((tile.right - tile.left) * along).toInt()
+        val y = tile.top + ((tile.bottom - tile.top) * along).toInt()
+        for ((sx, sy, across) in listOf(Sample(x, tile.top, 0 to 1), Sample(x, tile.bottom, 0 to 1), Sample(tile.left, y, 1 to 0), Sample(tile.right, y, 1 to 0))) {
+            sum += (-ACROSS..ACROSS).maxOf { frame.colourAt((sx + across.first * it).coerceIn(0, frame.width - 1), (sy + across.second * it).coerceIn(0, frame.height - 1)).paleness }
             count++
         }
     }
@@ -119,3 +113,12 @@ private const val STANDS_OUT = 1.6
 
 /** The grid's box on this frame, shared so every reader of the grid reads the same rectangle. */
 fun GridLayout.gridBox(frame: Frame): Box = grid.box(frame.width, frame.height)
+
+/** The tile's own rectangle on this frame, at its column and its centre's height; the selection frame is drawn on its edge. */
+fun GridLayout.tileBox(frame: Frame, column: Int, centreY: Int): Box {
+    val x = tileX(column, frame.width)
+    val halfW = (tileWidth * pitchX(frame.width) / 2).toInt()
+    val halfH = (tileHeight * pitchY(frame.height) / 2).toInt()
+
+    return Box(x - halfW, centreY - halfH, x + halfW, centreY + halfH)
+}

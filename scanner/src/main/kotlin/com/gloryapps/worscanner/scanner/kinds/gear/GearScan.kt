@@ -2,23 +2,40 @@ package com.gloryapps.worscanner.scanner.kinds.gear
 
 import com.gloryapps.worscanner.scanner.game.Attribute
 import com.gloryapps.worscanner.scanner.game.ReadAttribute
-import com.gloryapps.worscanner.scanner.kinds.Reader
+import com.gloryapps.worscanner.scanner.scan.Read
+import com.gloryapps.worscanner.scanner.scan.Scan
+import com.gloryapps.worscanner.scanner.scan.Seen
+import com.gloryapps.worscanner.scanner.scan.Tapped
 import com.gloryapps.worscanner.scanner.text.ValueUnit
 import com.gloryapps.worscanner.scanner.text.flatten
 import com.gloryapps.worscanner.scanner.text.holdsName
 import com.gloryapps.worscanner.scanner.text.nameIn
 import com.gloryapps.worscanner.scanner.text.numbersIn
+import com.gloryapps.worscanner.scanner.text.rowsOf
 import com.gloryapps.worscanner.scanner.text.wordIn
 
 /**
- * The gear card as the storage's panel prints it: a banner, a title, an exclusive's name, the
- * attribute rows, and the set block at the foot. What the card did not name is null.
+ * How gear is scanned: its storage, its record, and the card a piece's tile draws in the panel, a
+ * banner, a title, an exclusive's name, the attribute rows, and the set block at the foot. What
+ * the card did not name is null.
  */
-object GearReader : Reader<ScannedGear> {
+object GearScan : Scan<ScannedGear>() {
+    override val layout = GEAR_STORAGE
+    override val serializer = ScannedGear.serializer()
+
     /** Where the piece's own rows end: the set block below them talks about attributes too. The count reads `B` as often as `3`. */
     private val SET_BLOCK = Regex("\\(\\s*\\S{1,2}\\s*pieces?\\s*\\)", RegexOption.IGNORE_CASE)
 
-    override fun read(rows: List<String>): ScannedGear {
+    override suspend fun readTile(tapped: Tapped): Read<ScannedGear> {
+        val rows = tapped.seen.rowsIn(layout.panel)
+        val card = read(rows)
+
+        return Read.Card(card, rows, listOf(tapped.seen.frame), closed(card))
+    }
+
+    override fun readScreen(seen: Seen): ScannedGear = read(rowsOf(seen.lines))
+
+    internal fun read(rows: List<String>): ScannedGear {
         val set = setIn(rows)
         val read = attributesIn(rows)
         val slot = slotIn(rows, set, read)
@@ -34,7 +51,8 @@ object GearReader : Reader<ScannedGear> {
         )
     }
 
-    override fun closed(record: ScannedGear): Boolean = record.set != null && record.slot != null
+    /** Whether the card names what identifies it; one that does not keeps its panel as an image. */
+    internal fun closed(record: ScannedGear): Boolean = record.set != null && record.slot != null
 
     private fun setBlockAt(rows: List<String>): Int = rows.indexOfFirst { SET_BLOCK.containsMatchIn(it) }
 

@@ -1,0 +1,321 @@
+{
+    "width": 1280,
+    "height": 720,
+    "lines": [
+        {
+            "text": "V212/720",
+            "box": {
+                "left": 32,
+                "top": 78,
+                "right": 132,
+                "bottom": 98
+            }
+        },
+        {
+            "text": "Lvl, MaX Lvl. Max",
+            "box": {
+                "left": 46,
+                "top": 207,
+                "right": 190,
+                "bottom": 221
+            }
+        },
+        {
+            "text": "1vi. MaX",
+            "box": {
+                "left": 45,
+                "top": 341,
+                "right": 98,
+                "bottom": 353
+            }
+        },
+        {
+            "text": "HERO)",
+            "box": {
+                "left": 121,
+                "top": 10,
+                "right": 261,
+                "bottom": 46
+            }
+        },
+        {
+            "text": "Lyl,",
+            "box": {
+                "left": 45,
+                "top": 478,
+                "right": 61,
+                "bottom": 489
+            }
+        },
+        {
+            "text": "Lvl Max",
+            "box": {
+                "left": 44,
+                "top": 609,
+                "right": 98,
+                "bottom": 624
+            }
+        },
+        {
+            "text": "wMax",
+            "box": {
+                "left": 136,
+                "top": 473,
+                "right": 187,
+                "bottom": 494
+            }
+        },
+        {
+            "text": "Lvl. Max",
+            "box": {
+                "left": 228,
+                "top": 208,
+                "right": 282,
+                "bottom": 223
+            }
+        },
+        {
+            "text": "Rarity",
+            "box": {
+                "left": 106,
+                "top": 678,
+                "right": 155,
+                "bottom": 695
+            }
+        },
+        {
+            "text": "Jl, MaX",
+            "box": {
+                "left": 229,
+                "top": 341,
+                "right": 282,
+                "bottom": 352
+            }
+        },
+        {
+            "text": "1Max",
+            "box": {
+                "left": 239,
+                "top": 472,
+                "right": 285,
+                "bottom": 483
+            }
+        },
+        {
+            "text": "Ly Max Lvl. Max",
+            "box": {
+                "left": 138,
+                "top": 607,
+                "right": 282,
+                "bottom": 625
+            }
+        },
+        {
+            "text": "99+",
+            "box": {
+                "left": 371,
+                "top": 445,
+                "right": 400,
+                "bottom": 461
+            }
+        },
+        {
+            "text": "OPEN",
+            "box": {
+                "left": 496,
+                "top": 29,
+                "right": 529,
+                "bottom": 39
+            }
+        },
+        {
+            "text": "Scan",
+            "box": {
+                "left": 486,
+                "top": 82,
+                "right": 524,
+                "bottom": 94
+            }
+        },
+        {
+            "text": "Read",
+            "box": {
+                "left": 486,
+                "top": 125,
+                "right": 524,
+                "bottom": 138
+            }
+        },
+        {
+            "text": "Open the app",
+            "box": {
+                "left": 485,
+                "top": 167,
+                "right": 602,
+                "bottom": 186
+            }
+        },
+        {
+            "text": "Close overlay",
+            "box": {
+                "left": 485,
+                "top": 224,
+                "right": 612,
+                "bottom": 243
+            }
+        },
+        {
+            "text": "Quick Star Up",
+            "box": {
+                "left": 823,
+                "top": 674,
+                "right": 926,
+                "bottom": 690
+            }
+        },
+        {
+            "text": "Regalis Excelsa",
+            "box": {
+                "left": 1031,
+                "top": 301,
+                "right": 1139,
+                "bottom": 318
+            }
+        },
+        {
+            "text": "INGRID",
+            "box": {
+                "left": 1057,
+                "top": 327,
+                "right": 1141,
+                "bottom": 347
+            }
+        },
+        {
+            "text": "36,083",
+            "box": {
+                "left": 1027,
+                "top": 360,
+                "right": 1106,
+                "bottom": 386
+            }
+        },
+        {
+            "text": "AOE M. ATK",
+            "box": {
+                "left": 1044,
+                "top": 395,
+                "right": 1128,
+                "bottom": 411
+            }
+        },
+        {
+            "text": "Single-Target M. ATK",
+            "box": {
+                "left": 975,
+                "top": 422,
+                "right": 1130,
+                "bottom": 438
+            }
+        },
+        {
+            "text": "Range Boost",
+            "box": {
+                "left": 1040,
+                "top": 448,
+                "right": 1130,
+                "bottom": 463
+            }
+        },
+        {
+            "text": "Continuous DMG",
+            "box": {
+                "left": 1005,
+                "top": 472,
+                "right": 1130,
+                "bottom": 484
+            }
+        },
+        {
+            "text": "Anti-Air",
+            "box": {
+                "left": 1068,
+                "top": 497,
+                "right": 1130,
+                "bottom": 509
+            }
+        },
+        {
+            "text": "Lvl. 60/60.",
+            "box": {
+                "left": 941,
+                "top": 522,
+                "right": 1076,
+                "bottom": 548
+            }
+        },
+        {
+            "text": "Max",
+            "box": {
+                "left": 1039,
+                "top": 667,
+                "right": 1082,
+                "bottom": 682
+            }
+        },
+        {
+            "text": "Attributes",
+            "box": {
+                "left": 1172,
+                "top": 60,
+                "right": 1269,
+                "bottom": 75
+            }
+        },
+        {
+            "text": "Promotion",
+            "box": {
+                "left": 1172,
+                "top": 159,
+                "right": 1272,
+                "bottom": 176
+            }
+        },
+        {
+            "text": "Gear",
+            "box": {
+                "left": 1199,
+                "top": 267,
+                "right": 1243,
+                "bottom": 281
+            }
+        },
+        {
+            "text": "Skills",
+            "box": {
+                "left": 1196,
+                "top": 370,
+                "right": 1244,
+                "bottom": 386
+            }
+        },
+        {
+            "text": "Awaken",
+            "box": {
+                "left": 1181,
+                "top": 475,
+                "right": 1258,
+                "bottom": 491
+            }
+        },
+        {
+            "text": "Artifact",
+            "box": {
+                "left": 1183,
+                "top": 580,
+                "right": 1258,
+                "bottom": 596
+            }
+        }
+    ]
+}

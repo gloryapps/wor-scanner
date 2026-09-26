@@ -1,5 +1,6 @@
-package com.gloryapps.worscanner.scanner.kinds
+package com.gloryapps.worscanner.scanner.scan
 
+import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.text.Box
 import com.gloryapps.worscanner.scanner.text.Line
 
@@ -11,6 +12,12 @@ data class Region(val left: Double, val top: Double, val right: Double, val bott
         (right * width).toInt(),
         (bottom * height).toInt(),
     )
+}
+
+/** A point in fractions of the display, so one tap serves every resolution. */
+data class Spot(val x: Double, val y: Double) {
+    /** The pixel the point falls on in this frame. */
+    fun on(frame: Frame): Pair<Int, Int> = (x * frame.width).toInt() to (y * frame.height).toInt()
 }
 
 /** Whether the line's middle falls inside the box. */

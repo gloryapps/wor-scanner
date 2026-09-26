@@ -4,6 +4,7 @@
     <string name="touch_service_description">Taps through a Watcher of Realms storage while a scan runs. Nothing is read from other apps.</string>
 
     <string name="kind_gear">Gear</string>
+    <string name="kind_heroes">Heroes</string>
 
     <string name="emulator_ldplayer">LDPlayer</string>
     <string name="emulator_ldplayer_pc">On Windows: Documents\\LDPlayer\\Pictures\\WoR Scanner</string>
@@ -16,7 +17,8 @@
     <string name="home_on">on</string>
     <string name="home_grant">grant</string>
     <string name="home_scan_title">Scan your %1$s</string>
-    <string name="home_scan_said">Open Storage → %1$s in the game. The overlay sits at the top of the screen and reads as you scroll the grid. It stops on its own once it stops finding new pieces.</string>
+    <string name="home_scan_said_gear">Open Storage → Gear in the game. The overlay sits at the top of the screen and reads as you scroll the grid. It stops on its own once it stops finding new pieces.</string>
+    <string name="home_scan_said_heroes">Open Hero in the game, sort by Rarity ↓ and select the first hero. The overlay reads each legendary under Attributes, Skills and Awaken and stops at the first epic, so keep epics out of your favourites.</string>
     <string name="home_start">Start</string>
     <string name="home_to_game">→ game</string>
     <string name="home_capturing">Capturing. Open the storage in the game and press Scan on the capsule.</string>

@@ -1,9 +1,6 @@
 package com.gloryapps.worscanner.scanner.scan
 
-import com.gloryapps.worscanner.scanner.kinds.GridLayout
-import com.gloryapps.worscanner.scanner.kinds.Reader
-import com.gloryapps.worscanner.scanner.kinds.Region
-import com.gloryapps.worscanner.scanner.kinds.Scannable
+import com.gloryapps.worscanner.scanner.senses.Colour
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.senses.Screen
 import com.gloryapps.worscanner.scanner.senses.TextReader
@@ -15,14 +12,14 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * A storage screen made of numbers, and the kind that reads it: `pieces` tiles in the layout's
- * grid, a header with the count, and a panel naming whichever tile is selected by its number.
- * Every tile prints its badge and a number; the selected tile has a light frame on its edge, the
- * rest of the art is dark. The record is the number, so the scan is proven over no real kind.
+ * A storage screen made of numbers: `pieces` tiles in the layout's grid, a header with the count,
+ * and a panel naming whichever tile is selected by its number, under whichever tab is chosen where
+ * there are tabs. Every tile prints its badge and a number; the selected tile has a light frame on
+ * its edge, the rest of the art is dark.
  */
 class FakeStorage(
     private val pieces: Int,
-    override val layout: GridLayout = FAKE_GRID,
+    val layout: GridLayout = FAKE_GRID,
     /** Rows the grid actually moves on a drag, whole or not; the scan must not care. */
     private val rowsPerDrag: Double = layout.rowsPerDrag.toDouble(),
     private val storageOpen: Boolean = true,
@@ -41,19 +38,32 @@ class FakeStorage(
     private val sameNumbers: Boolean = false,
     /** Drags, counted from one, that the game drops: the finger moves, the grid does not. */
     private val droppedDrags: Set<Int> = emptySet(),
-) : Screen, Touch, TextReader, Scannable<Int> {
-    override val serializer = Int.serializer()
-    override val reader = object : Reader<Int> {
-        override fun read(rows: List<String>): Int = rows.single().substringAfter("Piece ").toIntOrNull() ?: -1
-        override fun closed(record: Int): Boolean = record >= 0
-    }
+    /** Tabs down the display's right edge; each switch re-centres the grid on the selected piece, as the hero screen's do. */
+    tabCount: Int = 0,
+    /** A tab under which the grid lists its own tiles, the first piece left out, as Awaken lists only the heroes that awaken. */
+    private val ownListTab: Int? = null,
+    /** Tab taps, counted from one, that the game drops: the panel stays as it was. */
+    private val droppedTabTaps: Set<Int> = emptySet(),
+    /** A tab tap, counted from one, after which the game shows another screen altogether. */
+    private val leavesOnTabTap: Int? = null,
+    /** Captures after a switch in which the panel is still blank, the game drawing it. */
+    private val drawsTabsOver: Int = 0,
+) : Screen, Touch, TextReader {
+    val tabs = (0 until tabCount).map { Spot(TAB_X, 0.10 + 0.08 * it) }
     val taps = mutableListOf<Pair<Int, Int>>()
     var drags = 0
+    private var tabTaps = 0
+    private var tab = 0
+    private var away = false
+    /** Captures left before a switched tab's panel is drawn. */
+    private var drawing = 0
     private val pitch = (layout.tilePitchY * 1000).toInt()
     private val pitchX = (layout.tilePitchX * 1000).toInt()
     /** Where row zero's centre sits when the grid is at its top. */
     private val restingTop = (layout.gridTop * 1000).toInt() + pitch / 2 + 10
-    private val rows get() = (pieces + layout.columns - 1) / layout.columns
+    /** Pieces the current list leaves out at its start. */
+    private val skipped get() = if (tab == ownListTab) 1 else 0
+    private val rows get() = (pieces - skipped + layout.columns - 1) / layout.columns
     private val floor get() = (restingTop + (rows - 1) * pitch - ((layout.gridBottom * 1000).toInt() - pitch / 2)).coerceAtLeast(0)
     /** How far the grid has scrolled, in pixels of a 1000-pixel display. */
     private var scrolled = (scrolledRows * pitch).toInt().coerceIn(0, floor)
@@ -63,14 +73,21 @@ class FakeStorage(
 
     private fun rowCentre(row: Int) = restingTop + row * pitch - scrolled
 
+    /** Where the selected piece sits in the current list, if it is listed. */
+    private fun selectedPlace(): Int? = selected?.minus(skipped)?.takeIf { it >= 0 }
+
     inner class Fake : Frame {
         override val width = 1000
         override val height = 1000
         val shown = selected
+        val tab = this@FakeStorage.tab
+        val away = this@FakeStorage.away
+        val blank = drawing > 0
+        private val place = if (away) null else selectedPlace()
         private val centres = (0 until rows).map { rowCentre(it) }
 
-        override fun palenessAt(x: Int, y: Int): Int {
-            val chosen = shown ?: return DARK
+        override fun colourAt(x: Int, y: Int): Colour {
+            val chosen = place ?: return DARK
             val cx = layout.tileX(chosen % layout.columns, 1000)
             val cy = centres[chosen / layout.columns]
             val halfW = (layout.tileWidth * pitchX / 2).toInt()
@@ -88,14 +105,26 @@ class FakeStorage(
             gliding -= step
         }
 
-        return Fake()
+        return Fake().also { if (drawing > 0) drawing-- }
     }
 
     override suspend fun tap(x: Int, y: Int) {
         taps += x to y
+        if (x >= (TAB_X * 1000).toInt() - 5) return switchTo(tabs.indexOfFirst { abs((it.y * 1000).toInt() - y) <= 5 })
         val column = ((x - layout.firstTileX * 1000) / pitchX).roundToInt()
         val row = ((y + scrolled - restingTop).toDouble() / pitch).roundToInt()
-        selected = row * layout.columns + column
+        selected = row * layout.columns + column + skipped
+    }
+
+    /* A switch redraws the panel and brings the selected piece's row to the middle of the viewport, as far as the grid allows. */
+    private fun switchTo(index: Int) {
+        if (++tabTaps in droppedTabTaps) return
+        if (tabTaps == leavesOnTabTap) away = true
+        tab = index
+        drawing = drawsTabsOver
+        val place = selectedPlace() ?: return
+        val middle = ((layout.gridTop + layout.gridBottom) / 2 * 1000).toInt()
+        scrolled = (restingTop + place / layout.columns * pitch - middle).coerceIn(0, floor)
     }
 
     /* The grid stops where its last row sits on the viewport's floor, as a list does. */
@@ -110,11 +139,14 @@ class FakeStorage(
 
     override suspend fun read(frame: Frame): List<Line> {
         val fake = frame as Fake
-        val lines = mutableListOf<Line>()
+        /* The overlay's own words, outside every region the scan reads. */
+        val lines = mutableListOf(Line("Scan Stop", Box(10, 10, 120, 30)))
+        if (fake.away) return lines
         if (storageOpen) lines += at("${pieces}/2,500", layout.count)
-        fake.shown?.let { index ->
+        fake.shown?.takeUnless { fake.blank }?.let { index ->
             val panel = layout.panel
-            lines += at(if (index in unreadable) "Piece ??" else "Piece $index", Region(panel.left, panel.top, panel.right, panel.top + (panel.bottom - panel.top) / 8))
+            val named = if (index in unreadable) "Piece ??" else "Piece $index"
+            lines += at(if (tabs.isEmpty()) named else "$named under tab ${fake.tab}", Region(panel.left, panel.top, panel.right, panel.top + (panel.bottom - panel.top) / 8))
         }
         /* Every tile in view carries its badge and its number, the way the game prints them. */
         for (row in 0 until rows) {
@@ -123,7 +155,7 @@ class FakeStorage(
             val labelTop = centre + (layout.labelBelowCentre * pitch).toInt()
             val numbers = mutableListOf<Line>()
             for (column in 0 until layout.columns) {
-                val index = row * layout.columns + column
+                val index = row * layout.columns + column + skipped
                 if (index >= pieces) break
                 val x = layout.tileX(column, 1000)
                 lines += Line("+16", Box(x + 10, centre - 60, x + 40, centre - 45))
@@ -136,19 +168,54 @@ class FakeStorage(
                 lines += numbers
             }
         }
-        /* The overlay's own words, outside every region the scan reads. */
-        lines += Line("Scan Stop", Box(10, 10, 120, 30))
-
         return lines
     }
 
     private fun at(text: String, region: Region) = Line(text, region.box(1000, 1000))
 
     private companion object {
-        const val DARK = 40
-        const val FRAME = 230
+        const val TAB_X = 0.99
+        /* Greys, each channel the same. */
+        val DARK = Colour(40 * 0x010101)
+        val FRAME = Colour(230 * 0x010101)
     }
 }
+
+/** The kind a fake storage holds: a piece is the number its panel prints, so the walk is proven over no real kind. */
+open class PieceScan(override val layout: GridLayout = FAKE_GRID) : Scan<Int>() {
+    override val serializer = Int.serializer()
+
+    override suspend fun readTile(tapped: Tapped): Read<Int> {
+        val rows = tapped.seen.rowsIn(layout.panel)
+        val piece = pieceIn(rows.single())
+
+        return Read.Card(piece, rows, listOf(tapped.seen.frame), piece >= 0)
+    }
+
+    override fun readScreen(seen: Seen): Int = pieceIn(seen.rowsIn(layout.panel).single())
+}
+
+/** A kind whose panel is read under every tab of a fake storage, as the heroes' is, and which may end at a piece. */
+class TabbedPieceScan(private val tabs: List<Spot>, private val endsAt: Int? = null) : Scan<Int>() {
+    override val layout = FAKE_GRID
+    override val serializer = Int.serializer()
+
+    override suspend fun readTile(tapped: Tapped): Read<Int> {
+        val shown = listOf(tapped.seen) + tabs.drop(1).map { tapped.show(it) }
+        tapped.show(tabs.first())
+        tapped.regrip() ?: return Read.Lost("back on the first tab, no piece is framed")
+        val rows = shown.flatMap { it.rowsIn(layout.panel) }
+        /* Tabs that name different pieces read as no piece. */
+        val piece = rows.map(::pieceIn).distinct().singleOrNull() ?: -1
+        if (piece == endsAt) return Read.Beyond
+
+        return Read.Card(piece, rows, shown.map { it.frame }, piece >= 0)
+    }
+
+    override fun readScreen(seen: Seen): Int = pieceIn(seen.rowsIn(layout.panel).single())
+}
+
+private fun pieceIn(row: String): Int = row.substringAfter("Piece ").substringBefore(" ").toIntOrNull() ?: -1
 
 /** A grid of seven, like the game's, in round fractions that belong to no kind. */
 val FAKE_GRID = GridLayout(

@@ -64,6 +64,7 @@ import com.gloryapps.worscanner.ui.said
 import com.gloryapps.worscanner.ui.shown
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.label
+import com.gloryapps.worscanner.ui.said
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -183,7 +184,7 @@ internal fun Start(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     Card(Modifier.fillMaxWidth(), leading = true) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stringResource(R.string.home_scan_title, stringResource(state.kind.label)), style = Lettering.title, color = Colors.text)
-            Text(stringResource(R.string.home_scan_said, stringResource(state.kind.label)), style = Lettering.body, color = Colors.muted)
+            Text(stringResource(state.kind.said), style = Lettering.body, color = Colors.muted)
         }
         if (state.capturing) {
             Text(stringResource(R.string.home_capturing), style = Lettering.body, color = Colors.accent)

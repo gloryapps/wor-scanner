@@ -26,4 +26,17 @@ class MatchingTest {
     fun `ATK does not shadow ATK Bonus`() {
         assertEquals(Attribute.ATK_BONUS, nameIn("ATK Bonus 66%", Attribute.entries) { it.word })
     }
+
+    @Test
+    fun `a word read with slips is counted each time it sits in the line`() {
+        assertEquals(3, timesHeld("Max Level Max Letel Max Level", "Max Level"))
+        assertEquals(1, timesHeld("1/5Mextevel", "Max Level"))
+        assertEquals(2, timesHeld("Max Level Max Eevel ", "Max Level"))
+    }
+
+    @Test
+    fun `a line that holds no such word counts none`() {
+        assertEquals(0, timesHeld("Random Upgrade", "Max Level"))
+        assertEquals(0, timesHeld("Lvl. 2/5", "Max Level"))
+    }
 }

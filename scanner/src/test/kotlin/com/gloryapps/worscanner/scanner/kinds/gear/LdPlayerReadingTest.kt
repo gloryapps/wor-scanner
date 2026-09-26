@@ -1,9 +1,10 @@
 package com.gloryapps.worscanner.scanner.kinds.gear
 
-import com.gloryapps.worscanner.scanner.kinds.holds
 import com.gloryapps.worscanner.scanner.scan.countIn
+import com.gloryapps.worscanner.scanner.scan.holds
 import com.gloryapps.worscanner.scanner.scan.tileAt
 import com.gloryapps.worscanner.scanner.scan.topRowCentre
+import com.gloryapps.worscanner.scanner.senses.Colour
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.text.Line
 import com.gloryapps.worscanner.scanner.text.rowsOf
@@ -24,7 +25,7 @@ class LdPlayerReadingTest {
     private val frame = object : Frame {
         override val width = reading.width
         override val height = reading.height
-        override fun palenessAt(x: Int, y: Int) = 0
+        override fun colourAt(x: Int, y: Int) = Colour(0)
     }
 
     private val layout = GEAR_STORAGE
@@ -58,7 +59,7 @@ class LdPlayerReadingTest {
     @Test
     fun `the panel region reads the selected piece whole`() {
         val box = layout.panel.box(frame.width, frame.height)
-        val card = GearReader.read(rowsOf(reading.lines.filter { box.holds(it) }))
+        val card = GearScan.read(rowsOf(reading.lines.filter { box.holds(it) }))
 
         assertEquals("cataclysm", card.set)
         assertEquals("VIERNA", card.exclusive)

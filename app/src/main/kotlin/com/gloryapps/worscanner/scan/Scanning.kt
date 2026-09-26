@@ -5,12 +5,11 @@ import com.gloryapps.worscanner.capture.BitmapFrame
 import com.gloryapps.worscanner.capture.CaptureSession
 import com.gloryapps.worscanner.report.CrashReports
 import com.gloryapps.worscanner.scanner.kinds.Kind
-import com.gloryapps.worscanner.scanner.kinds.Scannable
+import com.gloryapps.worscanner.scanner.kinds.scan
 import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.scanner.scan.Progress
 import com.gloryapps.worscanner.scanner.scan.Scan
 import com.gloryapps.worscanner.scanner.scan.ScanEntry
-import com.gloryapps.worscanner.scanner.scan.scannable
 import com.gloryapps.worscanner.scanner.senses.Screen
 import com.gloryapps.worscanner.scanner.senses.TextReader
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,13 +37,13 @@ class Scanning(
     private val _state = MutableStateFlow<ScanState>(ScanState.Idle)
     val state: StateFlow<ScanState> = _state.asStateFlow()
 
-    suspend fun run(kind: Kind) = run(kind, kind.scannable())
+    suspend fun run(kind: Kind) = run(kind, kind.scan())
 
     /* The record's type is fixed here, for the length of one scan, and the app above never sees it. */
-    private suspend fun <T> run(kind: Kind, scannable: Scannable<T>) {
+    private suspend fun <T> run(kind: Kind, scan: Scan<T>) {
         val screen: Screen = checkNotNull(session.screen.value) { "no capture session" }
         val hand = checkNotNull(touch.hand.value) { "accessibility service not bound" }
-        val writer = ScanWriter(context, kind, scannable)
+        val writer = ScanWriter(context, kind, scan)
         val first = screen.capture() as BitmapFrame
         reports.scanning(kind, first)
 
@@ -53,7 +52,7 @@ class Scanning(
 
         _state.value = ScanState.Running(kind, Progress(0, 0))
         try {
-            outcome = Scan(scannable, screen, hand, reader, writer.keeper).run(entries) { _state.value = ScanState.Running(kind, it) }
+            outcome = scan.run(screen, hand, reader, writer.keeper, entries) { _state.value = ScanState.Running(kind, it) }
         } finally {
             /* A cancelled scan ends by its exception; what it read before is still worth writing. */
             val ended = outcome ?: Outcome.Stopped(Outcome.Reason.CANCELLED, entries, "stopped by the user")
