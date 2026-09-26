@@ -11,3 +11,6 @@ local.properties
 *.aab
 mapping-*.txt
 .claude/
+
+# Working notes: plans and reviews stay on the machine
+docs/
