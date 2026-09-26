@@ -32,7 +32,7 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
     private val savedState = SavedStateRegistryController.create(this)
     private val manager = context.getSystemService(WindowManager::class.java)
     private var hairline: ComposeView? = null
-    private var strip: ComposeView? = null
+    private var capsule: ComposeView? = null
     private var sheet: ComposeView? = null
     private var target: ComposeView? = null
     private val over = mutableStateOf(false)
@@ -47,7 +47,7 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
         savedState.performRestore(null)
         registry.currentState = Lifecycle.State.RESUMED
         hairline = compose { HairlineContent() }.also { manager.addView(it, hairlineParams) }
-        strip = compose {
+        capsule = compose {
             OverlayContent(onOpen = ::toggleSheet, onDrag = ::moveBy, onDragStart = ::held, onDragEnd = ::dropped)
         }.also { manager.addView(it, params) }
     }
@@ -55,8 +55,8 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
     fun hide() {
         hideTarget()
         hideSheet()
-        strip?.let(manager::removeView)
-        strip = null
+        capsule?.let(manager::removeView)
+        capsule = null
         hairline?.let(manager::removeView)
         hairline = null
         registry.currentState = Lifecycle.State.DESTROYED
@@ -70,13 +70,13 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
 
     /** The capsule is parked centred until something takes hold of it; from then on it is placed by its corner. */
     private fun pin() {
-        val strip = strip ?: return
+        val capsule = capsule ?: return
         if (params.gravity == (Gravity.TOP or Gravity.START)) return
-        val at = strip.onScreen()
+        val at = capsule.onScreen()
         params.gravity = Gravity.TOP or Gravity.START
         params.x = at[0]
         params.y = at[1]
-        manager.updateViewLayout(strip, params)
+        manager.updateViewLayout(capsule, params)
     }
 
     private fun toggleSheet() {
@@ -89,13 +89,13 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
      * that opened it, which is a flicker.
      */
     private fun showSheet() {
-        val strip = strip ?: return
+        val capsule = capsule ?: return
         pin()
         val height = context.resources.displayMetrics.heightPixels
-        val below = params.y + strip.height / 2 < height / 2
+        val below = params.y + capsule.height / 2 < height / 2
         val beside = layout(if (below) Gravity.TOP or Gravity.START else Gravity.BOTTOM or Gravity.START).apply {
             x = params.x.coerceIn(INSET_PX, (context.resources.displayMetrics.widthPixels - SHEET_WIDTH - INSET_PX).coerceAtLeast(INSET_PX))
-            y = if (below) params.y + strip.height - PAD + GAP else height - params.y - PAD + GAP
+            y = if (below) params.y + capsule.height - PAD + GAP else height - params.y - PAD + GAP
         }
         sheet = compose { SheetContent(onDone = ::hideSheet) }.also { manager.addView(it, beside) }
     }
@@ -109,7 +109,7 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
     private fun moveBy(dx: Float, dy: Float) {
         params.x += dx.toInt()
         params.y += dy.toInt()
-        strip?.let { manager.updateViewLayout(it, params) }
+        capsule?.let { manager.updateViewLayout(it, params) }
         over.value = nearTarget()
     }
 
@@ -125,7 +125,7 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
     }
 
     /*
-     * Let go over the target, the strip is closed with the session, the way a bubble is; let go
+     * Let go over the target, the capsule is closed with the session, the way a bubble is; let go
      * anywhere else, it stays there. Both are measured where the screen shows them, since the system
      * places an overlay window under the status bar and the params do not say so.
      */
@@ -136,13 +136,13 @@ class OverlayWindow(private val context: Context, private val onClose: () -> Uni
     }
 
     private fun nearTarget(): Boolean {
-        val strip = strip ?: return false
+        val capsule = capsule ?: return false
         val target = target ?: return false
         val centre = target.onScreen()
-        val held = strip.onScreen()
+        val held = capsule.onScreen()
         val distance = hypot(
-            held[0] + strip.width / 2.0 - (centre[0] + target.width / 2.0),
-            held[1] + strip.height / 2.0 - (centre[1] + target.height / 2.0),
+            held[0] + capsule.width / 2.0 - (centre[0] + target.width / 2.0),
+            held[1] + capsule.height / 2.0 - (centre[1] + target.height / 2.0),
         )
 
         return distance < TARGET_SIZE

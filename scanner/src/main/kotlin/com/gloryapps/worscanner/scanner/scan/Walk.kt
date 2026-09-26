@@ -8,10 +8,12 @@ import com.gloryapps.worscanner.scanner.text.Box
 import com.gloryapps.worscanner.scanner.text.rowsOf
 import kotlinx.coroutines.delay
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * One run of a scan over its kind's grid: tap a tile, let the kind read it, next tile; drag when
- * the next row sits too low to tap and find where the grid landed by the words on its tiles.
+ * the next row sits too low to tap and find where the grid landed by the framed tile, else by the
+ * words on its tiles.
  *
  * It begins on the tile the game has selected, or on the first whole row in view where none is,
  * and ends where the rows run out. A tile's identity is its place in the walk, never its content.
@@ -77,10 +79,10 @@ internal class Walk<T>(
         }
     }
 
-    /* Finds the tile to begin on: the one the game has framed, found anywhere a whole tile sits, else the first of the first whole row by its words. */
+    /* Finds the tile to begin on: the one the game has framed, found anywhere a whole tile sits, else the first of the first whole row the kind finds. */
     private fun begin(): Outcome<T>? {
         val selected = framedTile(seen.frame, layout, metrics.grid.top + metrics.halfTile, metrics.floor)
-        origin = selected?.second ?: topRowCentre(seen.lines, layout, seen.frame) ?: return stopped(Outcome.Reason.STORAGE_NOT_OPEN, "no tile framed and no tile numbers in the grid")
+        origin = selected?.second ?: scan.firstRowCentre(seen) ?: return stopped(Outcome.Reason.STORAGE_NOT_OPEN, "no tile framed, and no row to begin on without one")
         startColumn = selected?.first ?: 0
         framed = selected
 
@@ -173,14 +175,14 @@ internal class Walk<T>(
         fun framedIn(shot: Frame): Int? =
             framed?.let { (column, centre) -> framedCentre(shot, layout, column, metrics.grid.top + metrics.halfTile, minOf(centre + reach, metrics.floor)) }
         /* How far the grid moved: from where the framed tile was to where it is, else by the tiles' words. */
-        fun shift(at: Int?, after: Seen): Int? = at?.let { framed!!.second - it } ?: shiftByText(seen.lines, after.lines, metrics.grid, metrics.columnPitch)
+        fun shift(at: Int?, after: Seen): Int? = at?.let { framed!!.second - it } ?: shiftByText(seen.lines, after.lines, metrics.grid, metrics.columnPitch, metrics.pitch)
         var shot = look()
         var at = framedIn(shot.frame)
         repeat(GLIDES) {
             delay(settleMillis)
             val again = look()
             val atAgain = framedIn(again.frame)
-            val still = if (at != null && atAgain != null) abs(at - atAgain) <= STILL else shiftByText(shot.lines, again.lines, metrics.grid, metrics.columnPitch)?.let { abs(it) <= STILL } ?: false
+            val still = if (at != null && atAgain != null) abs(at - atAgain) <= metrics.still else shiftByText(shot.lines, again.lines, metrics.grid, metrics.columnPitch, metrics.pitch)?.let { abs(it) <= metrics.still } ?: false
             shot = again
             at = atAgain
             if (still) return shot to shift(at, shot)
@@ -233,7 +235,7 @@ internal class Walk<T>(
 
     /* Whether the row below this one would print its numbers inside the grid, were it there. */
     private fun rowBelowInView(centreY: Int): Boolean =
-        centreY + metrics.pitch + (layout.labelBelowCentre * metrics.pitch).toInt() + metrics.pitch / 4 <= metrics.grid.bottom
+        centreY + metrics.pitch + metrics.labelBelow + metrics.pitch / 4 <= metrics.grid.bottom
 
     private fun finished(): Outcome<T> = Outcome.Finished(entries, rowsOf(seen.lines))
 
@@ -242,21 +244,24 @@ internal class Walk<T>(
     /** Where the grid sits on this display, measured once off the first frame. */
     private class Metrics(layout: GridLayout, frame: Frame) {
         val pitch = layout.pitchY(frame.height)
-        val floor = (layout.gridBottom * frame.height).toInt()
         val grid = layout.gridBox(frame)
+        val floor = grid.bottom
         val columnPitch = layout.pitchX(frame.width)
         /* A row is tapped where it sits whole; at the grid's end, where a drag moves nothing, a row still mostly in view will do. */
         val lowest = floor - pitch / 2
         val lowestAtEnd = floor - pitch / 4
-        val halfTile = (layout.tileHeight * pitch / 2).toInt()
+        val halfTile = layout.halfTile(frame.height)
+        val labelBelow = layout.labelBelow(frame.height)
+        /** Pixels the tiles may move between two captures and still count as stopped. */
+        val still = (pitch * STILL).roundToInt()
     }
 
     private companion object {
         const val DRAG_MILLIS = 900L
         /** Captures given to a grid that keeps gliding before the walk takes the last as it is. */
         const val GLIDES = 6
-        /** Pixels the tiles may move between two captures and still count as stopped. */
-        const val STILL = 2
+        /** The share of a row's pitch the tiles may move between two captures and still count as stopped. */
+        const val STILL = 0.015
         /** Taps a tile or a tab gets before the walk gives up on it. */
         const val TAPS = 2
         /** The share of a row's pitch under which a drag is taken to have moved nothing. */

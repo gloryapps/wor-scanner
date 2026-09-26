@@ -24,10 +24,13 @@ import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.ui.label
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.scan.TouchState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
 /**
@@ -37,15 +40,11 @@ import org.koin.android.ext.android.inject
 class CaptureService : LifecycleService() {
     private val session: CaptureSession by inject()
     private val scanning: Scanning by inject()
+    private val touch: TouchState by inject()
     private val readScreen: ReadScreen by inject()
     private var screen: ProjectionScreen? = null
     private var overlay: OverlayWindow? = null
     private var scan: Job? = null
-
-    override fun onCreate() {
-        super.onCreate()
-        lifecycleScope.launch { scanning.state.onEach(::show).collect() }
-    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -84,8 +83,10 @@ class CaptureService : LifecycleService() {
             return
         }
         val metrics = realMetrics()
-        screen = ProjectionScreen(projection, metrics.widthPixels, metrics.heightPixels, metrics.densityDpi)
+        screen = ProjectionScreen(projection, metrics.widthPixels, metrics.heightPixels, metrics.densityDpi, onStop = ::stopSelf)
             .also(session::opened)
+        scanning.idle()
+        lifecycleScope.launch { scanning.state.onEach(::show).collect() }
         showOverlay()
     }
 
@@ -98,21 +99,29 @@ class CaptureService : LifecycleService() {
         overlay = null
     }
 
-    /* The overlay stays, showing the scan and its stop; the scan reads only the regions it knows, and the strip sits elsewhere. */
+    /* The overlay stays, showing the scan and its stop; it is captured with the game, so the capsule is to be kept off the grid and the panel. */
     private fun startScan(kind: Kind) {
-        if (scan?.isActive == true) return
+        if (scan?.isActive == true) {
+            scan?.cancel()
+            return
+        }
         /* A service reborn after its process died has no projection: there is nothing to scan with. */
         if (session.screen.value == null) {
             stopSelf()
             return
         }
-        scan = lifecycleScope.launch { scanning.run(kind) }
+        if (touch.hand.value == null) {
+            Toast.makeText(this, R.string.scan_needs_touch, Toast.LENGTH_LONG).show()
+            return
+        }
+        /* The walk reads pixels and waits on the recogniser; it runs off the thread the overlay draws on. */
+        scan = lifecycleScope.launch(Dispatchers.Default) { scanning.run(kind) }
     }
 
     /* Read here, not in the sheet that asked: the sheet closes on the tap and takes its coroutines with it. */
     private fun read(kind: Kind) {
         lifecycleScope.launch {
-            val said = readScreen.now(kind).fold(
+            val said = withContext(Dispatchers.Default) { readScreen.now(kind) }.fold(
                 onSuccess = { getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
                 onFailure = { getString(R.string.overlay_read_failed, it.message) },
             )
@@ -209,6 +218,7 @@ class CaptureService : LifecycleService() {
             }
         }
 
+        /** Scans the kind, or stops the scan under way: the menu's one Scan line does both. */
         fun scan(context: Context, kind: Kind) = send(context, ACTION_SCAN) { putExtra(EXTRA_KIND, kind.name) }
 
         /** Reads the frame on screen as one kind and says what it kept. */

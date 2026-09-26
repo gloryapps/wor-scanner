@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gloryapps.worscanner.capture.Emulator
 import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.scan.Ended
 import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import java.io.File
@@ -26,28 +27,25 @@ import java.io.File
  * What the previews are drawn from. A `Kept` names files that need not exist: only its stamp, its
  * counts and how it ended reach the screen, and a file that is not there weighs nothing.
  */
-internal val SCANNED = Kept(
+internal val SCANNED = Kept.Scan(
     stamp = "20260907-130841",
-    form = "scan",
     files = listOf(File("scan.json"), File("5.png")),
     kind = Kind.GEAR,
     entries = 1204,
-    outcome = "finished",
+    ended = Ended.FINISHED,
 )
 
-internal val STOPPED = Kept(
+internal val STOPPED = Kept.Scan(
     stamp = "20260907-130118",
-    form = "scan",
     files = listOf(File("scan.json")),
     kind = Kind.GEAR,
     entries = 7,
-    outcome = "stopped:storage_not_open",
+    ended = Ended.STOPPED,
     detail = "no count like 1,169/2,500 in the header",
 )
 
-internal val READ = Kept(
+internal val READ = Kept.Read(
     stamp = "20260904-082442",
-    form = "reading",
     files = listOf(File("20260904-082442.json"), File("20260904-082442.png")),
 )
 
@@ -103,7 +101,7 @@ private fun LetteringPreview() {
             Section("section · permissions")
             Text("body · what the card says under its name.", style = Lettering.body, color = Colors.muted)
             Text("caption · and what is said under that.", style = Lettering.caption, color = Colors.muted)
-            Text("action · Save to Downloads", style = Lettering.action, color = Colors.text)
+            Text("action · Save", style = Lettering.action, color = Colors.text)
             Text("data · 20260907-130841", style = Lettering.data, color = Colors.text)
             Text("dataSmall · 1204/2500", style = Lettering.dataSmall, color = Colors.muted)
         }
@@ -118,7 +116,8 @@ private fun ExportSheetPreview() {
             outgoing = Outgoing(
                 name = "wor-gear-20260907-130841.json",
                 files = SCANNED.outbound(),
-                holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Scan" to "complete", "Size" to "318 kB"),
+                holds = listOf("Kind" to "Gear", "Read" to "1204", "Scan" to "complete", "Size" to "318 kB"),
+                forLab = true,
             ),
             failed = null,
             shared = listOf(LD_PLAYER, BLUE_STACKS),
@@ -153,9 +152,9 @@ private fun ExportSheetFailedPreview() {
             outgoing = Outgoing(
                 name = "wor-gear-20260907-130841.json",
                 files = SCANNED.outbound(),
-                holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Size" to "318 kB"),
+                holds = listOf("Kind" to "Gear", "Read" to "1204", "Size" to "318 kB"),
             ),
-            failed = Saved.Failed("/sdcard/windows/BstSharedFolder is not writable on this device"),
+            failed = "/sdcard/windows/BstSharedFolder is not writable on this device",
             shared = listOf(BLUE_STACKS),
             into = BLUE_STACKS,
             onChoose = { },
@@ -174,7 +173,7 @@ private fun ExportSheetNoFolderPreview() {
             outgoing = Outgoing(
                 name = "wor-gear-20260907-130841.json",
                 files = SCANNED.outbound(),
-                holds = listOf("Kind" to "Gear", "Pieces" to "1204", "Size" to "318 kB"),
+                holds = listOf("Kind" to "Gear", "Read" to "1204", "Size" to "318 kB"),
             ),
             failed = null,
             shared = emptyList(),

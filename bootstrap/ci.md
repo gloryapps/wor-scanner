@@ -16,6 +16,9 @@ builds show with a `-dev` suffix. `versionCode` derives from it (`0.1.0` → `10
 `gh workflow run Release -f next=patch`), telling it which part of the version `dev` moves to
 afterwards, `minor` by default:
 
+One release runs at a time (`concurrency: release`); the runner sets up Java 17 for the build and 25
+for the Gradle daemon, and hands the keystore's secret to the script through `env:`.
+
 1. Checks out `dev`, reads its version and fails if the tag `v<version>` already exists.
 2. Runs the tests and builds the release APK, R8-optimized and signed.
 3. Fast-forwards `main` to the `dev` commit, failing if `main` holds commits `dev` does not.
@@ -51,8 +54,8 @@ gh secret set KEY_PASSWORD
 
 ## Crashes
 
-Release builds report crashes to Firebase Crashlytics; debug builds do not (`WorScannerApp` turns
-collection off). The Firebase project is `wor-scanner-9914f`, with two Android apps registered, package
+Release builds report crashes to Firebase Crashlytics; debug builds do not (`appModule` builds `CrashReports` collecting only
+where the build is not debug). The Firebase project is `wor-scanner-9914f`, with two Android apps registered, package
 `com.gloryapps.worscanner` and `com.gloryapps.worscanner.debug`, since the Google services plugin
 refuses a build whose application id the file does not name. Its `app/google-services.json` is
 committed: the keys in it are client keys, restricted by package. On `assembleRelease` the

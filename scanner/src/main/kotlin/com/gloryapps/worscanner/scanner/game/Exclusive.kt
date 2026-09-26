@@ -1,6 +1,7 @@
 package com.gloryapps.worscanner.scanner.game
 
 import com.gloryapps.worscanner.scanner.text.holdsName
+import com.gloryapps.worscanner.scanner.text.readsAs
 
 /**
  * What a panel names above the word `Exclusive`, as read; who that is belongs to the lab.
@@ -12,10 +13,10 @@ internal fun exclusiveIn(rows: List<String>): String? {
     val at = head.indexOfFirst { holdsName(it, "Exclusive") }
     if (at < 0) return null
 
-    val named = "${head[at].replace(Regex("exclusive", RegexOption.IGNORE_CASE), "")} ${head.getOrNull(at - 1) ?: ""}"
+    val named = "${head[at]} ${head.getOrNull(at - 1) ?: ""}"
         .replace(Regex("[^A-Za-z' ]"), " ")
         .split(Regex("\\s+"))
-        .filter { it.length > 1 }
+        .filter { it.length > 1 && !readsAs(it, "Exclusive") }
         .joinToString(" ")
         .trim()
 

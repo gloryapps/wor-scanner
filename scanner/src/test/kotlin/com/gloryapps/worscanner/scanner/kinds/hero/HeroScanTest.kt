@@ -255,6 +255,20 @@ class HeroScanTest {
     }
 
     @Test
+    fun `a hero is called by the name its Attributes print, among every tab's rows`() {
+        val rows = listOf(ingridAttributes, ingridSkills, ingridAwaken).flatMap { Seen(Painted(), it).rowsIn(HERO_ROSTER.panel) }
+
+        assertEquals("INGRID", HeroScan.titleOf(rows))
+    }
+
+    @Test
+    fun `where the power did not read, the name is the row in capitals nearest above the level`() {
+        val rows = rowsDown("AY", "The Sun Supreme", "PRAETUS", "31.887 X", "Single-Target M. ATK", "Lvl. 60/60")
+
+        assertEquals("PRAETUS", HeroScan.read(Seen(Painted(), rows), null, null).name)
+    }
+
+    @Test
     fun `a skill's level reads through the recogniser's slips, each keeping its place in the row`() {
         fun skillsIn(vararg rows: String) = HeroScan.read(null, Seen(Painted(), rowsDown(*rows)), null).skills
 
@@ -274,6 +288,41 @@ class HeroScanTest {
             HeroSkills(ultimate = SkillLevel.Of(2), row = listOf(SkillLevel.Of(4), SkillLevel.Of(1), SkillLevel.Max)),
             skillsIn("Skills", "Manual Ultimate", "Lvl. 2/5", "Lvl, 4/5 Lvl. 1/5Mextevel", "Random Upgrade"),
         )
+    }
+
+    @Test
+    fun `a level read all in capitals is still a level, its label's`() {
+        fun skillsIn(vararg rows: String) = HeroScan.read(null, Seen(Painted(), rowsDown(*rows)), null).skills
+
+        assertEquals(
+            HeroSkills(ultimate = SkillLevel.Of(2), row = listOf(SkillLevel.Of(1), SkillLevel.Of(3), SkillLevel.Max)),
+            skillsIn("Skills", "Manual Ultimate", "LV 2/5", "Lvl. 1/5 Lvl. 3/5 Max Level", "MAX LEVEL"),
+        )
+        assertEquals(
+            HeroSkills(ultimate = SkillLevel.Max, row = List(3) { SkillLevel.Max }),
+            skillsIn("Skills", "Manual Ultimate", "Max Level", "Max Levet Max Level Max Level", "8MAX LEVEL"),
+        )
+    }
+
+    @Test
+    fun `a label whose level did not read takes none, and no level moves up a place`() {
+        fun skillsIn(vararg rows: String) = HeroScan.read(null, Seen(Painted(), rowsDown(*rows)), null).skills
+
+        assertEquals(
+            HeroSkills(ultimate = SkillLevel.Of(2), row = List(2) { SkillLevel.Max }),
+            skillsIn("Skills", "Lord Skill", "Manual Ultimate", "Lvl. 2/5", "Max Level Max Level"),
+        )
+        assertEquals(
+            HeroSkills(row = List(3) { SkillLevel.Max }),
+            skillsIn("Skills", "Manual Ultimate", "Max Level Max Level Max Level"),
+        )
+    }
+
+    @Test
+    fun `a bond still to unlock reads through a misread letter`() {
+        val skills = HeroScan.read(null, Seen(Painted(), rowsDown("Skills", "Auto Ultimate", "Max Level", "Passive Bond Skill", "Obtain Yuri to unIock", "Max Level")), null).skills
+
+        assertEquals(listOf(SkillLevel.Of(0)), skills.bonds)
     }
 
     @Test
@@ -341,6 +390,11 @@ class HeroScanTest {
     }
 
     @Test
+    fun `a whole frame of Awaken reads its lit nodes`() {
+        assertEquals(3, HeroScan.readScreen(Seen(awakened(3), ingridAwaken)).awakening)
+    }
+
+    @Test
     fun `a whole frame reads what its tab shows, and nothing of the tabs it does not`() {
         val hero = HeroScan.readScreen(Seen(Painted(), ingridSkills))
 
@@ -398,6 +452,35 @@ class HeroScanTest {
 
         assertEquals(Read.Beyond, HeroScan.readTile(lent))
         assertTrue(lent.shown.isEmpty())
+    }
+
+    @Test
+    fun `an Awaken tap that left another tab on screen reads no awakening, and the panels are kept`() = runTest {
+        val read = HeroScan.readTile(Lent(ingrid.getValue(ATTRIBUTES), ingrid + (AWAKEN to ingrid.getValue(SKILLS))))
+
+        assertIs<Read.Card<ScannedHero>>(read)
+        assertEquals(null, read.card.awakening)
+        assertFalse(read.closed)
+    }
+
+    @Test
+    fun `a skill label whose level did not read keeps the panels`() = runTest {
+        val skills = Seen(Painted(), ingridSkills.filterNot { it.box.top == 311 })
+
+        val read = HeroScan.readTile(Lent(ingrid.getValue(ATTRIBUTES), ingrid + (SKILLS to skills)))
+
+        assertIs<Read.Card<ScannedHero>>(read)
+        assertEquals(null, read.card.skills.lord)
+        assertEquals(SkillLevel.Max, read.card.skills.ultimate)
+        assertFalse(read.closed)
+    }
+
+    @Test
+    fun `a frame whose stars did not show keeps the panels`() = runTest {
+        val read = HeroScan.readTile(Lent(Seen(Painted(), ingridAttributes), ingrid))
+
+        assertIs<Read.Card<ScannedHero>>(read)
+        assertFalse(read.closed)
     }
 
     @Test

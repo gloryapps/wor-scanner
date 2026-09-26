@@ -1,7 +1,10 @@
 package com.gloryapps.worscanner.ui.home
 
+import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -64,7 +67,6 @@ import com.gloryapps.worscanner.ui.said
 import com.gloryapps.worscanner.ui.shown
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.label
-import com.gloryapps.worscanner.ui.said
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -86,6 +88,10 @@ internal fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = ko
         val data = it.data
         if (it.resultCode == Activity.RESULT_OK && data != null) CaptureService.start(context, it.resultCode, data)
     }
+    /* Android 13 hides a notification the app was not let post, the scan's Stop with it: asked at Start, and the scan goes on either way. */
+    val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
+    }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -93,7 +99,11 @@ internal fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = ko
                 HomeEffect.OpenOverlaySettings -> context.startActivity(
                     Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
                 )
-                HomeEffect.LaunchProjection -> projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
+                HomeEffect.LaunchProjection -> if (context.mayNotNotify()) {
+                    notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
+                }
                 HomeEffect.StopCapture -> CaptureService.stop(context)
                 is HomeEffect.OpenReading -> open(effect.kept)
             }
@@ -114,7 +124,7 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
         Header(state.running)
         BoxWithConstraints(Modifier.weight(1f)) {
             val start: @Composable () -> Unit = { Start(state, onEvent) }
-            val kept: @Composable () -> Unit = { Readings(state.readings, onEvent) }
+            val kept: @Composable () -> Unit = { state.readings?.let { Readings(it, onEvent) } }
 
             if (maxWidth >= WIDE) {
                 Row(Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 22.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -273,7 +283,7 @@ private fun Reading(kept: Kept, newest: Boolean, onEvent: (HomeEvent) -> Unit) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(kept.shown(), style = Lettering.subtitle, color = Colors.text)
             Text(kept.said(context), style = Lettering.caption, color = Colors.muted)
-            kept.detail?.let { Text(it, style = Lettering.caption, color = Colors.warning, maxLines = 2) }
+            (kept as? Kept.Scan)?.detail?.let { Text(it, style = Lettering.caption, color = Colors.warning, maxLines = 2) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Link(stringResource(R.string.home_delete), onClick = { onEvent(HomeEvent.Delete(kept)) })
@@ -286,6 +296,9 @@ private fun Reading(kept: Kept, newest: Boolean, onEvent: (HomeEvent) -> Unit) {
         }
     }
 }
+
+private fun Context.mayNotNotify(): Boolean =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
 
 /* Android 14 offers "one app" by default and Unity games are one app, but the scan reads the display. */
 private fun MediaProjectionManager.wholeDisplayIntent(): Intent =

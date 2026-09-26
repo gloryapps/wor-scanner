@@ -4,8 +4,8 @@ import kotlinx.serialization.Serializable
 
 /**
  * One tile as the scan found it: its place in the scan, what the reader made of its panel, and
- * the rows read. `row` and `column` count from the tile the scan began on, which is the selected
- * one or the first in view.
+ * the rows read. `row` counts from the row the scan began on, the selected tile's or the first in
+ * view; `column` is the grid's own, from its left edge.
  */
 @Serializable
 data class ScanEntry<T>(

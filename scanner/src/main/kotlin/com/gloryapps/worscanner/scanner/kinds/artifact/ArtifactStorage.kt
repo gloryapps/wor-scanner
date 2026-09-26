@@ -16,8 +16,6 @@ val ARTIFACT_STORAGE = GridLayout(
     tileWidth = 0.771,
     tileHeight = 0.95,
     labelBelowCentre = 0.115,
-    gridTop = 0.194,
-    gridBottom = 0.854,
     grid = Region(0.113, 0.194, 0.707, 0.854),
     /* Below the artifact's art, where the overlay's sheet may hang. */
     panel = Region(0.734, 0.38, 0.98, 0.89),

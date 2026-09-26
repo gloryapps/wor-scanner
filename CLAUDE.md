@@ -7,8 +7,8 @@ artifacts. Shipped as an APK on GitHub.
 | Area | Read before working there |
 | --- | --- |
 | Architecture & code layout | `bootstrap/architecture.md` |
-| Design system (deferred) | `bootstrap/design-system.md` |
-| CI & release (deferred) | `bootstrap/ci.md` |
+| Design system | `bootstrap/design-system.md` |
+| CI & release | `bootstrap/ci.md` |
 
 ## Rules
 

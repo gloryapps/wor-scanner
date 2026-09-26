@@ -57,6 +57,19 @@ class GearScanTest {
     }
 
     @Test
+    fun `a piece is called by its title, the row that names its slot`() {
+        assertEquals("Variant: Vierna's Bangle", GearScan.titleOf(rowsOf(viernasBangle)))
+    }
+
+    @Test
+    fun `an exclusive whose hero did not read names no one, not the title above it`() {
+        val card = GearScan.read(rowsOf(viernasBangle.filterNot { it.text == "VIERNA" }))
+
+        assertNull(card.exclusive)
+        assertEquals(Slot.BANGLE, card.slot)
+    }
+
+    @Test
     fun `a weapon whose ATK line lost its name takes the number back`() {
         val card = GearScan.read(
             listOf("Mythic Gear", "Whirlwind Weapon", "A7K 1056", "Crit. Rate 12%", "HP 2400", "Whirlwind", "(2 pieces) ATK Spd. +75"),

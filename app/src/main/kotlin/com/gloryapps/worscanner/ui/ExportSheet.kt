@@ -36,44 +36,32 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
-import com.gloryapps.worscanner.capture.Outbound
 import com.gloryapps.worscanner.capture.SharedFolder
 
-/** What one press of export puts on its way out, each file under the name it lands by, and what the sheet says it holds. */
-data class Outgoing(val name: String, val files: List<Outbound>, val holds: List<Pair<String, String>>)
-
-/** Where an export landed, or why it did not. */
-sealed interface Saved {
-    data class Into(val folder: String, val files: Int) : Saved
-
-    data class Failed(val why: String) : Saved
-}
-
-/** The sheet over whichever screen pressed export, wired to the doors out; nothing while nothing is on its way. */
+/** The sheet over whichever screen pressed export, wired to its delegate; nothing while nothing is on its way. */
 @Composable
 fun ExportSheet(export: ExportDelegate) {
-    val outgoing by export.outgoing.collectAsStateWithLifecycle()
-    val saved by export.saved.collectAsStateWithLifecycle()
-    val shared by export.shared.collectAsStateWithLifecycle()
-    val into by export.into.collectAsStateWithLifecycle()
+    val state by export.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val leaving = outgoing ?: return
 
-    LaunchedEffect(saved) {
-        val landed = saved as? Saved.Into ?: return@LaunchedEffect
-        Toast.makeText(context, context.said(landed), Toast.LENGTH_LONG).show()
-        export.forget()
+    LaunchedEffect(export) {
+        export.effects.collect { effect ->
+            when (effect) {
+                is ExportEffect.Share -> context.startActivity(effect.intent)
+                is ExportEffect.Landed -> Toast.makeText(context, context.said(effect), Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     ExportSheet(
-        outgoing = leaving,
-        failed = saved as? Saved.Failed,
-        shared = shared,
-        into = into,
-        onChoose = export::choose,
-        onShared = { export.toShared(leaving.files) },
-        onShare = { context.startActivity(export.shareIntent(leaving.files)) },
-        onClose = export::forget,
+        outgoing = state.outgoing ?: return,
+        failed = state.failed,
+        shared = state.shared,
+        into = state.into,
+        onChoose = { export.on(ExportEvent.Choose(it)) },
+        onShared = { export.on(ExportEvent.Save) },
+        onShare = { export.on(ExportEvent.Share) },
+        onClose = { export.on(ExportEvent.Close) },
     )
 }
 
@@ -84,7 +72,7 @@ fun ExportSheet(export: ExportDelegate) {
 @Composable
 fun ExportSheet(
     outgoing: Outgoing,
-    failed: Saved.Failed?,
+    failed: String?,
     shared: List<SharedFolder>,
     into: SharedFolder?,
     onChoose: (SharedFolder) -> Unit,
@@ -167,7 +155,7 @@ fun ExportSheet(
                     )
                     Edged(stringResource(R.string.export_share), onClick = onShare)
                 }
-                Text(stringResource(R.string.export_note), style = Lettering.caption, color = Colors.muted)
+                if (outgoing.forLab) Text(stringResource(R.string.export_note), style = Lettering.caption, color = Colors.muted)
             }
         }
     }
@@ -193,12 +181,12 @@ private fun Landing(shared: List<SharedFolder>, into: SharedFolder?, onChoose: (
     into?.let { Text(stringResource(it.emulator.onPc), style = Lettering.data, color = Colors.muted) }
 }
 
-private fun Context.said(landed: Saved.Into): String =
+private fun Context.said(landed: ExportEffect.Landed): String =
     resources.getQuantityString(R.plurals.export_saved, landed.files, landed.files) + "\n" + landed.folder
 
 /** Why the file did not land, pinned beside the buttons so it is seen whether or not the sheet scrolls. */
 @Composable
-private fun Landed(failed: Saved.Failed) {
+private fun Landed(failed: String) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -211,6 +199,6 @@ private fun Landed(failed: Saved.Failed) {
         Box(Modifier.size(30.dp).border(1.dp, Colors.warning, CircleShape), contentAlignment = Alignment.Center) {
             Icon(Icons.Default.Close, contentDescription = null, Modifier.size(15.dp), tint = Colors.warning)
         }
-        Text(failed.why, style = Lettering.body, color = Colors.muted)
+        Text(failed, style = Lettering.body, color = Colors.muted)
     }
 }

@@ -38,9 +38,9 @@ private fun Filled(label: String, modifier: Modifier, ground: Color, said: Strin
     Row(
         modifier
             .height(44.dp)
+            .alpha(if (enabled) 1f else 0.4f)
             .clip(RoundedCornerShape(9.dp))
             .background(ground)
-            .alpha(if (enabled) 1f else 0.4f)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 22.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),

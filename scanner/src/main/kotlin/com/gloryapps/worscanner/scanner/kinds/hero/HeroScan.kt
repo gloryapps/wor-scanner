@@ -5,12 +5,14 @@ import com.gloryapps.worscanner.scanner.scan.Scan
 import com.gloryapps.worscanner.scanner.scan.Seen
 import com.gloryapps.worscanner.scanner.scan.Spot
 import com.gloryapps.worscanner.scanner.scan.Tapped
+import com.gloryapps.worscanner.scanner.scan.spread
 import com.gloryapps.worscanner.scanner.senses.Colour
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.text.Box
 import com.gloryapps.worscanner.scanner.text.flatten
 import com.gloryapps.worscanner.scanner.text.holdsName
 import com.gloryapps.worscanner.scanner.text.readsAs
+import com.gloryapps.worscanner.scanner.text.readsAsCapitals
 import com.gloryapps.worscanner.scanner.text.timesHeld
 import com.gloryapps.worscanner.scanner.text.wordIn
 
@@ -40,10 +42,10 @@ object HeroScan : Scan<ScannedHero>() {
         val awaken = tapped.show(AWAKEN)
         tapped.show(ATTRIBUTES)
         tapped.regrip() ?: return Read.Lost("back on Attributes, the hero's tile is not framed")
-        val hero = read(attributes, skills, awaken)
+        val hero = read(attributes, skills, awaken.takeIf { it.showsAwaken() })
         val shown = listOf(attributes, skills, awaken)
 
-        return Read.Card(hero, shown.flatMap { it.rowsIn(layout.panel) }, shown.map { it.frame }, closed(hero))
+        return Read.Card(hero, shown.flatMap { it.rowsIn(layout.panel) }, shown.map { it.frame }, closed(hero, skills))
     }
 
     override fun readScreen(seen: Seen): ScannedHero {
@@ -52,9 +54,12 @@ object HeroScan : Scan<ScannedHero>() {
         return read(
             attributes = seen.takeIf { it.showsAttributes() },
             skills = seen.takeIf { rows.any(::isSkillsHeader) },
-            awaken = seen.takeIf { rows.any { row -> holdsName(row, "Awakened") } },
+            awaken = seen.takeIf { it.showsAwaken() },
         )
     }
+
+    /** The name, found among every tab's rows by the power or the level above which it is printed. */
+    override fun titleOf(rows: List<String>): String? = nameOf(rows)
 
     /** The hero the tabs' frames show; a tab not given leaves its part null or empty. */
     internal fun read(attributes: Seen?, skills: Seen?, awaken: Seen?): ScannedHero {
@@ -67,49 +72,49 @@ object HeroScan : Scan<ScannedHero>() {
             stars = stars?.first,
             promotion = stars?.second,
             awakening = awaken?.let { awakeningOf(it.frame) },
-            skills = skills?.let { skillsOf(it.rowsIn(layout.panel)) } ?: HeroSkills(),
+            skills = skills?.let { skillsOf(it.rowsIn(layout.panel)).skills } ?: HeroSkills(),
         )
     }
 
     /** Whether the tile's frame is an epic's purple rather than a legendary's gold, by the lower half of its left edge: the upper half carries the tile's gold icons. */
     internal fun isEpic(frame: Frame, tile: Box): Boolean {
-        val height = tile.bottom - tile.top
-        val hues = (0 until EDGE_SAMPLES).map { step ->
-            val y = tile.top + height / 2 + height / 2 * (2 * step + 1) / (2 * EDGE_SAMPLES)
-            /* The border is a few pixels in from the edge the selection frame is drawn on: the strongest colour across it is the border's. */
-            (tile.left + 2 until tile.left + 12).map { x -> frame.colourAt(x, y) }.maxBy { it.saturation * maxOf(it.red, it.green, it.blue) }.hue
+        val middle = (tile.top + tile.bottom) / 2
+        val width = tile.right - tile.left
+        val band = (tile.left + (width * BORDER_FROM).toInt() until tile.left + (width * BORDER_TO).toInt())
+        val hues = spread(middle, middle + (tile.bottom - tile.top) / 2, EDGE_SAMPLES).map { y ->
+            /* The strongest colour across the band is the border's. */
+            band.map { x -> frame.colourAt(x, y) }.maxBy { it.saturation * maxOf(it.red, it.green, it.blue) }.hue
         }
 
         return hues.count { it in PURPLE } > hues.count { it in GOLD }
     }
 
-    /** Whether the record names what identifies it; one that does not keeps its panels as an image. */
-    private fun closed(hero: ScannedHero): Boolean =
-        hero.name != null && hero.level != null && hero.stars != null && hero.awakening != null && hero.skills.ultimate != null && hero.skills.row.isNotEmpty()
+    /** Whether the record names what identifies it, every skill label's level included; one that does not keeps its panels as an image. */
+    private fun closed(hero: ScannedHero, skills: Seen): Boolean =
+        hero.name != null && hero.level != null && (hero.stars ?: 0) > 0 && hero.awakening != null &&
+            hero.skills.ultimate != null && hero.skills.row.isNotEmpty() && skillsOf(skills.rowsIn(layout.panel)).whole
 
     private fun Seen.showsAttributes(): Boolean = levelOf(rowsIn(layout.panel)) != null
+
+    /** A tab that did not change leaves the one before it on screen: only Awaken prints `Awakened`. */
+    private fun Seen.showsAwaken(): Boolean = rowsIn(layout.panel).any { holdsName(it, "Awakened") }
 
     private fun isSkillsHeader(row: String): Boolean = readsAs(flatten(row), "skills")
 
     /**
-     * The name is the row mostly in capitals nearest above the power, written in capitals: it is
-     * printed in small capitals, which the recogniser lowers a letter of here and there (`RoSALIA`,
-     * `Ezio AUDITORE`), and the icons above the title read as capitals too (`AY`). The title is
-     * mostly lower case; a tag like `AoE M. ATK` comes after the power. Where no power reads, the
-     * first such row from the top.
+     * The name is the row mostly in capitals nearest above the power, or above the level where the
+     * power did not read, written in capitals: it is printed in small capitals, which the
+     * recogniser lowers a letter of here and there (`RoSALIA`, `Ezio AUDITORE`), and the icons
+     * above the title read as capitals too (`AY`). The title is mostly lower case; a tag like
+     * `AoE M. ATK` comes after the power.
      */
     private fun nameOf(rows: List<String>): String? {
-        val power = rows.indexOfFirst { POWER.containsMatchIn(it) }
-        val above = if (power > 0) rows.subList(0, power).asReversed() else rows
+        val anchor = rows.indexOfFirst { POWER.containsMatchIn(it) }.takeIf { it > 0 } ?: rows.indexOfFirst { LEVEL.containsMatchIn(it) }.takeIf { it > 0 } ?: return null
 
-        return above.firstOrNull(::readsAsName)?.trim()?.uppercase()
+        return rows.subList(0, anchor).asReversed().firstOrNull(::readsAsName)?.trim()?.uppercase()
     }
 
-    private fun readsAsName(row: String): Boolean {
-        val letters = row.filter(Char::isLetter)
-
-        return letters.length >= 2 && letters.count(Char::isUpperCase) * 3 >= letters.length * 2 && row.none(Char::isDigit) && !row.contains("ATK")
-    }
+    private fun readsAsName(row: String): Boolean = readsAsCapitals(row) && row.none(Char::isDigit) && !row.contains("ATK")
 
     private fun levelOf(rows: List<String>): Int? = rows.firstNotNullOfOrNull { LEVEL.find(it) }?.groupValues?.get(1)?.toInt()
 
@@ -132,35 +137,50 @@ object HeroScan : Scan<ScannedHero>() {
 
     private fun awakeningOf(frame: Frame): Int = AWAKENING_NODES.count { frame.colourAt(it).saturation > LIT }
 
-    /** The labelled rows take the levels printed under them, in the order they are labelled; the levels left over are the icon row's, left to right. */
-    private fun skillsOf(rows: List<String>): HeroSkills {
+    /**
+     * A label's level is the one level on the row right under it; a label followed by another
+     * label, or by a row of several levels, read none, and the record stays open. Every other level
+     * is the icon row's, left to right.
+     */
+    private fun skillsOf(rows: List<String>): SkillsRead {
         val header = rows.indexOfFirst(::isSkillsHeader)
-        if (header < 0) return HeroSkills()
+        if (header < 0) return SkillsRead(HeroSkills(), whole = false)
         var skills = HeroSkills()
-        val waiting = ArrayDeque<Place>()
+        var whole = true
+        var labelled: Place? = null
         for (row in rows.drop(header + 1)) {
             val place = wordIn(row, Place.entries) { it.word }
-            if (place != null) {
-                waiting += place
-                continue
-            }
-            for (level in levelsIn(row)) {
-                skills = when (waiting.removeFirstOrNull()) {
-                    Place.LORD -> skills.copy(lord = level)
-                    Place.ULTIMATE -> skills.copy(ultimate = level)
-                    Place.BOND -> skills.copy(bonds = skills.bonds + level)
-                    null -> skills.copy(row = skills.row + level)
+            val levels = if (place == null) levelsIn(row) else emptyList()
+            val label = labelled
+            labelled = place
+            if (label != null) {
+                val own = levels.singleOrNull()
+                if (own != null) {
+                    skills = skills.at(label, own)
+                    continue
                 }
+                whole = false
             }
+            skills = skills.copy(row = skills.row + levels)
         }
+        if (labelled != null) whole = false
 
-        return skills
+        return SkillsRead(skills, whole)
     }
+
+    private fun HeroSkills.at(place: Place, level: SkillLevel): HeroSkills = when (place) {
+        Place.LORD -> copy(lord = level)
+        Place.ULTIMATE -> copy(ultimate = level)
+        Place.BOND -> copy(bonds = bonds + level)
+    }
+
+    /** The skills by place, and whether every label the tab printed read its level. */
+    private class SkillsRead(val skills: HeroSkills, val whole: Boolean)
 
     /** The levels a row prints, left to right: its numbers, and the stretches around them read for `Max Level` or a bond to unlock. */
     private fun levelsIn(row: String): List<SkillLevel> {
-        /* The tab's `MAX LEVEL` banner is the one row printed all in capitals. */
-        if (row.none(Char::isLowerCase)) return emptyList()
+        /* The tab's `MAX LEVEL` banner is the one row in capitals without a level's slash: `8MAX LEVEL` is the banner, `LV 2/5` a level. */
+        if (row.none(Char::isLowerCase) && !SKILL_LEVEL.containsMatchIn(row)) return emptyList()
         val levels = mutableListOf<SkillLevel>()
         var from = 0
         for (found in SKILL_LEVEL.findAll(row)) {
@@ -174,7 +194,7 @@ object HeroScan : Scan<ScannedHero>() {
 
     /* A stretch between numbers: a bond still to unlock, or as many `Max Level` as it holds through the recogniser's slips. */
     private fun topsIn(stretch: String): List<SkillLevel> =
-        if (stretch.contains("unlock", ignoreCase = true)) listOf(SkillLevel.Of(0)) else List(timesHeld(stretch, "Max Level")) { SkillLevel.Max }
+        if (holdsName(stretch, "unlock")) listOf(SkillLevel.Of(0)) else List(timesHeld(stretch, "Max Level")) { SkillLevel.Max }
 
     private fun Frame.colourAt(spot: Spot): Colour = spot.on(this).let { (x, y) -> colourAt(x, y) }
 
@@ -182,6 +202,9 @@ object HeroScan : Scan<ScannedHero>() {
     private enum class Place(val word: String) { LORD("Lord"), ULTIMATE("Ultimate"), BOND("Bond") }
 
     private const val EDGE_SAMPLES = 8
+    /** Where the border runs in from the tile's left edge, past the selection frame drawn on it: 2 to 12 px of a tile 83 wide. */
+    private const val BORDER_FROM = 0.025
+    private const val BORDER_TO = 0.145
     /** Below this saturation a star slot is the grey of an empty one. */
     private const val GREY = 0.15
     /** Above this saturation a node is lit; a grey one sits near none. */

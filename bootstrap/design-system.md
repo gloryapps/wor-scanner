@@ -31,22 +31,22 @@ roles. A screen names a role, never a value and never a size.
 
 ## Type roles
 
-Three families, in `Fonts`: `serif` Newsreader names a thing, `sans` Space Grotesk talks about it,
-`mono` DM Mono shows data. The files are in `res/font`, not fetched at run time.
+Two voices in `Fonts`, both the device's own: `sans` talks, `mono` shows what the app read or wrote.
+No font file ships with the app.
 
 | Role | Family, size | Where |
 | --- | --- | --- |
-| `title` | serif 22 | what a card or a screen is called |
-| `subtitle` | serif 19 | a reading's piece, a sheet's heading |
-| `brand` | sans 16 medium | the app's name in the header |
-| `section` | sans 11, tracked, upper-cased by the caller | the line above a group |
+| `title` | sans 19 semibold | what a card or a screen is called |
+| `subtitle` | sans 16 medium | a reading's tile, a sheet's heading |
+| `brand` | sans 15 medium | the app's name in the header |
+| `section` | sans 10 medium, tracked, upper-cased by `Section` | the line above a group |
 | `body` | sans 13 | prose |
-| `caption` | sans 12 | what is said under a line of prose |
-| `action` | sans 14 medium | a button |
-| `data` / `dataSmall` | mono 13 / 11 | a stamp, a count, an id, a file name |
-| `label` / `mark` | mono 12 / mono 10 tracked | a row of the menu over the game; the one word on the idle capsule |
+| `caption` | sans 11 | what is said under a line of prose |
+| `action` | sans 13 medium | a button |
+| `data` / `dataSmall` | mono 12 / 10 | a stamp, a count, an id, a file name |
+| `label` / `mark` | mono 11 / mono 9 tracked | a row of the menu over the game; the one word on the idle capsule |
 
 ## Shapes
 
-6, 8, 10, 12, 14 dp, in Material's five slots from `extraSmall`; a pill is fully rounded. The strip
+6, 8, 10, 12, 14 dp, in Material's five slots from `extraSmall`; a pill is fully rounded. The capsule
 over the game and its close target are pills; a card is 10, a screen-sized panel 12, a sheet 12.

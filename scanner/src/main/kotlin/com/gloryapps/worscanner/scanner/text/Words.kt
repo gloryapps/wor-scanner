@@ -9,3 +9,10 @@ fun <T> wordIn(row: String, candidates: Iterable<T>, wordOf: (T) -> String): T? 
 
     return candidates.firstOrNull { candidate -> words.any { readsAs(it, wordOf(candidate)) } }
 }
+
+/** Whether a row is written mostly in capitals, as a name printed in small capitals reads through the recogniser's slips (`RoSALIA`). */
+fun readsAsCapitals(row: String): Boolean {
+    val letters = row.filter(Char::isLetter)
+
+    return letters.length >= 2 && letters.count(Char::isUpperCase) * 3 >= letters.length * 2
+}

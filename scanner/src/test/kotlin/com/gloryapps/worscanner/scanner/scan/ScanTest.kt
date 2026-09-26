@@ -1,13 +1,16 @@
 package com.gloryapps.worscanner.scanner.scan
 
 import com.gloryapps.worscanner.scanner.senses.Frame
+import com.gloryapps.worscanner.scanner.senses.Touch
 import com.gloryapps.worscanner.scanner.text.Box
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -139,7 +142,7 @@ class ScanTest {
     }
 
     @Test
-    fun `with no tile framed and no word printed there is nowhere to begin`() = runTest {
+    fun `with no tile framed, a kind that finds no row without one has nowhere to begin`() = runTest {
         val outcome = scanOver(FakeStorage(pieces = 30, wordless = true), FacedPieceScan())
 
         assertIs<Outcome.Stopped<Int>>(outcome)
@@ -152,6 +155,58 @@ class ScanTest {
 
         assertIs<Outcome.Finished<Int>>(outcome)
         assertEquals((0 until 30).toList(), outcome.pieces())
+    }
+
+    @Test
+    fun `a gesture the player's finger cancelled ends the scan as cancelled, not failed, what was read kept`() = runTest {
+        val storage = FakeStorage(pieces = 30)
+        val touched = object : Touch by storage {
+            private var taps = 0
+
+            override suspend fun tap(x: Int, y: Int) {
+                if (++taps == 4) throw CancellationException("a finger touched the screen")
+                storage.tap(x, y)
+            }
+        }
+        val entries = mutableListOf<ScanEntry<Int>>()
+
+        assertFailsWith<CancellationException> { PieceScan(storage.layout).run(storage, touched, storage, keeper, entries, 0) }
+        assertEquals((0 until 3).toList(), entries.map { it.card })
+    }
+
+    @Test
+    fun `a tile tap the game dropped is tapped again, and every piece read in its place`() = runTest {
+        val outcome = scanOver(FakeStorage(pieces = 10, droppedTileTaps = setOf(2)))
+
+        assertIs<Outcome.Finished<Int>>(outcome)
+        assertEquals((0 until 10).toList(), outcome.pieces())
+    }
+
+    @Test
+    fun `a tile whose frame does not show after a second tap stops the scan, the grid lost`() = runTest {
+        val outcome = scanOver(FakeStorage(pieces = 10, droppedTileTaps = setOf(2, 3)))
+
+        assertIs<Outcome.Stopped<Int>>(outcome)
+        assertEquals(Outcome.Reason.GRID_LOST, outcome.reason)
+        assertEquals(listOf(0), outcome.pieces())
+    }
+
+    @Test
+    fun `a drag after which the grid is found neither by its frame nor its words stops the scan, what was read kept`() = runTest {
+        val outcome = scanOver(FakeStorage(pieces = 42, leavesOnDrag = 1))
+
+        assertIs<Outcome.Stopped<Int>>(outcome)
+        assertEquals(Outcome.Reason.GRID_LOST, outcome.reason)
+        assertTrue(outcome.entries.isNotEmpty())
+    }
+
+    @Test
+    fun `a failure mid-scan ends it failed, what was read kept`() = runTest {
+        val outcome = scanOver(FakeStorage(pieces = 30, failsOnCapture = 6))
+
+        assertIs<Outcome.Failed<Int>>(outcome)
+        assertEquals("the display delivered no frame", outcome.cause.message)
+        assertTrue(outcome.entries.isNotEmpty())
     }
 
     @Test
@@ -200,7 +255,7 @@ class ScanTest {
     }
 
     @Test
-    fun `a last row short of a number is not made longer than it is`() = runTest {
+    fun `a last tile whose number the recogniser missed is not read, and nothing says so`() = runTest {
         val outcome = scanOver(FakeStorage(pieces = 31, unlabelled = setOf(30)))
 
         assertIs<Outcome.Finished<Int>>(outcome)

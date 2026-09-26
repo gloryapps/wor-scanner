@@ -30,7 +30,8 @@ val appModule = module {
     single<TextReader> { MlKitTextReader() }
     factory { ReadScreen(get(), get(), get(), get()) }
     single { Scanning(androidContext(), get(), get(), get(), get()) }
-    single { Chosen(androidContext()) }
+    /* Read from the store at start, so the overlay's menu opens on the kind already chosen. */
+    single(createdAtStart = true) { Chosen(androidContext()) }
     single { Permissions(androidContext()) }
     factory { ExportDelegate(get(), androidContext()) }
     viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }

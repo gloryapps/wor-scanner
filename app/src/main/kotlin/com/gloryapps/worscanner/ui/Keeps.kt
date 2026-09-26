@@ -5,18 +5,22 @@ import android.text.format.Formatter
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.capture.Outbound
+import com.gloryapps.worscanner.scan.Ended
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 /** The stamp as a person reads it, in their own locale: `6 Sept 2026 · 19:18`. */
 fun Kept.shown(): String = "${at.format(DAY)} · ${at.format(HOUR)}"
 
-/** The line under the stamp: how much was read, how big it is on disk, and how it ended. */
+/** The line under the stamp: what was read and how much, how big it is on disk, and how it ended. */
 fun Kept.said(context: Context): String = listOfNotNull(
-    entries?.let { "$it ${kind?.let { each -> context.getString(each.label) }.orEmpty()}".trim() }
-        ?: context.getString(R.string.home_reading),
+    kind?.let { context.getString(it.label) },
+    when (this) {
+        is Kept.Read -> context.getString(R.string.home_reading)
+        is Kept.Scan -> entries?.let { context.getString(R.string.overlay_kept, it) }
+    },
     Formatter.formatShortFileSize(context, weight()),
-    outcome?.let { ended(context) },
+    (this as? Kept.Scan)?.ended(context),
 ).joinToString(" · ")
 
 /** One reading on its way out: the JSON it goes out under, and the files that travel with it. */
@@ -26,10 +30,13 @@ fun Kept.outgoing(context: Context): Outgoing {
     return Outgoing(
         name = outgoingName(),
         files = leaving,
+        forLab = this is Kept.Scan,
         holds = buildList {
             kind?.let { add(context.getString(R.string.export_kind) to context.getString(it.label)) }
-            entries?.let { add(context.getString(R.string.export_entries) to "$it") }
-            outcome?.let { add(context.getString(R.string.export_outcome) to ended(context)) }
+            if (this@outgoing is Kept.Scan) {
+                entries?.let { add(context.getString(R.string.export_entries) to "$it") }
+                add(context.getString(R.string.export_outcome) to ended(context))
+            }
             images(context)?.let(::add)
             add(context.getString(R.string.export_size) to Formatter.formatShortFileSize(context, weight()))
         },
@@ -42,8 +49,8 @@ private fun Kept.images(context: Context): Pair<String, String>? {
 
     return when {
         panels == 0 -> null
-        form == "reading" -> context.getString(R.string.export_frame) to context.getString(R.string.export_frame_read)
-        entries == 0 -> context.getString(R.string.export_frame) to context.getString(R.string.export_frame_first)
+        this is Kept.Read -> context.getString(R.string.export_frame) to context.getString(R.string.export_frame_read)
+        this is Kept.Scan && entries == 0 -> context.getString(R.string.export_frame) to context.getString(R.string.export_frame_first)
         else -> context.getString(R.string.export_panels) to context.resources.getQuantityString(R.plurals.export_open, panels, panels)
     }
 }
@@ -55,6 +62,7 @@ fun Kept.outgoingName(): String = outbound().firstOrNull { it.file.extension == 
 fun List<Kept>.outgoing(context: Context): Outgoing = Outgoing(
     name = context.resources.getQuantityString(R.plurals.export_all_name, size, size),
     files = flatMap { it.outbound() },
+    forLab = any { it is Kept.Scan },
     holds = listOf(
         context.getString(R.string.export_readings) to "$size",
         context.getString(R.string.export_size) to Formatter.formatShortFileSize(context, sumOf { it.weight() }),
@@ -73,7 +81,7 @@ fun Kept.outbound(): List<Outbound> {
             file,
             when {
                 file.extension == "json" -> "$export.json"
-                form == "reading" -> "$export.png"
+                this is Kept.Read -> "$export.png"
                 else -> "$export-${file.nameWithoutExtension}.png"
             },
         )
@@ -83,12 +91,13 @@ fun Kept.outbound(): List<Outbound> {
 private fun Kept.exportName(): String = listOfNotNull("wor", kind?.id, stamp).joinToString("-")
 
 /** How a scan ended, in one word. Why it ended that way is `detail`, which is a sentence. */
-fun Kept.ended(context: Context): String = when {
-    outcome == null -> context.getString(R.string.home_reading)
-    outcome == "finished" -> context.getString(R.string.home_complete)
-    outcome.startsWith("stopped") -> context.getString(R.string.home_stopped)
-    else -> context.getString(R.string.home_failed)
-}
+fun Kept.Scan.ended(context: Context): String = context.getString(
+    when (ended) {
+        Ended.FINISHED -> R.string.home_complete
+        Ended.STOPPED -> R.string.home_stopped
+        Ended.FAILED, null -> R.string.home_failed
+    },
+)
 
 private fun Kept.weight(): Long = files.sumOf { it.length() }
 

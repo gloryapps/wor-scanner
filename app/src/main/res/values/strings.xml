@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">WoR Scanner</string>
-    <string name="touch_service_description">Taps through a Watcher of Realms storage while a scan runs. Nothing is read from other apps.</string>
+    <string name="touch_service_description">Taps and scrolls through Watcher of Realms while a scan runs. Nothing is read from other apps.</string>
 
     <string name="kind_gear">Gear</string>
     <string name="kind_heroes">Heroes</string>
@@ -18,12 +18,12 @@
     <string name="home_on">on</string>
     <string name="home_grant">grant</string>
     <string name="home_scan_title">Scan your %1$s</string>
-    <string name="home_scan_said_gear">Open Storage → Gear in the game. The overlay sits at the top of the screen and reads as you scroll the grid. It stops on its own once it stops finding new pieces.</string>
+    <string name="home_scan_said_gear">Open Storage → Gear in the game, filtered and sorted as you want it scanned, and select the first piece. The overlay taps through the grid, scrolls it itself and stops at its end.</string>
     <string name="home_scan_said_heroes">Open Hero in the game, sort by Rarity ↓ and select the first hero. The overlay reads each legendary under Attributes, Skills and Awaken and stops at the first epic, so keep epics out of your favourites.</string>
     <string name="home_scan_said_artifacts">Open Storage → Artifact in the game, sort by Rarity ↓ and select the first artifact. The overlay reads each mythic, exclusives first, and stops at the first legendary.</string>
     <string name="home_start">Start</string>
     <string name="home_to_game">→ game</string>
-    <string name="home_capturing">Capturing. Open the storage in the game and press Scan on the capsule.</string>
+    <string name="home_capturing">Capturing. Open the game as said above and press Scan on the capsule.</string>
     <string name="home_stop">Stop capturing</string>
     <string name="home_kinds">types</string>
     <string name="home_readings">Readings</string>
@@ -51,7 +51,7 @@
     <string name="export_beside">+%1$d beside it</string>
     <string name="export_holds">What goes out</string>
     <string name="export_kind">Kind</string>
-    <string name="export_entries">Pieces</string>
+    <string name="export_entries">Read</string>
     <string name="export_outcome">Scan</string>
     <string name="export_size">Size</string>
     <string name="export_panels">Panels</string>
@@ -74,12 +74,13 @@
     <string name="reading_copy">copy</string>
 
     <string name="capture_channel">Screen capture</string>
-    <string name="capture_notification_title">Capturing the screen. Open the storage to scan and press Scan.</string>
-    <string name="scan_running">Scanning %1$s: %2$d read, %3$d in storage</string>
+    <string name="capture_notification_title">Capturing the screen. Open the game where the scan begins and press Scan.</string>
+    <string name="scan_running">Scanning %1$s: %2$d read, %3$d held</string>
     <string name="scan_finished">%1$s scan finished: %2$d read</string>
     <string name="scan_stopped">%1$s scan stopped: %2$s. %3$d kept.</string>
     <string name="scan_failed">%1$s scan failed: %2$s</string>
     <string name="scan_stop">Stop</string>
+    <string name="scan_needs_touch">The accessibility service is off, so the scan cannot tap. Turn it on in the app, then scan.</string>
 
     <string name="overlay_open">OPEN</string>
     <string name="overlay_scan">Scan</string>
@@ -99,13 +100,13 @@
         <item quantity="one">%1$d line</item>
         <item quantity="other">%1$d lines</item>
     </plurals>
-    <plurals name="reading_pieces">
-        <item quantity="one">%1$d piece</item>
-        <item quantity="other">%1$d pieces</item>
+    <plurals name="reading_tiles">
+        <item quantity="one">%1$d tile</item>
+        <item quantity="other">%1$d tiles</item>
     </plurals>
     <plurals name="reading_open">
-        <item quantity="one">%1$d piece not fully read</item>
-        <item quantity="other">%1$d pieces not fully read</item>
+        <item quantity="one">%1$d tile not fully read</item>
+        <item quantity="other">%1$d tiles not fully read</item>
     </plurals>
     <plurals name="export_open">
         <item quantity="one">%1$d, a panel the reader could not fully read</item>

@@ -12,7 +12,8 @@ internal data class HomeUiState(
     val kind: Kind = Chosen.FIRST,
     /** The scan under way, for the header; null when none is running. */
     val running: ScanState.Running? = null,
-    val readings: List<Kept> = emptyList(),
+    /** Null until the store has answered, so a start does not show an empty list first. */
+    val readings: List<Kept>? = null,
     /** The readings whose deletion is being asked about, one or every one; empty while none is. */
     val deleting: List<Kept> = emptyList(),
 ) {

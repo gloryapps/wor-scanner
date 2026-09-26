@@ -54,6 +54,7 @@ internal fun holdsName(line: String, name: String): Boolean {
 internal fun timesHeld(line: String, word: String): Int {
     val flat = line.lowercase().filter { it in 'a'..'z' }
     val target = word.lowercase().filter { it in 'a'..'z' }
+    if (target.isEmpty()) return 0
     val slack = target.length / 4
     var times = 0
     var at = 0

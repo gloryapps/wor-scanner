@@ -21,7 +21,7 @@ object Lettering {
     /** The app's own name in the header. */
     val brand = TextStyle(fontFamily = Fonts.sans, fontSize = 15.sp, fontWeight = FontWeight.Medium, letterSpacing = (-0.01).em)
 
-    /** The caps line above a group: Permissions, Readings, Format. */
+    /** The caps line above a group: Permissions, Readings. */
     val section = TextStyle(fontFamily = Fonts.sans, fontSize = 10.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.08.em)
 
     val body = TextStyle(fontFamily = Fonts.sans, fontSize = 13.sp, lineHeight = 18.sp)

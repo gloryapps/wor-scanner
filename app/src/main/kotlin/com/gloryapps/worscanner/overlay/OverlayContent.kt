@@ -35,7 +35,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +58,6 @@ import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.label
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 /**
@@ -117,16 +115,15 @@ fun SheetContent(
     chosen: Chosen = koinInject(),
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val state by scanning.state.collectAsStateWithLifecycle()
-    val kind by chosen.kind.collectAsStateWithLifecycle(Chosen.FIRST)
+    val kind by chosen.kind.collectAsStateWithLifecycle()
 
     Sheet(
         kind = kind,
         running = state is ScanState.Running,
-        onChoose = { scope.launch { chosen.choose(it) } },
+        onChoose = chosen::choose,
         onScan = {
-            if (state is ScanState.Running) CaptureService.stopScan(context) else CaptureService.scan(context, kind)
+            CaptureService.scan(context, kind)
             onDone()
         },
         onRead = {
@@ -162,7 +159,6 @@ internal fun Capsule(state: ScanState, onOpen: () -> Unit, onStop: () -> Unit, o
                 Text(stringResource(R.string.overlay_open), style = Lettering.mark, color = Colors.text)
             }
 
-            /* The count sits in the top band or a corner, never over the header region the scan reads it from. */
             is ScanState.Running -> Row(
                 Modifier.pill(CAPTURING, Colors.glassEdge).padding(start = 10.dp, end = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(9.dp),

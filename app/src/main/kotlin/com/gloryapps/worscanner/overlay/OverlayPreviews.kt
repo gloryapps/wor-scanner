@@ -19,7 +19,6 @@ import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.scanner.scan.Progress
 import com.gloryapps.worscanner.scanner.scan.ScanEntry
 import com.gloryapps.worscanner.ui.ScannerTheme
-import java.io.File
 
 /* The strip is drawn over the game, so the previews put it on a dark ground rather than on the app's. */
 private val GAME = Color(0xFF0A0C12)
@@ -29,7 +28,6 @@ private val ENDED = ScanState.Ended(
     Kind.GEAR,
     /* The capsule counts the entries and says nothing else of them, so an entry can be an empty one. */
     Outcome.Finished(List(1204) { ScanEntry(it, 0, 0, card = Unit, rows = emptyList()) }),
-    File("scan.json"),
 )
 
 @Preview(name = "Hairline · under way", widthDp = 320, heightDp = 24)

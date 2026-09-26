@@ -1,5 +1,6 @@
 package com.gloryapps.worscanner.scanner.kinds.artifact
 
+import com.gloryapps.worscanner.scanner.game.Attribute
 import com.gloryapps.worscanner.scanner.game.attributesIn
 import com.gloryapps.worscanner.scanner.game.exclusiveIn
 import com.gloryapps.worscanner.scanner.game.headOf
@@ -8,8 +9,10 @@ import com.gloryapps.worscanner.scanner.scan.Scan
 import com.gloryapps.worscanner.scanner.scan.Seen
 import com.gloryapps.worscanner.scanner.scan.Tapped
 import com.gloryapps.worscanner.scanner.scan.gridBox
+import com.gloryapps.worscanner.scanner.scan.spread
 import com.gloryapps.worscanner.scanner.scan.tileBox
 import com.gloryapps.worscanner.scanner.text.holdsName
+import com.gloryapps.worscanner.scanner.text.readsAsCapitals
 import com.gloryapps.worscanner.scanner.text.wordIn
 
 /**
@@ -29,13 +32,15 @@ object ArtifactScan : Scan<ScannedArtifact>() {
 
     override suspend fun readTile(tapped: Tapped): Read<ScannedArtifact> {
         val rows = tapped.seen.rowsIn(layout.panel)
-        if (rows.firstNotNullOfOrNull(::rarityIn)?.scanned == false) return Read.Beyond
+        if (rows.firstOrNull()?.let(::rarityIn)?.scanned == false) return Read.Beyond
         val artifact = read(rows)
 
         return Read.Card(artifact, rows, listOf(tapped.seen.frame), closed(artifact))
     }
 
     override fun readScreen(seen: Seen): ScannedArtifact = read(seen.rowsIn(layout.panel))
+
+    override fun titleOf(rows: List<String>): String? = nameOf(rows)
 
     /**
      * A tile by the colour of its face, red, gold or purple where an empty slot is grey: a tile prints
@@ -45,38 +50,47 @@ object ArtifactScan : Scan<ScannedArtifact>() {
     override fun tileAt(seen: Seen, column: Int, centreY: Int): Boolean {
         val grid = layout.gridBox(seen.frame)
         val tile = layout.tileBox(seen.frame, column, centreY)
-        val across = (0 until FACE_SAMPLES).map { tile.left + (tile.right - tile.left) * (2 * it + 1) / (2 * FACE_SAMPLES) }
-        val down = (0 until FACE_SAMPLES).map { tile.top + (tile.bottom - tile.top) * (2 * it + 1) / (2 * FACE_SAMPLES) }
-        val face = across.flatMap { x -> down.filter { it in grid.top..grid.bottom }.map { y -> seen.frame.colourAt(x, y).saturation } }
+        val down = spread(tile.top, tile.bottom, FACE_SAMPLES).filter { it in grid.top..grid.bottom }
+        val face = spread(tile.left, tile.right, FACE_SAMPLES).flatMap { x -> down.map { y -> seen.frame.colourAt(x, y).saturation } }
 
         return face.isNotEmpty() && face.average() > FACE
     }
 
+    /** No word finds the first row: the `+25` reads as `Wt25` or not at all. The scan begins on the selected tile or not at all. */
+    override fun firstRowCentre(seen: Seen): Int? = null
+
     internal fun read(rows: List<String>): ScannedArtifact {
         val skills = rows.indexOfFirst(::isSkillsRow)
         val own = if (skills < 0) rows else rows.subList(0, skills)
+        val name = nameOf(own)
 
         return ScannedArtifact(
-            name = nameOf(rows),
+            name = name,
             level = headOf(own).firstNotNullOfOrNull { LEVEL.find(it) }?.groupValues?.get(1)?.toInt(),
             skill = rows.getOrNull(skills)?.let { SKILL.find(it) }?.groupValues?.get(1)?.toInt(),
-            exclusive = exclusiveIn(own),
+            /* Below the name only, so a hero's name that did not read leaves no neighbour in its place. */
+            exclusive = if (name == null) null else exclusiveIn(own.drop(2)),
             attributes = attributesIn(own, extras = 2),
         )
     }
 
-    /** Whether the record names what identifies it; one that does not keeps its panel as an image. */
+    /** Whether the record names what identifies it, HP and ATK among the attributes; one that does not keeps its panel as an image. */
     internal fun closed(artifact: ScannedArtifact): Boolean =
-        artifact.name != null && artifact.level != null && artifact.skill != null && artifact.attributes.isNotEmpty()
+        artifact.name != null && artifact.level != null && artifact.skill != null &&
+            artifact.attributes.map { it.name }.containsAll(listOf(Attribute.HP, Attribute.ATK))
 
-    /** `Mythic Artifact` and its like, the panel's first row. */
     private fun rarityIn(row: String): Rarity? = wordIn(row, Rarity.entries) { it.word }
 
-    /** The row under the rarity. */
+    /**
+     * The row under the rarity, which the panel prints first. A row that is the hero's name in
+     * capitals, `Exclusive`, `Class-Limited` or the level is the name that did not read.
+     */
     private fun nameOf(rows: List<String>): String? {
-        val at = rows.indexOfFirst { rarityIn(it) != null }
+        if (rows.firstOrNull()?.let(::rarityIn) == null) return null
+        val under = rows.getOrNull(1)?.trim() ?: return null
+        val stranger = readsAsCapitals(under) || holdsName(under, "Exclusive") || holdsName(under, "Class-Limited") || LEVEL.containsMatchIn(under)
 
-        return if (at < 0) null else rows.getOrNull(at + 1)?.trim()
+        return under.takeUnless { stranger }
     }
 
     /** `Artifact Skills`, which the recogniser also reads `Artifact Skils`; the effect's text below it names attributes too. */

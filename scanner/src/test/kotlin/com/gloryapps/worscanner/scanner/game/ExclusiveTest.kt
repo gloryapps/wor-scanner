@@ -16,6 +16,11 @@ class ExclusiveTest {
     }
 
     @Test
+    fun `the word read a letter off is left out of the name`() {
+        assertEquals("KASSANIDR", exclusiveIn(listOf("Spear of Leonidas", "KASSANIDR", "Exclusivc", "HP 4650+1730")))
+    }
+
+    @Test
     fun `a panel without the word names no exclusive`() {
         assertNull(exclusiveIn(listOf("Mythic Artifact", "Hate's Contagion", "Class-Limited", "+ 25/25", "HP 4650+1790")))
     }

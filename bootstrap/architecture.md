@@ -15,7 +15,7 @@ artifacts. Distributed as an APK on GitHub, not on the Play Store.
   `AccessibilityService` using `dispatchGesture` (taps and swipes, blind: the game is Unity and
   exposes no view tree), ML Kit (text) and the file writer; holds the foreground service that runs
   the scan, the hairline and capsule drawn over the game, and the two screens.
-- The words (sets, slots, attribute names, variants, factions) are `scanner`'s own, transcribed
+- The words (sets, slots, attribute names) are `scanner`'s own, transcribed
   from the wiki's Gear page. The app depends on no other repository: what it shares with the azhor
   lab is the JSON it writes, not code. A word the catalogue lacks reads as `null` beside the raw
   lines, and the lab's picker settles it. The wiki's Gear page is behind Cloudflare; the
@@ -34,9 +34,9 @@ that the walk over a grid is written once and a kind says only what its tiles ho
 
 | Package | Holds | Knows |
 | --- | --- | --- |
-| `senses/` | `Screen`, `Touch`, `TextReader`, `Frame`, `Colour` | nothing |
-| `text/` | `Line`, `Box`, `rowsOf`, matching, `numbersIn`, `wordIn`, `nameIn` | senses |
-| `game/` | `Attribute`, `FACTIONS`, `Named`, `ReadAttribute`, `attributesIn`, `headOf`, `exclusiveIn`: the words every kind shares and the rows they are read off | text |
+| `text/` | `Line`, `Box`, `rowsOf`, matching, `numbersIn`, `wordIn`, `nameIn`, `readsAsCapitals` | nothing |
+| `senses/` | `Screen`, `Touch`, `TextReader`, `Frame`, `Colour`; the recogniser hands back `text/`'s lines | text |
+| `game/` | `Attribute`, `ReadAttribute`, `attributesIn`, `headOf`, `exclusiveIn`: the words every kind shares and the rows they are read off | text |
 | `scan/` | `Scan<T>`, `Walk`, `Seen`, `Tapped`, `Read<T>`, `GridLayout`, `Region`, `Spot`, `ScanEntry<T>`, `Outcome<T>`, tiles, registration, count | senses, text |
 | `kinds/gear/` | `ScannedGear`, its words, `GEAR_STORAGE`, `GearScan` | scan, text, game |
 | `kinds/hero/` | `ScannedHero`, `HeroSkills`, `SkillLevel`, `HERO_ROSTER` and its spots, `HeroScan` | scan, text, senses |
@@ -118,12 +118,13 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
 ## Persistence
 
 - No database. A scan is a JSON file in the app's external files directory, `version` 2 with the
-  `kind` it scanned; a new scan is a new file, never a merge. The user takes it out through the share sheet or saves it to Downloads via
-  MediaStore. Sending straight to the lab is a later option.
+  `kind` it scanned; a new scan is a new file, never a merge. The user takes it out through the share
+  sheet or saves it into the folder the emulator shares with the PC. Sending straight to the lab is a
+  later option.
 - What leaves the app is named `wor-<kind>-<stamp>`: `wor-gear-20260907-130812.json`, with a scan's
   kept panels beside it as `wor-gear-20260907-130812-<tile>.png`. On disk the names stay `scan.json`
   and `<tile>.png`; `Exports` copies each file under the name its caller gives, which is what keeps
-  two exports of the same kind apart in one Downloads folder. The share sheet stages its copies in
+  two exports of the same kind apart in one folder. The share sheet stages its copies in
   the cache so the other app is shown those same names.
 - Every entry in the JSON carries the raw OCR lines it was read from.
 - The panel PNG is kept only for a piece the reader did not close: set or slot null, or the card
@@ -139,18 +140,17 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
 - Neither mount needs a grant, both sitting outside the sdcard, so the app asks for no storage
   permission at all; a device with no mount is told to use the share sheet instead.
 - The clipboard does not cross that border, and the two apps are not linked over the network.
-- Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, which
-  the home screen picks and the overlay obeys.
+- Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, picked
+  on the home screen or in the overlay's menu, held at once and written behind.
 - Room enters only if scan history inside the app is ever wanted, and brings the no-destructive-
   migration rule with it.
 
 ## Navigation
 
-- One Activity, Compose, Navigation 3 from the start: the back stack is a state list the app owns,
-  which lets the service push the follow-up screen when a scan ends.
-- The overlay belongs to the service, not the Activity, and is drawn in Compose too. It is three
-  windows: the hairline pinned to the top, the capsule a finger drags, and the close target that
-  appears under it while it is held.
+- One Activity, Compose, Navigation 3 from the start: the back stack is a state list the app owns.
+- The overlay belongs to the service, not the Activity, and is drawn in Compose too. It is four
+  windows: the hairline pinned to the top, the capsule a finger drags, the menu its tap opens beside
+  it, and the close target that appears under it while it is held.
 
 ## Error handling
 
@@ -160,7 +160,7 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   not stop.
 - `resultOf` wraps the calls that throw: a capture, an OCR pass, a gesture.
 - The end of a scan is a sealed type of its own, not a `Result`: finished, stopped for a named
-  reason (storage closed, the grid no longer matches, projection consent lost), failed with cause.
+  reason (the screen not open, the grid lost, stopped by the player), failed with cause.
   The UI renders each with its own verb.
 - A tile that reads badly is not a scan error: it lands in the JSON with nulls and its PNG, and
   the scan goes on. Only what prevents the next tap stops a scan.
@@ -171,8 +171,9 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   capture the panel, next, with no back.
 - The grid scrolls continuously, seven per row, under a scrollbar. A swipe does not move an exact
   number of rows: the scan drags slowly (no fling), then finds where the last row it had seen now
-  sits by matching tiles, and takes its position from that. The header's count (`1,169/2,500`) gives
-  the number of rows and the stop.
+  sits by the framed tile, else by matching tiles' words, and takes its position from that. The
+  header's count (`1,169/2,500`) says the screen is open and what the progress counts to; the scan
+  ends where the rows run out, or where the kind says the tiles it scans end.
 - Two equal pieces give two equal panels, so a piece's identity is its grid position, never its
   content.
 - Positions are fractions of the display read at start, never pixels: the app runs on any

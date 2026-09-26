@@ -1,68 +1,48 @@
 package com.gloryapps.worscanner.scanner.kinds.gear
 
 import com.gloryapps.worscanner.scanner.scan.countIn
-import com.gloryapps.worscanner.scanner.scan.holds
 import com.gloryapps.worscanner.scanner.scan.labelledTileAt
+import com.gloryapps.worscanner.scanner.scan.recorded
 import com.gloryapps.worscanner.scanner.scan.topRowCentre
-import com.gloryapps.worscanner.scanner.senses.Colour
-import com.gloryapps.worscanner.scanner.senses.Frame
-import com.gloryapps.worscanner.scanner.text.Line
-import com.gloryapps.worscanner.scanner.text.rowsOf
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /** The storage as ML Kit read it inside LDPlayer at 1280x720, with the first piece selected. */
 class LdPlayerReadingTest {
-    @Serializable
-    private class Reading(val width: Int, val height: Int, val lines: List<Line>)
-
-    private val reading = Json { ignoreUnknownKeys = true }
-        .decodeFromString<Reading>(javaClass.getResource("/ldplayer-storage-1280x720.json")!!.readText())
-
-    private val frame = object : Frame {
-        override val width = reading.width
-        override val height = reading.height
-        override fun colourAt(x: Int, y: Int) = Colour(0)
-    }
-
+    private val seen = recorded("ldplayer-storage-1280x720.json")
     private val layout = GEAR_STORAGE
 
     @Test
     fun `the header's count is read from its region`() {
-        val box = layout.count.box(frame.width, frame.height)
-
-        assertEquals(1169, countIn(rowsOf(reading.lines.filter { box.holds(it) })))
+        assertEquals(1169, countIn(seen.rowsIn(layout.count)))
     }
 
     @Test
     fun `the top row is the first row of tiles, not the second`() {
-        val centre = topRowCentre(reading.lines, layout, frame)!!
+        val centre = topRowCentre(seen.lines, layout, seen.frame)!!
 
         assertTrue(centre in 195..215, "row zero's centre read as $centre")
     }
 
     @Test
     fun `every column of the first three rows has a tile`() {
-        val top = topRowCentre(reading.lines, layout, frame)!!
-        val pitch = layout.pitchY(frame.height)
+        val top = topRowCentre(seen.lines, layout, seen.frame)!!
+        val pitch = layout.pitchY(seen.frame.height)
 
         for (row in 0..2) {
             for (column in 0 until layout.columns) {
-                assertTrue(labelledTileAt(reading.lines, layout, frame, column, top + row * pitch), "no tile at row $row column $column")
+                assertTrue(labelledTileAt(seen.lines, layout, seen.frame, column, top + row * pitch), "no tile at row $row column $column")
             }
         }
     }
 
     @Test
-    fun `the panel region reads the selected piece whole`() {
-        val box = layout.panel.box(frame.width, frame.height)
-        val card = GearScan.read(rowsOf(reading.lines.filter { box.holds(it) }))
+    fun `the whole frame reads the selected piece as the recording kept it`() {
+        val kept = Json.parseToJsonElement(javaClass.getResource("/ldplayer-storage-1280x720.json")!!.readText()).jsonObject.getValue("card")
 
-        assertEquals("cataclysm", card.set)
-        assertEquals("VIERNA", card.exclusive)
-        assertEquals(5, card.attributes.size)
+        assertEquals(Json.decodeFromJsonElement(ScannedGear.serializer(), kept), GearScan.readScreen(seen))
     }
 }

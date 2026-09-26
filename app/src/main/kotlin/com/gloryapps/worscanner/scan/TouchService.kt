@@ -5,6 +5,7 @@ import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.view.accessibility.AccessibilityEvent
 import com.gloryapps.worscanner.scanner.senses.Touch
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.android.ext.android.inject
 import kotlin.coroutines.resume
@@ -45,6 +46,9 @@ class TouchService : AccessibilityService(), Touch {
         send(hold)
     }
 
+    /** Android cancels an injected gesture the moment a finger touches the screen: the player took it back, and the scan ends as stopped. */
+    private class TouchedByHand : CancellationException("a finger touched the screen")
+
     private suspend fun stroke(path: Path, millis: Long) = send(GestureDescription.StrokeDescription(path, 0, millis))
 
     private suspend fun send(stroke: GestureDescription.StrokeDescription) = suspendCancellableCoroutine { continuation ->
@@ -57,7 +61,7 @@ class TouchService : AccessibilityService(), Touch {
                 }
 
                 override fun onCancelled(gestureDescription: GestureDescription?) {
-                    if (continuation.isActive) continuation.resumeWithException(IllegalStateException("gesture cancelled"))
+                    if (continuation.isActive) continuation.resumeWithException(TouchedByHand())
                 }
             },
             null,

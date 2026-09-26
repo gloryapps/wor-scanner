@@ -33,11 +33,25 @@ data class ScanFile<T>(
     val entries: List<ScanEntry<T>>,
 )
 
+/** How a scan ended, as the lab and the app's list read it. */
+enum class Ended { FINISHED, STOPPED, FAILED }
+
+/** The outcome as the file says it: `finished`, `stopped:<reason>`, `failed:<cause>`. */
+fun Outcome<*>.wire(): String = when (this) {
+    is Outcome.Finished -> "finished"
+    is Outcome.Stopped -> "stopped:${reason.name.lowercase()}"
+    is Outcome.Failed -> "failed:$cause"
+}
+
+/** How a file's outcome ended; null for a word no scan writes. */
+fun endedOf(wire: String): Ended? = Ended.entries.firstOrNull { wire.substringBefore(':') == it.name.lowercase() }
+
 /** One folder per scan: `scan.json` and the panel of every tile the reader did not close. */
 class ScanWriter<T>(private val context: Context, private val kind: Kind, private val scan: Scan<T>) {
     private val json = Json { prettyPrint = true }
-    val stamp: String = LocalDateTime.now().format(STAMP)
-    private val folder = File(File(context.getExternalFilesDir(null), "scans"), stamp).apply { mkdirs() }
+    private val stamp: String = LocalDateTime.now().format(STAMP)
+    /** Made when the first file goes in, so a scan that wrote nothing leaves no folder. */
+    private val folder by lazy { File(File(context.getExternalFilesDir(null), "scans"), stamp).apply { mkdirs() } }
 
     /* A tile read under several tabs keeps its panels side by side, in the order they were read. */
     val keeper = Keeper { frames: List<Frame>, index: Int ->
@@ -52,26 +66,22 @@ class ScanWriter<T>(private val context: Context, private val kind: Kind, privat
         file.name
     }
 
-    fun write(first: BitmapFrame, outcome: Outcome<T>): File {
-        val (ended, entries) = when (outcome) {
-            is Outcome.Finished -> "finished" to outcome.entries
-            is Outcome.Stopped -> "stopped:${outcome.reason.name.lowercase()}" to outcome.entries
-            is Outcome.Failed -> "failed:${outcome.cause}" to outcome.entries
-        }
+    /** The file the lab reads; a scan that never saw a frame writes a display of 0x0. */
+    fun write(first: BitmapFrame?, outcome: Outcome<T>) {
+        val entries = outcome.entries
         val stopped = outcome as? Outcome.Stopped
         val file = ScanFile(
             kind = kind.id,
             startedAt = stamp,
-            width = first.width,
-            height = first.height,
-            outcome = ended,
+            width = first?.width ?: 0,
+            height = first?.height ?: 0,
+            outcome = outcome.wire(),
             detail = stopped?.detail ?: (outcome as? Outcome.Failed)?.cause?.stackTraceToString()?.lineSequence()?.take(4)?.joinToString(" | "),
             seen = stopped?.seen ?: (outcome as? Outcome.Finished)?.seen.orEmpty(),
             entries = entries,
         )
         /* A scan that read nothing leaves the frame it looked at, which is what tells why. */
-        if (entries.isEmpty()) File(folder, "first.png").outputStream().use { first.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-
-        return File(folder, "scan.json").apply { writeText(json.encodeToString(ScanFile.serializer(scan.serializer), file)) }
+        if (entries.isEmpty() && first != null) File(folder, "first.png").outputStream().use { first.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        File(folder, "scan.json").writeText(json.encodeToString(ScanFile.serializer(scan.serializer), file))
     }
 }

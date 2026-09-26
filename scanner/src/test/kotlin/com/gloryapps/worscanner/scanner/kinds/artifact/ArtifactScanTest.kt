@@ -77,6 +77,11 @@ class ArtifactScanTest {
     }
 
     @Test
+    fun `an artifact is called by its name, not its rarity`() {
+        assertEquals("Spear of Leonidas", ArtifactScan.titleOf(spearOfLeonidas))
+    }
+
+    @Test
     fun `a class-limited mythic names no hero`() {
         val artifact = ArtifactScan.read(hatesContagion)
 
@@ -148,8 +153,32 @@ class ArtifactScanTest {
     }
 
     @Test
-    fun `a rarity that does not read ends nothing`() = runTest {
-        assertIs<Read.Card<ScannedArtifact>>(ArtifactScan.readTile(Lent(panelOf(listOf("Mythc Artifac") + hatesContagion.drop(1)))))
+    fun `a rarity that does not read ends nothing, though the effect below names one`() = runTest {
+        val unread = listOf("Mxthxc Artxfact") + hatesContagion.drop(1).dropLast(1) + "the Epic hero's allies"
+
+        val read = ArtifactScan.readTile(Lent(panelOf(unread)))
+
+        assertIs<Read.Card<ScannedArtifact>>(read)
+        assertFalse(read.closed)
+    }
+
+    @Test
+    fun `a hero's name that did not read leaves the exclusive empty, not the artifact's name in its place`() {
+        val artifact = ArtifactScan.read(spearOfLeonidas.filterNot { it == "KASSANIDR" })
+
+        assertEquals("Spear of Leonidas", artifact.name)
+        assertNull(artifact.exclusive)
+    }
+
+    @Test
+    fun `a name that did not read is no name, not the row that came up under the rarity`() {
+        assertNull(ArtifactScan.read(hatesContagion.filterNot { it == "Hate's Contagion" }).name)
+        assertNull(ArtifactScan.read(spearOfLeonidas.filterNot { it == "Spear of Leonidas" }).name)
+    }
+
+    @Test
+    fun `an artifact without its HP or ATK keeps its image`() {
+        assertFalse(ArtifactScan.closed(ArtifactScan.read(hatesContagion.filterNot { it.startsWith("ATK 1497") })))
     }
 
     @Test

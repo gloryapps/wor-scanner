@@ -12,7 +12,6 @@ import com.gloryapps.worscanner.scanner.text.ValueUnit
 import com.gloryapps.worscanner.scanner.text.flatten
 import com.gloryapps.worscanner.scanner.text.holdsName
 import com.gloryapps.worscanner.scanner.text.numbersIn
-import com.gloryapps.worscanner.scanner.text.rowsOf
 import com.gloryapps.worscanner.scanner.text.wordIn
 
 /**
@@ -34,7 +33,10 @@ object GearScan : Scan<ScannedGear>() {
         return Read.Card(card, rows, listOf(tapped.seen.frame), closed(card))
     }
 
-    override fun readScreen(seen: Seen): ScannedGear = read(rowsOf(seen.lines))
+    override fun readScreen(seen: Seen): ScannedGear = read(seen.rowsIn(layout.panel))
+
+    /** The title, `Variant: Vierna's Bangle`: the head's row that names the slot. */
+    override fun titleOf(rows: List<String>): String? = headOf(rows).getOrNull(titleAt(rows))?.trim()
 
     internal fun read(rows: List<String>): ScannedGear {
         val set = setIn(rows)
@@ -47,7 +49,7 @@ object GearScan : Scan<ScannedGear>() {
             slot = slot,
             ancient = bannerHas(rows, "ancient"),
             variant = bannerHas(rows, "variant"),
-            exclusive = exclusiveIn(rows),
+            exclusive = exclusiveIn(belowTitle(rows)),
             attributes = if (primary != null) listOf(primary) + read.map { it.copy(bonus = null) } else read,
         )
     }
@@ -75,6 +77,15 @@ object GearScan : Scan<ScannedGear>() {
     }
 
     private fun bannerHas(rows: List<String>, word: String): Boolean = headOf(rows).any { flatten(it).contains(word) }
+
+    private fun titleAt(rows: List<String>): Int = headOf(rows).indexOfFirst { row -> wordIn(row, Slot.entries) { it.word } != null }
+
+    /** The rows under the title: an exclusive's hero is printed below it, and a hero that did not read leaves the title no way in. */
+    private fun belowTitle(rows: List<String>): List<String> {
+        val title = titleAt(rows)
+
+        return if (title < 0) rows else rows.drop(title + 1)
+    }
 
     /**
      * The slot: a word of the head narrowed to the side its set is worn in, or the attribute the

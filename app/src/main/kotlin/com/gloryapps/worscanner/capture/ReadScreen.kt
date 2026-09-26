@@ -23,7 +23,7 @@ class ReadScreen(
         val screen = checkNotNull(session.screen.value) { "no capture session" }
         val frame = screen.capture() as BitmapFrame
         val lines = reader.read(frame)
-        val reading = Reading(kind.id, frame.width, frame.height, lines, scan.readScreen(Seen(frame, lines)))
+        val reading = ReadingFile(kind.id, frame.width, frame.height, lines, scan.readScreen(Seen(frame, lines)))
 
         return Read(readings.keep(frame, reading, scan.serializer), lines.size)
     }

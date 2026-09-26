@@ -17,8 +17,6 @@ val HERO_ROSTER = GridLayout(
     tileWidth = 0.907,
     tileHeight = 0.95,
     labelBelowCentre = 0.213,
-    gridTop = 0.150,
-    gridBottom = 0.905,
     grid = Region(0.02, 0.150, 0.235, 0.905),
     /* Every tab prints right of the grid's art and left of the tabs. */
     panel = Region(0.655, 0.03, 0.906, 0.99),

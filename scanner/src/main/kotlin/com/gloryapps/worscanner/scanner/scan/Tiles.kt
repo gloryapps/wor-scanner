@@ -5,7 +5,7 @@ import com.gloryapps.worscanner.scanner.text.Box
 import com.gloryapps.worscanner.scanner.text.Line
 import kotlin.math.abs
 
-/** A word printed on a tile, which is any word in the grid but the `+16` badge every tile carries. */
+/** A word printed on a tile, which is any word in the grid but a `+16` badge, the same on many tiles. */
 fun Line.namesATile(): Boolean = !text.trim().startsWith("+")
 
 /**
@@ -13,11 +13,10 @@ fun Line.namesATile(): Boolean = !text.trim().startsWith("+")
  * tiles print: each number sits a fixed way below its tile's centre.
  */
 fun topRowCentre(lines: List<Line>, layout: GridLayout, frame: Frame): Int? {
-    val grid = layout.grid.box(frame.width, frame.height)
-    val pitch = layout.pitchY(frame.height)
-    val above = (layout.labelBelowCentre * pitch).toInt()
-    /* A row is whole once its tile's top edge clears the viewport's, which is half a tile below its centre. */
-    val lowestTop = (layout.gridTop * frame.height).toInt() + (layout.tileHeight * pitch / 2).toInt()
+    val grid = layout.gridBox(frame)
+    val above = layout.labelBelow(frame.height)
+    /* A row is whole once its centre sits half a tile below the viewport's top. */
+    val lowestTop = grid.top + layout.halfTile(frame.height)
 
     return lines.filter { grid.holds(it) && it.namesATile() }
         .map { it.box.top - above }
@@ -34,7 +33,7 @@ fun topRowCentre(lines: List<Line>, layout: GridLayout, frame: Frame): Int? {
 fun labelledTileAt(lines: List<Line>, layout: GridLayout, frame: Frame, column: Int, centreY: Int): Boolean {
     val grid = layout.gridBox(frame)
     val x = layout.tileX(column, frame.width)
-    val labelY = centreY + (layout.labelBelowCentre * layout.pitchY(frame.height)).toInt()
+    val labelY = centreY + layout.labelBelow(frame.height)
     val slackX = layout.pitchX(frame.width) / 2
     val slackY = layout.pitchY(frame.height) / 4
 
@@ -75,10 +74,7 @@ fun framedCentre(frame: Frame, layout: GridLayout, column: Int, highest: Int, lo
 private fun edgePaleness(frame: Frame, tile: Box): Int {
     var sum = 0
     var count = 0
-    for (step in 0 until EDGE_SAMPLES) {
-        val along = (2 * step + 1).toDouble() / (2 * EDGE_SAMPLES)
-        val x = tile.left + ((tile.right - tile.left) * along).toInt()
-        val y = tile.top + ((tile.bottom - tile.top) * along).toInt()
+    for ((x, y) in spread(tile.left, tile.right, EDGE_SAMPLES).zip(spread(tile.top, tile.bottom, EDGE_SAMPLES))) {
         for ((sx, sy, across) in listOf(Sample(x, tile.top, 0 to 1), Sample(x, tile.bottom, 0 to 1), Sample(tile.left, y, 1 to 0), Sample(tile.right, y, 1 to 0))) {
             sum += (-ACROSS..ACROSS).maxOf { frame.colourAt((sx + across.first * it).coerceIn(0, frame.width - 1), (sy + across.second * it).coerceIn(0, frame.height - 1)).paleness }
             count++
@@ -106,7 +102,10 @@ fun GridLayout.gridBox(frame: Frame): Box = grid.box(frame.width, frame.height)
 fun GridLayout.tileBox(frame: Frame, column: Int, centreY: Int): Box {
     val x = tileX(column, frame.width)
     val halfW = (tileWidth * pitchX(frame.width) / 2).toInt()
-    val halfH = (tileHeight * pitchY(frame.height) / 2).toInt()
+    val halfH = halfTile(frame.height)
 
     return Box(x - halfW, centreY - halfH, x + halfW, centreY + halfH)
 }
+
+/** `count` points spread evenly from `from` to `to`, each in the middle of its share, so none sits on an end. */
+fun spread(from: Int, to: Int, count: Int): List<Int> = (0 until count).map { from + (to - from) * (2 * it + 1) / (2 * count) }

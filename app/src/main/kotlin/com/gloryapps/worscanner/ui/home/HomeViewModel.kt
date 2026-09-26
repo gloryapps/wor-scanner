@@ -22,20 +22,22 @@ import kotlinx.coroutines.launch
 
 internal class HomeViewModel(
     session: CaptureSession,
-    scanning: Scanning,
+    private val scanning: Scanning,
     private val chosen: Chosen,
     private val permissions: Permissions,
     private val readings: Readings,
     val export: ExportDelegate,
 ) : ViewModel() {
-    private val kept = MutableStateFlow(readings.list())
+    private val kept = MutableStateFlow<List<Kept>?>(null)
     private val deleting = MutableStateFlow<List<Kept>>(emptyList())
+    /** Whether the deletion asked about is every one, which also clears what interrupted scans left. */
+    private var all = false
     private val _effects = Channel<HomeEffect>(Channel.BUFFERED)
     val effects: Flow<HomeEffect> = _effects.receiveAsFlow()
 
     init {
         /* A scan that ends while the screen is in front is listed without waiting for the next return. */
-        viewModelScope.launch { scanning.state.filterIsInstance<ScanState.Ended>().collect { kept.value = readings.list() } }
+        viewModelScope.launch { scanning.state.filterIsInstance<ScanState.Ended>().collect { relist() } }
     }
 
     val state: StateFlow<HomeUiState> = combine(
@@ -54,7 +56,18 @@ internal class HomeViewModel(
         .combine(chosen.kind) { state, kind -> state.copy(kind = kind) }
         .combine(kept) { state, readings -> state.copy(readings = readings) }
         .combine(deleting) { state, kept -> state.copy(deleting = kept) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            /* What is known at once, so a start does not flash nothing granted. */
+            HomeUiState(
+                accessibilityOn = permissions.accessibilityOn.value,
+                overlayAllowed = permissions.overlayAllowed.value,
+                capturing = session.screen.value != null,
+                kind = chosen.kind.value,
+                running = scanning.state.value as? ScanState.Running,
+            ),
+        )
 
     fun on(event: HomeEvent) {
         when (event) {
@@ -62,23 +75,39 @@ internal class HomeViewModel(
             HomeEvent.GrantOverlay -> send(HomeEffect.OpenOverlaySettings)
             HomeEvent.Start -> send(HomeEffect.LaunchProjection)
             HomeEvent.Stop -> send(HomeEffect.StopCapture)
-            is HomeEvent.Choose -> viewModelScope.launch { chosen.choose(event.kind) }
+            is HomeEvent.Choose -> chosen.choose(event.kind)
             is HomeEvent.Open -> send(HomeEffect.OpenReading(event.kept))
             is HomeEvent.Export -> export.begin(event.kept)
-            HomeEvent.ExportAll -> export.begin(kept.value)
-            is HomeEvent.Delete -> deleting.value = listOf(event.kept)
-            HomeEvent.DeleteAll -> deleting.value = kept.value
+            HomeEvent.ExportAll -> export.begin(kept.value.orEmpty())
+            is HomeEvent.Delete -> ask(listOf(event.kept), all = false)
+            HomeEvent.DeleteAll -> ask(kept.value.orEmpty(), all = true)
             HomeEvent.ConfirmDelete -> {
-                deleting.value.forEach(readings::delete)
-                deleting.value = emptyList()
-                kept.value = readings.list()
+                val going = deleting.value
+                val sweep = all && scanning.state.value !is ScanState.Running
+                ask(emptyList(), all = false)
+                viewModelScope.launch {
+                    going.forEach { readings.delete(it) }
+                    if (sweep) readings.sweep()
+                    relist()
+                }
             }
-            HomeEvent.CancelDelete -> deleting.value = emptyList()
+            HomeEvent.CancelDelete -> ask(emptyList(), all = false)
         }
     }
 
+    override fun onCleared() = export.clear()
+
     fun returned() {
         permissions.refresh()
+        viewModelScope.launch { relist() }
+    }
+
+    private fun ask(readings: List<Kept>, all: Boolean) {
+        this.all = all
+        deleting.value = readings
+    }
+
+    private suspend fun relist() {
         kept.value = readings.list()
     }
 

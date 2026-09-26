@@ -3,25 +3,26 @@ package com.gloryapps.worscanner.scanner.scan
 import com.gloryapps.worscanner.scanner.text.Box
 import com.gloryapps.worscanner.scanner.text.Line
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * How far the grid moved between two frames, in pixels upward, by the words printed on its tiles.
  *
- * Every tile carries its enhancement badge and its main number, which the recogniser reads with a
- * box; a number that was at one height and is now higher moved with the grid. Numbers repeat across
- * tiles, so a pair of equal words proves nothing alone, but the true shift is the one every true
- * pair agrees on and the rest scatter; pairing only within a column keeps the scatter thin. The
- * badge reads `+16` on every tile and says nothing about which, so it does not vote. The tiles' art
- * animates and cannot be trusted; the words do not move.
+ * A tile's words are read with a box; a word that was at one height and is now higher moved with
+ * the grid. Words repeat across tiles, so a pair of equal words proves nothing alone, but the true
+ * shift is the one every true pair agrees on and the rest scatter; pairing only within a column
+ * keeps the scatter thin. A badge that starts with `+`, the same on many tiles, does not vote. The
+ * tiles' art animates and cannot be trusted; the words do not move. The walk asks this only where
+ * the framed tile is not found.
  *
  * The recogniser is not the same twice: it runs level numbers into one line in one frame and not
  * the next, so a line is taken apart into its words before pairing. A character it slips loses
  * that one pair and no more; forgiving the slip would pair `1056` with `1006`, two tiles. Two
  * shifts within a few pixels of each other are one, since a box's top wobbles between frames.
  *
- * Null where no shift gathers enough pairs, which is a screen that is no longer the storage.
+ * Null where no shift gathers enough pairs, which is a screen that is no longer the grid.
  */
-fun shiftByText(before: List<Line>, after: List<Line>, grid: Box, columnPitch: Int): Int? {
+fun shiftByText(before: List<Line>, after: List<Line>, grid: Box, columnPitch: Int, rowPitch: Int): Int? {
     val was = tileWords(before, grid)
     val now = tileWords(after, grid)
     val shifts = ArrayList<Int>()
@@ -34,7 +35,8 @@ fun shiftByText(before: List<Line>, after: List<Line>, grid: Box, columnPitch: I
     }
 
     val needed = maxOf(FEWEST_PAIRS, was.size * SHARE / 100)
-    val best = shifts.map { centre -> shifts.filter { abs(it - centre) <= WOBBLE } }
+    val wobble = (rowPitch * WOBBLE).roundToInt()
+    val best = shifts.map { centre -> shifts.filter { abs(it - centre) <= wobble } }
         .filter { it.size >= needed }
         .maxByOrNull { it.size } ?: return null
 
@@ -63,8 +65,8 @@ private fun Line.tileWords(): List<TileWord> {
 
 /** What the recogniser sprinkles around a number: anything but letters, digits and the percent sign. */
 private val NOISE = Regex("[^a-z0-9%]")
-/** Pixels within which two shifts count as one. */
-private const val WOBBLE = 6
+/** The share of a row's pitch within which two shifts count as one. */
+private const val WOBBLE = 0.045
 private const val FEWEST_PAIRS = 3
 /** Of the words seen before, the share that must be found again at one shift. */
 private const val SHARE = 30

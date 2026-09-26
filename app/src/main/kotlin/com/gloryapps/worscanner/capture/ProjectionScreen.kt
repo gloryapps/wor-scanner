@@ -8,6 +8,7 @@ import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.Looper
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.senses.Screen
@@ -21,23 +22,35 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * A capture waits a moment for a frame newer than the call, since after a tap the frame wanted is
  * the one after it; a display that has not changed delivers none, and then the newest one stands.
+ * Once the system stops the projection, `onStop` is told and no capture returns a frame.
  */
 class ProjectionScreen(
     private val projection: MediaProjection,
     private var width: Int,
     private var height: Int,
     density: Int,
+    private val onStop: () -> Unit,
 ) : Screen {
     private class Held(val frame: BitmapFrame, val at: Long)
 
     private val handler = Handler(Looper.getMainLooper())
-    private var reader: ImageReader = newReader()
+    /** Every frame the display delivers is copied out on a thread of its own, never the one the overlay draws on. */
+    private val frames = HandlerThread("wor-scanner-frames").apply { start() }
+    @Volatile private var reader: ImageReader = newReader()
     private val display: VirtualDisplay
     private val latest = MutableStateFlow<Held?>(null)
+    @Volatile private var stopped = false
 
     init {
-        /* Android 14 refuses a virtual display on a projection with no callback registered. */
-        projection.registerCallback(object : MediaProjection.Callback() {}, handler)
+        projection.registerCallback(
+            object : MediaProjection.Callback() {
+                override fun onStop() {
+                    stopped = true
+                    onStop()
+                }
+            },
+            handler,
+        )
         display = checkNotNull(
             projection.createVirtualDisplay(
                 "wor-scanner",
@@ -53,6 +66,7 @@ class ProjectionScreen(
     }
 
     override suspend fun capture(): Frame {
+        check(!stopped) { "the projection was stopped" }
         val since = System.nanoTime()
         val fresh = withTimeoutOrNull(FRESH_WAIT_MS) { latest.filter { it != null && it.at > since }.first() }
 
@@ -75,7 +89,7 @@ class ProjectionScreen(
 
     /* A frame from a reader since replaced is of the old shape, and is dropped. */
     private fun newReader(): ImageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2).apply {
-        setOnImageAvailableListener({ if (it === reader) it.acquireLatestImage()?.use { image -> latest.value = Held(frameOf(image), System.nanoTime()) } }, handler)
+        setOnImageAvailableListener({ if (it === reader) it.acquireLatestImage()?.use { image -> latest.value = Held(frameOf(image), System.nanoTime()) } }, Handler(frames.looper))
     }
 
     private fun frameOf(image: Image): BitmapFrame {
@@ -90,6 +104,7 @@ class ProjectionScreen(
     fun close() {
         display.release()
         reader.close()
+        frames.quitSafely()
         projection.stop()
     }
 

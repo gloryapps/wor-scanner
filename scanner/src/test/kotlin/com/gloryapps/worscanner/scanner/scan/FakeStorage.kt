@@ -48,13 +48,21 @@ class FakeStorage(
     private val leavesOnTabTap: Int? = null,
     /** Captures after a switch in which the panel is still blank, the game drawing it. */
     private val drawsTabsOver: Int = 0,
-    /** Whether tiles print no word and show only a coloured face, as the artifacts' do. */
+    /** Whether tiles show a coloured face and print only a badge the recogniser misreads, as the artifacts' do. */
     private val wordless: Boolean = false,
+    /** Tile taps, counted from one, that the game drops: the frame stays where it was. */
+    private val droppedTileTaps: Set<Int> = emptySet(),
+    /** A drag, counted from one, after which the game shows another screen altogether. */
+    private val leavesOnDrag: Int? = null,
+    /** A capture, counted from one, that fails as a display that delivers no frame does. */
+    private val failsOnCapture: Int? = null,
 ) : Screen, Touch, TextReader {
     val tabs = (0 until tabCount).map { Spot(TAB_X, 0.10 + 0.08 * it) }
     val taps = mutableListOf<Pair<Int, Int>>()
     var drags = 0
     private var tabTaps = 0
+    private var tileTaps = 0
+    private var captures = 0
     private var tab = 0
     private var away = false
     /** Captures left before a switched tab's panel is drawn. */
@@ -62,11 +70,11 @@ class FakeStorage(
     private val pitch = (layout.tilePitchY * 1000).toInt()
     private val pitchX = (layout.tilePitchX * 1000).toInt()
     /** Where row zero's centre sits when the grid is at its top. */
-    private val restingTop = (layout.gridTop * 1000).toInt() + pitch / 2 + 10
+    private val restingTop = (layout.grid.top * 1000).toInt() + pitch / 2 + 10
     /** Pieces the current list leaves out at its start. */
     private val skipped get() = if (tab == ownListTab) 1 else 0
     private val rows get() = (pieces - skipped + layout.columns - 1) / layout.columns
-    private val floor get() = (restingTop + (rows - 1) * pitch - ((layout.gridBottom * 1000).toInt() - pitch / 2)).coerceAtLeast(0)
+    private val floor get() = (restingTop + (rows - 1) * pitch - ((layout.grid.bottom * 1000).toInt() - pitch / 2)).coerceAtLeast(0)
     /** How far the grid has scrolled, in pixels of a 1000-pixel display. */
     private var scrolled = (scrolledRows * pitch).toInt().coerceIn(0, floor)
     private var selected: Int? = selected
@@ -89,7 +97,7 @@ class FakeStorage(
         private val centres = (0 until rows).map { rowCentre(it) }
 
         private val halfW = (layout.tileWidth * pitchX / 2).toInt()
-        private val halfH = (layout.tileHeight * pitch / 2).toInt()
+        private val halfH = layout.halfTile(1000)
 
         override fun colourAt(x: Int, y: Int): Colour = when {
             place?.let { onEdgeOf(it, x, y) } == true -> FRAME
@@ -106,7 +114,7 @@ class FakeStorage(
 
         /* Inside a listed tile, clear of the edge its frame is drawn on and of the grid's viewport. */
         private fun faceAt(x: Int, y: Int): Boolean {
-            if (y < layout.gridTop * 1000 || y > layout.gridBottom * 1000) return false
+            if (y < layout.grid.top * 1000 || y > layout.grid.bottom * 1000) return false
             val column = ((x - layout.firstTileX * 1000) / pitchX).roundToInt()
             val row = centres.indexOfFirst { abs(y - it) < halfH - 3 }
             return column in 0 until layout.columns && row >= 0 && abs(x - layout.tileX(column, 1000)) < halfW - 3 && row * layout.columns + column < pieces - skipped
@@ -114,6 +122,7 @@ class FakeStorage(
     }
 
     override suspend fun capture(): Frame {
+        check(++captures != failsOnCapture) { "the display delivered no frame" }
         if (gliding > 0) {
             val step = minOf(gliding, pitch / 3)
             scrolled = (scrolled + step).coerceAtMost(floor)
@@ -126,6 +135,7 @@ class FakeStorage(
     override suspend fun tap(x: Int, y: Int) {
         taps += x to y
         if (x >= (TAB_X * 1000).toInt() - 5) return switchTo(tabs.indexOfFirst { abs((it.y * 1000).toInt() - y) <= 5 })
+        if (++tileTaps in droppedTileTaps) return
         val column = ((x - layout.firstTileX * 1000) / pitchX).roundToInt()
         val row = ((y + scrolled - restingTop).toDouble() / pitch).roundToInt()
         selected = row * layout.columns + column + skipped
@@ -138,13 +148,14 @@ class FakeStorage(
         tab = index
         drawing = drawsTabsOver
         val place = selectedPlace() ?: return
-        val middle = ((layout.gridTop + layout.gridBottom) / 2 * 1000).toInt()
+        val middle = ((layout.grid.top + layout.grid.bottom) / 2 * 1000).toInt()
         scrolled = (restingTop + place / layout.columns * pitch - middle).coerceIn(0, floor)
     }
 
     /* The grid stops where its last row sits on the viewport's floor, as a list does. */
     override suspend fun drag(fromX: Int, fromY: Int, toX: Int, toY: Int, millis: Long) {
         drags++
+        if (drags == leavesOnDrag) away = true
         if (drags in droppedDrags) return
         scrolled = (scrolled + (rowsPerDrag * pitch).toInt()).coerceAtMost(floor)
         gliding = (glideRows * pitch).toInt()
@@ -165,15 +176,18 @@ class FakeStorage(
         }
         /* Every tile in view carries its badge and its number, the way the game prints them. */
         for (row in 0 until rows) {
-            if (wordless) break
             val centre = rowCentre(row)
-            if (centre < layout.gridTop * 1000 || centre > layout.gridBottom * 1000) continue
-            val labelTop = centre + (layout.labelBelowCentre * pitch).toInt()
+            if (centre < layout.grid.top * 1000 || centre > layout.grid.bottom * 1000) continue
+            val labelTop = centre + layout.labelBelow(1000)
             val numbers = mutableListOf<Line>()
             for (column in 0 until layout.columns) {
                 val index = row * layout.columns + column + skipped
                 if (index >= pieces) break
                 val x = layout.tileX(column, 1000)
+                if (wordless) {
+                    lines += Line("t25", Box(x - 30, labelTop, x + 30, labelTop + 15))
+                    continue
+                }
                 lines += Line("+16", Box(x + 10, centre - 60, x + 40, centre - 45))
                 if (index in unlabelled) continue
                 numbers += Line(if (sameNumbers) "66%" else "${1000 + (index * 7) % 9}", Box(x - 30, labelTop, x + 30, labelTop + 15))
@@ -211,11 +225,15 @@ open class PieceScan(override val layout: GridLayout = FAKE_GRID) : Scan<Int>() 
     }
 
     override fun readScreen(seen: Seen): Int = pieceIn(seen.rowsIn(layout.panel).single())
+
+    override fun titleOf(rows: List<String>): String? = rows.firstOrNull()
 }
 
 /** A kind whose tiles print no word, found by the colour of their face as the artifacts' are. */
 class FacedPieceScan : PieceScan() {
     override fun tileAt(seen: Seen, column: Int, centreY: Int): Boolean = seen.frame.colourAt(layout.tileX(column, seen.frame.width), centreY).saturation > 0.5
+
+    override fun firstRowCentre(seen: Seen): Int? = null
 }
 
 /** A kind whose panel is read under every tab of a fake storage, as the heroes' is, and which may end at a piece. */
@@ -236,6 +254,8 @@ class TabbedPieceScan(private val tabs: List<Spot>, private val endsAt: Int? = n
     }
 
     override fun readScreen(seen: Seen): Int = pieceIn(seen.rowsIn(layout.panel).single())
+
+    override fun titleOf(rows: List<String>): String? = rows.firstOrNull()
 }
 
 private fun pieceIn(row: String): Int = row.substringAfter("Piece ").substringBefore(" ").toIntOrNull() ?: -1
@@ -249,8 +269,6 @@ val FAKE_GRID = GridLayout(
     tileWidth = 0.85,
     tileHeight = 0.94,
     labelBelowCentre = 0.28,
-    gridTop = 0.19,
-    gridBottom = 0.85,
     grid = Region(0.11, 0.19, 0.71, 0.85),
     panel = Region(0.73, 0.20, 0.98, 0.89),
     count = Region(0.60, 0.13, 0.72, 0.175),

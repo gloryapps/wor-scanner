@@ -6,3 +6,8 @@ local.properties
 .DS_Store
 .kotlin/
 *.jks
+*.keystore
+*.apk
+*.aab
+mapping-*.txt
+.claude/
