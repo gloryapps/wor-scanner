@@ -8,7 +8,7 @@ phone, but that has not been tried.
 
 ## Install
 
-1. Download `wor-scanner-<version>.apk` from the latest [release](../../releases/latest).
+1. Download [`wor-scanner.apk`](../../releases/latest/download/wor-scanner.apk) from the latest [release](../../releases/latest).
 2. LDPlayer or BlueStacks: drag the APK onto the emulator's window. A phone: open the APK and allow
    installing apps from that source.
 3. Open WoR Scanner and grant the two permissions its home screen lists.
