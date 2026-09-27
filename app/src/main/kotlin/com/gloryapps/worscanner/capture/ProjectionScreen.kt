@@ -46,7 +46,7 @@ class ProjectionScreen(
             object : MediaProjection.Callback() {
                 override fun onStop() {
                     stopped = true
-                    onStop()
+                    this@ProjectionScreen.onStop()
                 }
             },
             handler,

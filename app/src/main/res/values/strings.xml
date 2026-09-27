@@ -63,7 +63,7 @@
     <string name="export_save">Save</string>
     <string name="export_to">→ %1$s</string>
     <string name="export_share">Share…</string>
-    <string name="export_note">This is the file you open in Import a Scan in WoR Lab.</string>
+    <string name="export_note">This is the file you open in Import a scan in Azhor’s Master Smithy.</string>
 
     <string name="back">Back</string>
     <string name="reading_data">Data</string>
