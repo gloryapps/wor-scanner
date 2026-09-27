@@ -31,7 +31,8 @@ Concise, in English. One change is a single-line title; several changes are a ti
 one-line factual bullets. No prose bodies.
 
 New work is on a new branch off `dev`; nothing is worked on or committed on `dev` itself. A branch
-lands on `dev` squashed.
+lands on `dev` squashed. `dev` reaches `main` only by a pull request merged with a merge commit, and
+that merge is a release (`bootstrap/ci.md`).
 
 ## Tests
 

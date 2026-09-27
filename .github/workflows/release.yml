@@ -1,28 +1,31 @@
 name: Release
 
+# A pull request from dev to main builds the release it would publish; merging it publishes that release.
 on:
-  workflow_dispatch:
-    inputs:
-      next:
-        description: Part of the version dev moves to once this one is released
-        type: choice
-        options: [patch, minor, major]
-        default: minor
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
 
 permissions:
   contents: write
 
 concurrency:
-  group: release
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Refuse a pull request from anywhere but dev
+        if: github.event_name == 'pull_request' && github.head_ref != 'dev'
+        run: |
+          echo "main takes pull requests from dev only, not from ${{ github.head_ref }}" >&2
+          exit 1
+
       - uses: actions/checkout@v4
         with:
-          ref: dev
           fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
@@ -32,7 +35,7 @@ jobs:
             25
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Read the version dev is on
+      - name: Read the version being released
         id: version
         run: echo "name=$(sed -n 's/.*versionName = "\(.*\)"/\1/p' app/build.gradle.kts)" >> "$GITHUB_OUTPUT"
 
@@ -56,29 +59,31 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew test :app:assembleRelease
 
-      - name: Advance main and publish the GitHub release
+      - name: Publish the GitHub release
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.name }}
         run: |
           cp app/build/outputs/apk/release/app-release.apk "wor-scanner-$VERSION.apk"
           cp app/build/outputs/mapping/release/mapping.txt "mapping-$VERSION.txt"
-          git push origin HEAD:main
           gh release create "v$VERSION" "wor-scanner-$VERSION.apk" "mapping-$VERSION.txt" \
-            --title "v$VERSION" --generate-notes --target "$(git rev-parse HEAD)"
+            --title "v$VERSION" --generate-notes --target "$GITHUB_SHA"
 
+      # dev moves to the next minor; a patch or a major is set on dev by hand before its pull request.
       - name: Start the next version on dev
+        if: github.event_name == 'push'
         env:
           VERSION: ${{ steps.version.outputs.name }}
         run: |
+          git switch dev
           IFS=. read -r major minor patch <<< "$VERSION"
-          case "${{ inputs.next }}" in
-            major) major=$((major + 1)); minor=0; patch=0 ;;
-            minor) minor=$((minor + 1)); patch=0 ;;
-            patch) patch=$((patch + 1)) ;;
-          esac
-          next="$major.$minor.$patch"
+          next="$major.$((minor + 1)).0"
           sed -i "s/versionName = \"$VERSION\"/versionName = \"$next\"/" app/build.gradle.kts
+          if git diff --quiet; then
+            echo "dev is already past $VERSION"
+            exit 0
+          fi
           git config user.name github-actions
           git config user.email github-actions@github.com
           git commit -am "Start $next"

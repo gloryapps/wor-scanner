@@ -1,30 +1,49 @@
 # CI & release
 
-`main` is what is released; `dev` is where work lands. A release moves `main` to the head of `dev`.
+`main` is what is released; `dev` is where work lands. `main` moves only by a pull request from `dev`,
+merged with a merge commit, and each merge is a release.
 
 ## Verification
 
-Tests run locally, `./gradlew test`, before a push; nothing runs on a push. The release workflow runs
-them again before it builds, so a release never ships over a red test, and Actions minutes are spent
-only there.
+Tests run locally, `./gradlew test`, before a push; nothing runs on a push to `dev`. A pull request to
+`main` runs them again with the signed build it would publish, so a release never ships over a red
+test or a key that does not sign, and Actions minutes are spent only there.
 
 ## Release
 
 `dev` is always on the version it is building: `versionName` in `app/build.gradle.kts`, which debug
 builds show with a `-dev` suffix. `versionCode` derives from it (`0.1.0` → `100`).
-`.github/workflows/release.yml` is run by hand (Actions → Release → Run workflow, or
-`gh workflow run Release -f next=patch`), telling it which part of the version `dev` moves to
-afterwards, `minor` by default:
 
-One release runs at a time (`concurrency: release`); the runner sets up Java 17 for the build and 25
-for the Gradle daemon, and hands the keystore's secret to the script through `env:`.
+A release is a pull request from `dev` to `main` (`gh pr create --base main --head dev`), and
+`.github/workflows/release.yml` runs on both ends of it: as the pull request's check, and on the
+merge. One run per ref at a time; the runner sets up Java 17 for the build and 25 for the Gradle
+daemon, and hands the keystore's secret to the script through `env:`.
 
-1. Checks out `dev`, reads its version and fails if the tag `v<version>` already exists.
-2. Runs the tests and builds the release APK, R8-optimized and signed.
-3. Fast-forwards `main` to the `dev` commit, failing if `main` holds commits `dev` does not.
-4. Creates the tag and a GitHub release holding `wor-scanner-<version>.apk` and
-   `mapping-<version>.txt`, with notes generated from the commits since the previous tag.
-5. Commits `Start <next version>` to `dev` with the bumped `versionName`: pull `dev` before working on.
+On the pull request:
+
+1. Fails one from any branch but `dev`.
+2. Reads the version and fails if the tag `v<version>` already exists.
+3. Runs the tests and builds the release APK, R8-optimized and signed.
+
+On the merge, which is a merge commit so that `dev`'s commits reach `main` as they are:
+
+1. Reads the version, runs the tests and builds the signed APK again, from the merge commit.
+2. Creates the tag on the merge commit and a GitHub release holding `wor-scanner-<version>.apk` and
+   `mapping-<version>.txt`, with notes generated since the previous tag.
+3. Commits `Start <next minor>` to `dev`: pull `dev` before working on. A patch or a major is set in
+   `versionName` on `dev` by hand, before its pull request.
+
+## Repository rules
+
+Rulesets, available once the repository is public:
+
+| Ruleset | Target | Rules |
+| --- | --- | --- |
+| main | `main` | Require a pull request (no approvals; merge method Merge only), require the `release` check, block force pushes, restrict deletions |
+| dev | `dev` | Block force pushes, restrict deletions |
+| release tags | `v*` | Restrict updates, restrict deletions, block force pushes; creations stay open for the workflow |
+
+Nobody bypasses them. Pull requests are for collaborators only.
 
 Crashes reported against a release are retraced with that release's `mapping-<version>.txt`.
 
