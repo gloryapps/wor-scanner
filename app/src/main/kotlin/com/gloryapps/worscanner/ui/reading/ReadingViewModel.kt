@@ -3,6 +3,7 @@ package com.gloryapps.worscanner.ui.reading
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gloryapps.worscanner.capture.Readings
+import com.gloryapps.worscanner.scanner.kinds.scan
 import com.gloryapps.worscanner.ui.ExportDelegate
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -16,11 +17,15 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
 internal class ReadingViewModel(stamp: String, readings: Readings, val export: ExportDelegate) : ViewModel() {
-    private val _state = MutableStateFlow(read(stamp, readings))
+    private val _state = MutableStateFlow(ReadingUiState())
     val state: StateFlow<ReadingUiState> = _state.asStateFlow()
 
     private val _effects = Channel<ReadingEffect>(Channel.BUFFERED)
     val effects: Flow<ReadingEffect> = _effects.receiveAsFlow()
+
+    init {
+        viewModelScope.launch { _state.value = read(stamp, readings) }
+    }
 
     fun on(event: ReadingEvent) {
         when (event) {
@@ -33,23 +38,24 @@ internal class ReadingViewModel(stamp: String, readings: Readings, val export: E
         }
     }
 
+    override fun onCleared() = export.clear()
+
     private fun send(effect: ReadingEffect) {
         viewModelScope.launch { _effects.send(effect) }
     }
 
-    private fun read(stamp: String, readings: Readings): ReadingUiState {
-        val kept = readings.list().firstOrNull { it.stamp == stamp } ?: return ReadingUiState()
+    private suspend fun read(stamp: String, readings: Readings): ReadingUiState {
+        val kept = readings.kept(stamp) ?: return ReadingUiState()
         val scan = readings.opened(kept)
 
         return ReadingUiState(
             kept = kept,
-            kind = kept.kind,
             pieces = scan?.entries.orEmpty().map { entry ->
                 Piece(
                     index = entry.index,
                     row = entry.row,
                     column = entry.column,
-                    name = entry.rows.firstOrNull().orEmpty(),
+                    name = kept.kind?.scan()?.titleOf(entry.rows) ?: entry.rows.firstOrNull().orEmpty(),
                     said = entry.rows.drop(1).joinToString(" · "),
                     card = PRETTY.encodeToString(JsonElement.serializer(), entry.card),
                     closed = entry.png == null,

@@ -1,7 +1,7 @@
 package com.gloryapps.worscanner.scanner.kinds.gear
 
-import com.gloryapps.worscanner.scanner.kinds.GridLayout
-import com.gloryapps.worscanner.scanner.kinds.Region
+import com.gloryapps.worscanner.scanner.scan.GridLayout
+import com.gloryapps.worscanner.scanner.scan.Region
 
 /**
  * Where the gear storage puts things, measured on a reading taken inside LDPlayer at 1280x720
@@ -16,8 +16,6 @@ val GEAR_STORAGE = GridLayout(
     tileWidth = 0.85,
     tileHeight = 0.94,
     labelBelowCentre = 0.28,
-    gridTop = 0.194,
-    gridBottom = 0.854,
     grid = Region(0.113, 0.194, 0.707, 0.854),
     panel = Region(0.734, 0.20, 0.98, 0.89),
     count = Region(0.60, 0.13, 0.72, 0.175),

@@ -3,6 +3,7 @@ package com.gloryapps.worscanner.ui.reading
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
+import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.ui.Accented
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.ended
@@ -92,6 +94,7 @@ internal fun Reading(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit) {
         val wide = maxWidth >= WIDE
         /* Narrow, the arrow first returns the piece to its list; the file is always one tap deep. */
         val within = !wide && state.opened && state.showing == Showing.PIECE
+        BackHandler(enabled = within) { onEvent(ReadingEvent.Close) }
 
         Column(Modifier.fillMaxSize()) {
             Header(state, back = if (within) ReadingEvent.Close else ReadingEvent.Back, onEvent)
@@ -130,8 +133,8 @@ private fun Header(state: ReadingUiState, back: ReadingEvent, onEvent: (ReadingE
             IconButton(onClick = { onEvent(back) }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Colors.muted)
             }
-            Text(state.kept?.shown().orEmpty(), style = Lettering.data, color = Colors.text, maxLines = 1)
-            state.kept?.takeIf { it.outcome != null }?.let { Pill(it.ended(context)) }
+            Text(state.kept?.shown().orEmpty(), style = Lettering.subtitle, color = Colors.text, maxLines = 1)
+            (state.kept as? Kept.Scan)?.let { Pill(it.ended(context)) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
             if (state.pieces.isNotEmpty()) {
@@ -160,7 +163,7 @@ internal fun Pieces(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modi
             Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(pluralStringResource(R.plurals.reading_pieces, state.pieces.size, state.pieces.size), style = Lettering.caption, color = Colors.muted)
+            Text(pluralStringResource(R.plurals.reading_tiles, state.pieces.size, state.pieces.size), style = Lettering.caption, color = Colors.muted)
         }
         Rule()
         LazyColumn(Modifier.weight(1f)) {
@@ -225,7 +228,7 @@ internal fun Detail(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modi
     }
 }
 
-/** The file as it was written, which is what the lab reads and what `copy` hands over whole. */
+/** The file as it was written, which is what the lab reads, and what `copy` hands over whole where a clip can carry it. */
 @Composable
 internal fun Written(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
     val lines = remember(state.file) { state.file.lines().size }
@@ -235,7 +238,7 @@ internal fun Written(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, mod
             name = { Text(state.name, style = Lettering.data, color = Colors.text, maxLines = 1) },
             mark = { },
             said = pluralStringResource(R.plurals.reading_lines, lines, lines),
-            onCopy = { onEvent(ReadingEvent.Copy(state.name, state.file)) },
+            onCopy = { onEvent(ReadingEvent.Copy(state.name, state.file)) }.takeIf { state.file.length <= COPYABLE },
         )
         Code(state.file)
     }
@@ -243,7 +246,7 @@ internal fun Written(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, mod
 
 /** What sits over a block of JSON: what it is, and the one thing to do with it. */
 @Composable
-private fun Above(name: @Composable () -> Unit, mark: @Composable () -> Unit, said: String, onCopy: () -> Unit) {
+private fun Above(name: @Composable () -> Unit, mark: @Composable () -> Unit, said: String, onCopy: (() -> Unit)?) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -255,7 +258,7 @@ private fun Above(name: @Composable () -> Unit, mark: @Composable () -> Unit, sa
         }
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(said, style = Lettering.dataSmall, color = Colors.muted)
-            Link(stringResource(R.string.reading_copy), onClick = onCopy)
+            onCopy?.let { Link(stringResource(R.string.reading_copy), onClick = it) }
         }
     }
     Rule()
@@ -302,4 +305,7 @@ private fun Context.copy(label: String, text: String) =
     getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(label, text))
 
 private val WIDE = 720.dp
+
+/** Characters a clip carries safely: the clipboard hands its text to the system in one transaction of at most 1 MB. */
+private const val COPYABLE = 200_000
 internal val LIST = 396.dp

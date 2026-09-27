@@ -1,6 +1,5 @@
 package com.gloryapps.worscanner.scanner.text
 
-import com.gloryapps.worscanner.scanner.game.Attribute
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -23,7 +22,25 @@ class MatchingTest {
     }
 
     @Test
-    fun `ATK does not shadow ATK Bonus`() {
-        assertEquals(Attribute.ATK_BONUS, nameIn("ATK Bonus 66%", Attribute.entries) { it.word })
+    fun `a shorter name does not shadow the longer one it begins`() {
+        assertEquals("ATK Bonus", nameIn("ATK Bonus 66%", listOf("ATK", "ATK Bonus")) { it })
+    }
+
+    @Test
+    fun `a word read with slips is counted each time it sits in the line`() {
+        assertEquals(3, timesHeld("Max Level Max Letel Max Level", "Max Level"))
+        assertEquals(1, timesHeld("1/5Mextevel", "Max Level"))
+        assertEquals(2, timesHeld("Max Level Max Eevel ", "Max Level"))
+    }
+
+    @Test
+    fun `a word without letters is held nowhere`() {
+        assertEquals(0, timesHeld("Max Level", "2/5"))
+    }
+
+    @Test
+    fun `a line that holds no such word counts none`() {
+        assertEquals(0, timesHeld("Random Upgrade", "Max Level"))
+        assertEquals(0, timesHeld("Lvl. 2/5", "Max Level"))
     }
 }

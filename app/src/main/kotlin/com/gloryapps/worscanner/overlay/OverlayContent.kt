@@ -1,7 +1,6 @@
 package com.gloryapps.worscanner.overlay
 
 import android.content.Intent
-import android.widget.Toast
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -36,7 +35,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,22 +42,22 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.capture.CaptureService
-import com.gloryapps.worscanner.capture.ReadScreen
 import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Lettering
+import com.gloryapps.worscanner.ui.label
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 /**
@@ -113,33 +111,29 @@ private fun shownFor(state: ScanState): ScanState {
 @Composable
 fun SheetContent(
     onDone: () -> Unit,
-    readScreen: ReadScreen = koinInject(),
     scanning: Scanning = koinInject(),
     chosen: Chosen = koinInject(),
 ) {
     val context = LocalContext.current
-    val resources = LocalResources.current
-    val scope = rememberCoroutineScope()
     val state by scanning.state.collectAsStateWithLifecycle()
-    val kind by chosen.kind.collectAsStateWithLifecycle(Chosen.FIRST)
+    val kind by chosen.kind.collectAsStateWithLifecycle()
 
     Sheet(
+        kind = kind,
         running = state is ScanState.Running,
+        onChoose = chosen::choose,
         onScan = {
-            if (state is ScanState.Running) CaptureService.stopScan(context) else CaptureService.scan(context, kind)
             onDone()
+            CaptureService.scan(context, kind)
         },
         onRead = {
             onDone()
-            scope.launch {
-                val said = readScreen.now(kind).fold(
-                    onSuccess = { resources.getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
-                    onFailure = { resources.getString(R.string.overlay_read_failed, it.message) },
-                )
-                Toast.makeText(context, said, Toast.LENGTH_LONG).show()
-            }
+            CaptureService.read(context, kind)
         },
-        onApp = { context.openApp() },
+        onApp = {
+            context.openApp()
+            onDone()
+        },
         onClose = { CaptureService.stop(context) },
     )
 }
@@ -165,7 +159,6 @@ internal fun Capsule(state: ScanState, onOpen: () -> Unit, onStop: () -> Unit, o
                 Text(stringResource(R.string.overlay_open), style = Lettering.mark, color = Colors.text)
             }
 
-            /* The count sits in the top band or a corner, never over the header region the scan reads it from. */
             is ScanState.Running -> Row(
                 Modifier.pill(CAPTURING, Colors.glassEdge).padding(start = 10.dp, end = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(9.dp),
@@ -242,7 +235,9 @@ private fun Stop(onStop: () -> Unit) {
 
 @Composable
 internal fun Sheet(
+    kind: Kind,
     running: Boolean,
+    onChoose: (Kind) -> Unit,
     onScan: () -> Unit,
     onRead: () -> Unit,
     onApp: () -> Unit,
@@ -256,6 +251,7 @@ internal fun Sheet(
             .padding(6.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
+        Kinds(kind, onChoose)
         Action(
             label = stringResource(R.string.overlay_scan),
             said = if (running) stringResource(R.string.overlay_running) else null,
@@ -265,6 +261,29 @@ internal fun Sheet(
         Action(label = stringResource(R.string.overlay_app), onClick = onApp)
         Box(Modifier.padding(horizontal = 9.dp, vertical = 3.dp).fillMaxWidth().height(1.dp).background(Colors.hairline))
         Action(label = stringResource(R.string.overlay_close), colour = Colors.muted, onClick = onClose)
+    }
+}
+
+/** What Scan and Read take, the chosen kind lit; a choice lasts until the next, here or in the app. */
+@Composable
+private fun Kinds(kind: Kind, onChoose: (Kind) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Kind.entries.forEach { each ->
+            val chosen = each == kind
+            Text(
+                stringResource(each.label),
+                Modifier
+                    .weight(1f)
+                    .background(if (chosen) Colors.glassWash else Color.Transparent, RoundedCornerShape(6.dp))
+                    .border(1.dp, if (chosen) Colors.glassAccentEdge else Colors.hairline, RoundedCornerShape(6.dp))
+                    .clickable(interactionSource = null, indication = null, onClick = { onChoose(each) })
+                    .padding(vertical = 7.dp),
+                style = Lettering.mark,
+                color = if (chosen) Colors.accent else Colors.muted,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -294,6 +313,6 @@ internal val IDLE = 22.dp
 private val CAPTURING = 26.dp
 private val ENDED = 24.dp
 private val STOP = 18.dp
-private val SHEET = 180.dp
+internal val SHEET = 200.dp
 private const val BREATH_MS = 850
 private const val ENDED_SHOWN_MS = 8_000L

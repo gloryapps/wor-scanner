@@ -1,7 +1,6 @@
 package com.gloryapps.worscanner.ui.reading
 
 import com.gloryapps.worscanner.capture.Kept
-import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.outgoingName
 
 /** One tile of a scan as the screen shows it: what the reader saw, and what it made of it. */
@@ -9,7 +8,7 @@ internal data class Piece(
     val index: Int,
     val row: Int,
     val column: Int,
-    /** The first row of the panel, which is what the tile is called. */
+    /** What the kind calls the tile, else the panel's first row. */
     val name: String,
     /** The rest of the rows, in one line. */
     val said: String,
@@ -23,7 +22,6 @@ internal enum class Showing { PIECE, FILE }
 
 internal data class ReadingUiState(
     val kept: Kept? = null,
-    val kind: Kind? = null,
     val pieces: List<Piece> = emptyList(),
     val file: String = "",
     val chosen: Int = 0,

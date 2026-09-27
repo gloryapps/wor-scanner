@@ -1,7 +1,10 @@
 package com.gloryapps.worscanner.ui.home
 
+import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -85,6 +88,10 @@ internal fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = ko
         val data = it.data
         if (it.resultCode == Activity.RESULT_OK && data != null) CaptureService.start(context, it.resultCode, data)
     }
+    /* Android 13 hides a notification the app was not let post, the scan's Stop with it: asked at Start, and the scan goes on either way. */
+    val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
+    }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -92,7 +99,11 @@ internal fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = ko
                 HomeEffect.OpenOverlaySettings -> context.startActivity(
                     Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
                 )
-                HomeEffect.LaunchProjection -> projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
+                HomeEffect.LaunchProjection -> if (context.mayNotNotify()) {
+                    notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
+                }
                 HomeEffect.StopCapture -> CaptureService.stop(context)
                 is HomeEffect.OpenReading -> open(effect.kept)
             }
@@ -113,7 +124,7 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
         Header(state.running)
         BoxWithConstraints(Modifier.weight(1f)) {
             val start: @Composable () -> Unit = { Start(state, onEvent) }
-            val kept: @Composable () -> Unit = { Readings(state.readings, onEvent) }
+            val kept: @Composable () -> Unit = { state.readings?.let { Readings(it, onEvent) } }
 
             if (maxWidth >= WIDE) {
                 Row(Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 22.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -132,11 +143,12 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
         }
     }
 
-    if (state.deleting != null) {
+    if (state.deleting.isNotEmpty()) {
+        val one = state.deleting.size == 1
         Confirm(
-            title = stringResource(R.string.home_delete_title),
-            said = stringResource(R.string.home_delete_said),
-            confirm = stringResource(R.string.home_delete_yes),
+            title = if (one) stringResource(R.string.home_delete_title) else stringResource(R.string.home_delete_all_title, state.deleting.size),
+            said = stringResource(if (one) R.string.home_delete_said else R.string.home_delete_all_said),
+            confirm = stringResource(if (one) R.string.home_delete_yes else R.string.home_delete_all_yes),
             onConfirm = { onEvent(HomeEvent.ConfirmDelete) },
             onCancel = { onEvent(HomeEvent.CancelDelete) },
         )
@@ -183,7 +195,7 @@ internal fun Start(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     Card(Modifier.fillMaxWidth(), leading = true) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stringResource(R.string.home_scan_title, stringResource(state.kind.label)), style = Lettering.title, color = Colors.text)
-            Text(stringResource(R.string.home_scan_said, stringResource(state.kind.label)), style = Lettering.body, color = Colors.muted)
+            Text(stringResource(state.kind.said), style = Lettering.body, color = Colors.muted)
         }
         if (state.capturing) {
             Text(stringResource(R.string.home_capturing), style = Lettering.body, color = Colors.accent)
@@ -199,7 +211,7 @@ internal fun Start(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     }
 
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.home_kinds), style = Lettering.dataSmall, color = Colors.muted)
+        Text(stringResource(R.string.home_kinds), style = Lettering.caption, color = Colors.muted)
         Kind.entries.forEach { each ->
             Pill(stringResource(each.label), chosen = each == state.kind, onClick = { onEvent(HomeEvent.Choose(each)) })
         }
@@ -219,7 +231,7 @@ private fun Given(label: String, given: Boolean, onGrant: () -> Unit) {
             Text(label, style = Lettering.body, color = if (given) Colors.text else Colors.muted)
         }
         if (given) {
-            Text(stringResource(R.string.home_on), style = Lettering.dataSmall, color = Colors.muted)
+            Text(stringResource(R.string.home_on), style = Lettering.caption, color = Colors.muted)
         } else {
             Inline(stringResource(R.string.home_grant), onClick = onGrant)
         }
@@ -232,7 +244,12 @@ internal fun Readings(readings: List<Kept>, onEvent: (HomeEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Section(stringResource(R.string.home_readings))
-            if (readings.isNotEmpty()) Link(stringResource(R.string.home_export_all), onClick = { onEvent(HomeEvent.ExportAll) })
+            if (readings.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Link(stringResource(R.string.home_delete_all), onClick = { onEvent(HomeEvent.DeleteAll) })
+                    Link(stringResource(R.string.home_export_all), onClick = { onEvent(HomeEvent.ExportAll) })
+                }
+            }
         }
 
         Panel(Modifier.fillMaxWidth()) {
@@ -264,9 +281,9 @@ private fun Reading(kept: Kept, newest: Boolean, onEvent: (HomeEvent) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(kept.shown(), style = Lettering.data, color = Colors.text)
+            Text(kept.shown(), style = Lettering.subtitle, color = Colors.text)
             Text(kept.said(context), style = Lettering.caption, color = Colors.muted)
-            kept.detail?.let { Text(it, style = Lettering.caption, color = Colors.warning, maxLines = 2) }
+            (kept as? Kept.Scan)?.detail?.let { Text(it, style = Lettering.caption, color = Colors.warning, maxLines = 2) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Link(stringResource(R.string.home_delete), onClick = { onEvent(HomeEvent.Delete(kept)) })
@@ -279,6 +296,9 @@ private fun Reading(kept: Kept, newest: Boolean, onEvent: (HomeEvent) -> Unit) {
         }
     }
 }
+
+private fun Context.mayNotNotify(): Boolean =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
 
 /* Android 14 offers "one app" by default and Unity games are one app, but the scan reads the display. */
 private fun MediaProjectionManager.wholeDisplayIntent(): Intent =

@@ -13,7 +13,10 @@ androidx-datastore = "1.2.1"
 koin = "4.2.2"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.10.0"
-mlkit-text = "16.0.1"
+mlkit-text = "19.0.1"
+firebase-bom = "34.19.0"
+firebase-crashlytics-plugin = "3.0.8"
+google-services = "4.5.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
@@ -31,7 +34,6 @@ compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-uiToolingPreview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-uiTooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-materialIconsCore = { module = "androidx.compose.material:material-icons-core" }
-koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
@@ -39,7 +41,9 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-coroutines-playServices = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
-mlkit-textRecognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+mlkit-textRecognition = { module = "com.google.android.gms:play-services-mlkit-text-recognition", version.ref = "mlkit-text" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version = "4.13.2" }
@@ -49,3 +53,5 @@ androidApplication = { id = "com.android.application", version.ref = "agp" }
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+googleServices = { id = "com.google.gms.google-services", version.ref = "google-services" }
+firebaseCrashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics-plugin" }

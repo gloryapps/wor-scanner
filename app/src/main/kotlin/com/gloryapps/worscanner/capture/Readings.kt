@@ -5,7 +5,11 @@ import android.graphics.Bitmap
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.text.Line
+import com.gloryapps.worscanner.scan.Ended
 import com.gloryapps.worscanner.scan.ScanFile
+import com.gloryapps.worscanner.scan.endedOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -16,67 +20,90 @@ import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-/** One frame read as a kind: its size, every line the recogniser gave up, and the record the reader made of them. */
+/** One frame read as a kind, as its file holds it: its size, every line the recogniser gave up, and the record the reader made of them. */
 @Serializable
-data class Reading<T>(val kind: String, val width: Int, val height: Int, val lines: List<Line>, val card: T)
+data class ReadingFile<T>(val kind: String, val width: Int, val height: Int, val lines: List<Line>, val card: T)
 
-/** Something kept on disk under a stamp: a reading's JSON and PNG, or a scan's folder with what it came to. */
-data class Kept(
-    val stamp: String,
-    /** `reading` or `scan`. */
-    val form: String,
-    val files: List<File>,
+/** Something kept on disk under a stamp: a Read's JSON and the screen it was read from, or a scan's folder with what it came to. */
+sealed interface Kept {
+    val stamp: String
+    val files: List<File>
     /** What was read; null where the JSON names a kind this app does not know, or will not read at all. */
-    val kind: Kind? = null,
-    val entries: Int? = null,
-    val outcome: String? = null,
-    /** Why a scan stopped or failed, in the scan's own words; null when it finished. */
-    val detail: String? = null,
-) {
+    val kind: Kind?
     val at: LocalDateTime get() = LocalDateTime.parse(stamp, STAMP)
+
+    /** One frame the overlay's Read kept. */
+    data class Read(override val stamp: String, override val files: List<File>, override val kind: Kind? = null) : Kept
+
+    data class Scan(
+        override val stamp: String,
+        override val files: List<File>,
+        override val kind: Kind? = null,
+        val entries: Int? = null,
+        /** Null where the file does not say, or will not read. */
+        val ended: Ended? = null,
+        /** Why it stopped or failed, in the scan's own words; null when it finished. */
+        val detail: String? = null,
+    ) : Kept
 }
 
 val STAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
-/** Where readings and scans go to be looked at later: the app's own external folder. */
+/** Where readings and scans go to be looked at later: the app's own external folder, read and written off the main thread. */
 class Readings(private val context: Context) {
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     private val readings: File get() = File(context.getExternalFilesDir(null), "readings").apply { mkdirs() }
     private val scans: File get() = File(context.getExternalFilesDir(null), "scans").apply { mkdirs() }
 
-    fun <T> keep(frame: BitmapFrame, reading: Reading<T>, card: KSerializer<T>): Kept {
+    suspend fun <T> keep(frame: BitmapFrame, reading: ReadingFile<T>, card: KSerializer<T>): Kept = withContext(Dispatchers.IO) {
         val stamp = LocalDateTime.now().format(STAMP)
         val png = File(readings, "$stamp.png")
         val text = File(readings, "$stamp.json")
         png.outputStream().use { frame.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        text.writeText(json.encodeToString(Reading.serializer(card), reading))
+        text.writeText(json.encodeToString(ReadingFile.serializer(card), reading))
 
-        return Kept(stamp, "reading", listOf(text, png), kindOf(reading.kind))
+        Kept.Read(stamp, listOf(text, png), kindOf(reading.kind))
     }
 
     /** The JSON of a kept thing, as written. */
-    fun text(kept: Kept): String = kept.files.first { it.extension == "json" }.readText()
+    suspend fun text(kept: Kept): String = withContext(Dispatchers.IO) { kept.files.first { it.extension == "json" }.readText() }
 
     /** A kept scan opened, every card left as the JSON it is; null for a reading, and for a file that will not read. */
-    fun opened(kept: Kept): ScanFile<JsonElement>? = kept.files.firstOrNull { it.name == "scan.json" }?.let(::scanIn)
+    suspend fun opened(kept: Kept): ScanFile<JsonElement>? = withContext(Dispatchers.IO) { kept.files.firstOrNull { it.name == "scan.json" }?.let(::scanIn) }
 
-    fun delete(kept: Kept) {
+    suspend fun delete(kept: Kept) = withContext(Dispatchers.IO) {
         kept.files.forEach { it.delete() }
-        if (kept.form == "scan") File(scans, kept.stamp).delete()
+        if (kept is Kept.Scan) File(scans, kept.stamp).delete()
+    }
+
+    /** Clears the folders scans left without their file, cut short by a process that died: panels no list shows. Only while no scan runs. */
+    suspend fun sweep() = withContext(Dispatchers.IO) {
+        scans.listFiles { file -> file.isDirectory && !File(file, "scan.json").exists() }.orEmpty().forEach { it.deleteRecursively() }
     }
 
     /** Newest first, which is the one the reader came to look at. */
-    fun list(): List<Kept> {
-        val read = readings.listFiles { file -> file.extension == "json" }.orEmpty().map {
-            Kept(it.nameWithoutExtension, "reading", listOf(it, File(readings, "${it.nameWithoutExtension}.png")), kindIn(it))
-        }
-        /* The list wants the count and the outcome, not the cards, so the card stays whatever JSON it is. */
-        val scanned = scans.listFiles { file -> file.isDirectory }.orEmpty().map { folder ->
-            val scan = File(folder, "scan.json").takeIf { it.exists() }?.let(::scanIn)
-            Kept(folder.name, "scan", folder.listFiles().orEmpty().sortedBy { it.name }, kindOf(scan?.kind), scan?.entries?.size, scan?.outcome, scan?.detail)
-        }
+    suspend fun list(): List<Kept> = withContext(Dispatchers.IO) {
+        val read = readings.listFiles { file -> file.extension == "json" }.orEmpty().map(::readingIn)
+        /* A folder without its JSON is a scan still running. */
+        val scanned = scans.listFiles { file -> file.isDirectory && File(file, "scan.json").exists() }.orEmpty().map(::scanKeptIn)
 
-        return (read + scanned).sortedByDescending { it.stamp }
+        (read + scanned).sortedByDescending { it.stamp }
+    }
+
+    /** The one thing kept under a stamp, a reading or a scan; null where neither is. */
+    suspend fun kept(stamp: String): Kept? = withContext(Dispatchers.IO) {
+        File(readings, "$stamp.json").takeIf { it.exists() }?.let(::readingIn)
+            ?: File(scans, stamp).takeIf { File(it, "scan.json").exists() }?.let(::scanKeptIn)
+    }
+
+    private fun readingIn(file: File): Kept =
+        Kept.Read(file.nameWithoutExtension, listOf(file, File(readings, "${file.nameWithoutExtension}.png")), kindIn(file))
+
+    /* The list wants the count and the outcome, not the cards, so each card stays whatever JSON it is. */
+    private fun scanKeptIn(folder: File): Kept {
+        val scan = scanIn(File(folder, "scan.json"))
+
+        return Kept.Scan(folder.name, folder.listFiles().orEmpty().sortedBy { it.name }, kindOf(scan?.kind), scan?.entries?.size, scan?.outcome?.let(::endedOf), scan?.detail)
     }
 
     private fun scanIn(file: File): ScanFile<JsonElement>? =

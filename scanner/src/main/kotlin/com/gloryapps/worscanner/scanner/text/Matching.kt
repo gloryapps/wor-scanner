@@ -46,6 +46,35 @@ internal fun holdsName(line: String, name: String): Boolean {
     return false
 }
 
+/**
+ * How many times a word sits in the line, letters only, with a character of slack per four of the
+ * word: `Mextevel` and `Max Letel` are still `Max Level`. Each time is the closest window to the
+ * word, and the next is looked for after it.
+ */
+internal fun timesHeld(line: String, word: String): Int {
+    val flat = line.lowercase().filter { it in 'a'..'z' }
+    val target = word.lowercase().filter { it in 'a'..'z' }
+    if (target.isEmpty()) return 0
+    val slack = target.length / 4
+    var times = 0
+    var at = 0
+    while (at < flat.length) {
+        val held = ((target.length - slack)..(target.length + slack))
+            .filter { at + it <= flat.length }
+            .map { length -> length to distance(flat.substring(at, at + length), target) }
+            .filter { (_, off) -> off <= slack }
+            .minByOrNull { (_, off) -> off }
+        if (held == null) {
+            at++
+        } else {
+            times++
+            at += held.first
+        }
+    }
+
+    return times
+}
+
 /** Whether a word is this one read again: the same, or off by one character where there are enough to be sure. */
 internal fun readsAs(word: String, name: String): Boolean =
     word.equals(name, ignoreCase = true) || name.length >= SURE_LENGTH && distance(word.lowercase(), name.lowercase()) <= 1

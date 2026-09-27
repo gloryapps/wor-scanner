@@ -8,6 +8,7 @@ import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.Looper
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.senses.Screen
@@ -21,24 +22,35 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * A capture waits a moment for a frame newer than the call, since after a tap the frame wanted is
  * the one after it; a display that has not changed delivers none, and then the newest one stands.
+ * Once the system stops the projection, `onStop` is told and no capture returns a frame.
  */
 class ProjectionScreen(
     private val projection: MediaProjection,
-    private val width: Int,
-    private val height: Int,
+    private var width: Int,
+    private var height: Int,
     density: Int,
+    private val onStop: () -> Unit,
 ) : Screen {
     private class Held(val frame: BitmapFrame, val at: Long)
 
     private val handler = Handler(Looper.getMainLooper())
-    private val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
+    /** Every frame the display delivers is copied out on a thread of its own, never the one the overlay draws on. */
+    private val frames = HandlerThread("wor-scanner-frames").apply { start() }
+    @Volatile private var reader: ImageReader = newReader()
     private val display: VirtualDisplay
     private val latest = MutableStateFlow<Held?>(null)
+    @Volatile private var stopped = false
 
     init {
-        /* Android 14 refuses a virtual display on a projection with no callback registered. */
-        projection.registerCallback(object : MediaProjection.Callback() {}, handler)
-        reader.setOnImageAvailableListener({ it.acquireLatestImage()?.use { image -> latest.value = Held(frameOf(image), System.nanoTime()) } }, handler)
+        projection.registerCallback(
+            object : MediaProjection.Callback() {
+                override fun onStop() {
+                    stopped = true
+                    onStop()
+                }
+            },
+            handler,
+        )
         display = checkNotNull(
             projection.createVirtualDisplay(
                 "wor-scanner",
@@ -54,6 +66,7 @@ class ProjectionScreen(
     }
 
     override suspend fun capture(): Frame {
+        check(!stopped) { "the projection was stopped" }
         val since = System.nanoTime()
         val fresh = withTimeoutOrNull(FRESH_WAIT_MS) { latest.filter { it != null && it.at > since }.first() }
 
@@ -61,18 +74,37 @@ class ProjectionScreen(
             ?: error("the display delivered no frame")
     }
 
+    /** The display turned or changed size: the mirror takes the new shape and forgets the frames of the old one. */
+    fun resize(width: Int, height: Int, density: Int) {
+        if (width == this.width && height == this.height) return
+        val outgrown = reader
+        this.width = width
+        this.height = height
+        reader = newReader()
+        display.resize(width, height, density)
+        display.surface = reader.surface
+        latest.value = null
+        outgrown.close()
+    }
+
+    /* A frame from a reader since replaced is of the old shape, and is dropped. */
+    private fun newReader(): ImageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2).apply {
+        setOnImageAvailableListener({ if (it === reader) it.acquireLatestImage()?.use { image -> latest.value = Held(frameOf(image), System.nanoTime()) } }, Handler(frames.looper))
+    }
+
     private fun frameOf(image: Image): BitmapFrame {
         val plane = image.planes[0]
         val stride = plane.rowStride / plane.pixelStride
-        val wide = Bitmap.createBitmap(stride, height, Bitmap.Config.ARGB_8888)
+        val wide = Bitmap.createBitmap(stride, image.height, Bitmap.Config.ARGB_8888)
         wide.copyPixelsFromBuffer(plane.buffer)
 
-        return BitmapFrame(if (stride == width) wide else Bitmap.createBitmap(wide, 0, 0, width, height))
+        return BitmapFrame(if (stride == image.width) wide else Bitmap.createBitmap(wide, 0, 0, image.width, image.height))
     }
 
     fun close() {
         display.release()
         reader.close()
+        frames.quitSafely()
         projection.stop()
     }
 

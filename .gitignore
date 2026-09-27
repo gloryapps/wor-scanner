@@ -5,3 +5,12 @@ local.properties
 *.iml
 .DS_Store
 .kotlin/
+*.jks
+*.keystore
+*.apk
+*.aab
+mapping-*.txt
+.claude/
+
+# Working notes: plans and reviews stay on the machine
+docs/

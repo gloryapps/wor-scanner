@@ -11,6 +11,16 @@ class NumbersTest {
     }
 
     @Test
+    fun `an O between digits is read as the zero it is`() {
+        assertEquals(listOf(Amount(4000.0, ValueUnit.FLAT), Amount(1050.0, ValueUnit.FLAT)), numbersIn("HP 4000+1O50"))
+    }
+
+    @Test
+    fun `letters glued to the last number are left off it`() {
+        assertEquals(listOf(Amount(1497.0, ValueUnit.FLAT), Amount(830.0, ValueUnit.FLAT)), numbersIn("ATK 1497+830o"))
+    }
+
+    @Test
     fun `a number inside the name is not a value`() {
         assertEquals(emptyList(), numbersIn("A7K Bonus"))
     }

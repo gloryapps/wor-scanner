@@ -1,44 +1,67 @@
 package com.gloryapps.worscanner.ui
 
 import android.content.Context
-import android.content.Intent
 import com.gloryapps.worscanner.capture.Exports
 import com.gloryapps.worscanner.capture.Kept
-import com.gloryapps.worscanner.capture.Outbound
+import com.gloryapps.worscanner.capture.sharedFolders
 import com.gloryapps.worscanner.scanner.resultOf
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-/** The slice of a screen's ViewModel that exports: what is on its way out, the two doors, and what the last one said. */
+/** The slice of a screen's ViewModel that exports, with a contract of its own; the ViewModel clears it with itself. */
 class ExportDelegate(private val exports: Exports, private val context: Context) {
-    private val _outgoing = MutableStateFlow<Outgoing?>(null)
-    val outgoing: StateFlow<Outgoing?> = _outgoing.asStateFlow()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val _state = MutableStateFlow(ExportUiState())
+    val state: StateFlow<ExportUiState> = _state.asStateFlow()
 
-    private val _saved = MutableStateFlow<Saved?>(null)
-    val saved: StateFlow<Saved?> = _saved.asStateFlow()
+    private val _effects = Channel<ExportEffect>(Channel.BUFFERED)
+    val effects: Flow<ExportEffect> = _effects.receiveAsFlow()
 
-    fun begin(kept: Kept) {
-        _outgoing.value = kept.outgoing(context)
+    fun begin(kept: Kept) = open(kept.outgoing(context))
+
+    fun begin(readings: List<Kept>) = open(readings.outgoing(context))
+
+    fun on(event: ExportEvent) {
+        when (event) {
+            is ExportEvent.Choose -> _state.update { it.copy(into = event.shared, failed = null) }
+            ExportEvent.Save -> scope.launch { save() }
+            ExportEvent.Share -> scope.launch { share() }
+            ExportEvent.Close -> _state.update { it.copy(outgoing = null, failed = null) }
+        }
     }
 
-    fun begin(readings: List<Kept>) {
-        _outgoing.value = readings.outgoing(context)
+    fun clear() = scope.cancel()
+
+    /* The folders are looked at again as the sheet opens: an emulator can mount its folder while the app runs. */
+    private fun open(outgoing: Outgoing) {
+        val shared = sharedFolders()
+        _state.update { ExportUiState(outgoing, shared, it.into?.takeIf { into -> into in shared } ?: shared.firstOrNull()) }
     }
 
-    fun toShared(files: List<Outbound>) = save { exports.toShared(files) }
-
-    fun shareIntent(files: List<Outbound>): Intent = exports.shareIntent(files)
-
-    fun forget() {
-        _outgoing.value = null
-        _saved.value = null
-    }
-
-    private fun save(export: () -> List<String>) {
-        _saved.value = resultOf(export).fold(
-            onSuccess = { Saved.Into(it.first().substringBeforeLast('/'), it.size) },
-            onFailure = { Saved.Failed(it.message ?: it.toString()) },
+    private suspend fun save() {
+        val state = _state.value
+        val outgoing = state.outgoing ?: return
+        resultOf { exports.toShared(state.into ?: error("no emulator shared folder on this device"), outgoing.files) }.fold(
+            onSuccess = { landed ->
+                _state.update { it.copy(outgoing = null, failed = null) }
+                _effects.send(ExportEffect.Landed(landed.first().substringBeforeLast('/'), landed.size))
+            },
+            onFailure = { failure -> _state.update { it.copy(failed = failure.message ?: failure.toString()) } },
         )
+    }
+
+    private suspend fun share() {
+        val outgoing = _state.value.outgoing ?: return
+        _effects.send(ExportEffect.Share(exports.shareIntent(outgoing.files)))
     }
 }

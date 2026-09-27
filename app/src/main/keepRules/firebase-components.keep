@@ -1,0 +1,2 @@
+# ML Kit resolves firebase-components 16.1.0, whose rule omits the constructor R8 full mode strips; 19.0.0 ships this one.
+-keep class * implements com.google.firebase.components.ComponentRegistrar { void <init>(); }

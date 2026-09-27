@@ -1,9 +1,9 @@
 # Architecture & code layout
 
-Settled 2026-09-06, kinds added 2026-09-07. A native Android app that scans a Watcher of Realms
-storage on the device it runs on (LDPlayer or a phone), captures each tile's panel, reads it and
-writes a JSON the azhor lab imports. Gear today; heroes and artifacts are kinds still to add.
-Distributed as an APK on GitHub, not on the Play Store.
+Settled 2026-09-06, kinds added 2026-09-07, heroes and artifacts 2026-09-26. A native Android app that scans a
+Watcher of Realms storage on the device it runs on (LDPlayer, BlueStacks or a phone), captures each
+tile's panel, reads it and writes a JSON the azhor lab imports: gear, legendary heroes and mythic
+artifacts. Distributed as an APK on GitHub, not on the Play Store.
 
 ## Modules
 
@@ -15,70 +15,90 @@ Distributed as an APK on GitHub, not on the Play Store.
   `AccessibilityService` using `dispatchGesture` (taps and swipes, blind: the game is Unity and
   exposes no view tree), ML Kit (text) and the file writer; holds the foreground service that runs
   the scan, the hairline and capsule drawn over the game, and the two screens.
-- The words (sets, slots, attribute names, variants, factions) are `scanner`'s own, transcribed
+- The words (sets, slots, attribute names) are `scanner`'s own, transcribed
   from the wiki's Gear page. The app depends on no other repository: what it shares with the azhor
   lab is the JSON it writes, not code. A word the catalogue lacks reads as `null` beside the raw
   lines, and the lab's picker settles it. The wiki's Gear page is behind Cloudflare; the
   transcription was made from azhor-wor's verbatim copy, `docs/gear.md`. If the two transcriptions
   drift, the option on the table is a third project, a library both read; not now.
 - The `Exclusive` line's name is written as read; who that hero or faction is belongs to the lab.
+- Heroes carry no words of their own: a hero's name is written as printed and its skills by place,
+  a number or `"max"`. Which hero, which skill and what `max` stands for belong to the lab, which
+  keeps the wiki's pages; a list in the app would be left behind by every hero the game adds.
 - Named after what it is, never where it sits: `scanner`, not `core:domain`.
 
 ## Kinds
 
-A kind is one thing the app scans: gear today, heroes and artifacts next. `scanner` is split so
-that a kind is a package with its own model behind one small contract, and the scan knows none.
+A kind is one thing the app scans: gear, heroes and artifacts. `scanner` is split so
+that the walk over a grid is written once and a kind says only what its tiles hold.
 
 | Package | Holds | Knows |
 | --- | --- | --- |
-| `senses/` | `Screen`, `Touch`, `TextReader`, `Frame` | nothing |
-| `text/` | `Line`, `Box`, `rowsOf`, matching, `numbersIn`, `wordIn`, `nameIn` | senses |
-| `game/` | `Attribute`, `FACTIONS`, `Named`, `ReadAttribute`: the words every kind shares | text |
-| `kinds/` | the contracts: `Kind`, `Scannable<T>`, `Reader<T>`, `GridLayout`, `Region` | text |
-| `kinds/gear/` | `ScannedGear`, its words, `GearReader`, `GEAR_STORAGE`, `GearScannable` | kinds, text, game |
-| `scan/` | `Kind.scannable()`, `Scan<T>`, `ScanEntry<T>`, `Outcome<T>`, tiles, registration, count | kinds, and every kind through one `when` |
+| `text/` | `Line`, `Box`, `rowsOf`, matching, `numbersIn`, `wordIn`, `nameIn`, `readsAsCapitals` | nothing |
+| `senses/` | `Screen`, `Touch`, `TextReader`, `Frame`, `Colour`; the recogniser hands back `text/`'s lines | text |
+| `game/` | `Attribute`, `ReadAttribute`, `attributesIn`, `headOf`, `exclusiveIn`: the words every kind shares and the rows they are read off | text |
+| `scan/` | `Scan<T>`, `Walk`, `Seen`, `Tapped`, `Read<T>`, `GridLayout`, `Region`, `Spot`, `ScanEntry<T>`, `Outcome<T>`, tiles, registration, count | senses, text |
+| `kinds/gear/` | `ScannedGear`, its words, `GEAR_STORAGE`, `GearScan` | scan, text, game |
+| `kinds/hero/` | `ScannedHero`, `HeroSkills`, `SkillLevel`, `HERO_ROSTER` and its spots, `HeroScan` | scan, text, senses |
+| `kinds/artifact/` | `ScannedArtifact`, `ARTIFACT_STORAGE`, `ArtifactScan` | scan, text, game |
+| `kinds/` | `Kind`, `Kind.scan()` | every kind |
 
-- Arrows point down only. Every kind is a sub-package of `kinds/`, whose root holds the contracts; they sit below both the kinds and the scan: a kind implements
-  them without knowing the scan, the scan consumes them without knowing a kind. `Kind.scannable()`
-  in `scan/` is the one place every kind is named; `Kind.label()` in the app is the other, for the
-  overlay's button.
+- Arrows point down only. `scan/` knows no kind; each kind's package extends its `Scan<T>`;
+  `Kind.scan()` in `kinds/` is the one place every kind is named, and `Kind.named` in the app's
+  `ui/Kinds.kt` is the other, for its label and the home screen's instructions.
 - `Kind` is an enum: identity only. Its id is the JSON's `kind` and the scan folder's, `entries`
   is what the overlay lists, and a `when` over it is exhaustive.
-- `Scannable<T>` is what the scan needs from a kind: a `GridLayout`, a serializer, a `Reader<T>`.
-  One `object` per kind implements it; that object is the kind's single door.
-- `Reader<T>` is `read(rows): T` and `closed(record)`. Readers share instruments, not an
-  algorithm: each kind's panel is its own model, read by that kind's `object` with its own
-  private helpers. There is no base reader and no shared card shape; a hero panel is not a gear
-  panel.
+- `Scan<T>` is an abstract class: a kind's `GridLayout`, its serializer, `readTile` (what it reads
+  off the tile the walk just tapped), `readScreen` (what it makes of a whole frame, for the
+  overlay's Read) and `tileAt` (whether a tile sits at a place, by default the word it prints
+  below its centre; an artifact's tile prints none and is told by the colour of its face). One
+  stateless `object` per kind extends it. Its `run` starts a `Walk`, created
+  per scan with the senses of the moment, which holds where the grid is and taps, verifies,
+  drags and registers for every kind.
+- `readTile` gets a `Tapped`: the frame the tap left, the tile's rectangle on it, `show(tab)`
+  (taps a tab until the panel changes, a dropped tap tapped again) and `regrip()` (once the kind's
+  taps have moved the grid, finds the tile again by its frame anywhere in its column and takes the
+  grid's place from it). It returns a `Read<T>`: `Card` (the record, its rows, its frames, whether
+  it is closed), `Beyond` (the scan finishes before this tile) or `Lost` (the scan stops, the grid
+  lost).
+- A kind's `Scan` object reads its panel with its own private helpers, its model of that panel:
+  kinds share instruments, not an algorithm. There is no base reader and no shared card shape; a
+  hero panel is not a gear panel.
 - `text/` holds the instruments a reader is written with, model-free by construction: each takes
   a row or a block and a candidate list and knows nothing of what the row is part of. What a
-  second reader turns out to need from `GearReader`'s private helpers is lifted to `text/`
-  before that reader is written, never on a guess.
+  second kind turns out to need from `GearScan`'s private helpers is lifted to `text/` or `game/`
+  before that kind is written, never on a guess.
 - The records have no supertype. Generics carry `T` through `ScanEntry<T>`, `Outcome<T>` and
   `ScanFile<T>` to the writer, which encodes with the kind's serializer; the app holds
   `Outcome<*>` where it only counts entries. On the wire `kind` is the discriminator.
-- The scan is a grid with a side panel redrawn on tap, verified by the framed tile and read off
-  the same frame. A kind whose tile opens a full screen makes `Scannable` say how a tile opens
-  and the scan branch on it; that is written off a recorded frame of that screen, not before.
+- The walk assumes a grid with a side panel redrawn on tap, the tap verified by the framed tile.
+  It begins on the framed tile, found anywhere in the grid, and only where none is framed on the
+  first whole row by its words.
+  What a tile's panel shows, and any tapping it takes to show it all, is the kind's `readTile`,
+  with what `Tapped` lends it.
 
 ### Adding a kind
 
-Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and 7.
+Written after heroes and followed for artifacts. The compiler enforces step 5.
 
-1. Record the hero screen inside LDPlayer, grid and panel, and keep the frame under the tests as
-   `ldplayer-storage-1280x720.json` is kept for gear. This is where the scan's assumption is
-   checked: a grid with a side panel, or something else.
-2. `kinds/hero/ScannedHero.kt`: the record, `@Serializable`, what the panel may fail to name nullable.
-3. `kinds/hero/` words: the hero's own, transcribed from the wiki as it spells them; attributes and
-   factions are in `game/` already.
-4. `kinds/hero/HeroReader.kt`: `object HeroReader : Reader<ScannedHero>`, written against recorded
-   panels with `text/`'s instruments.
-5. `kinds/hero/HeroRoster.kt`: `HERO_ROSTER: GridLayout`, measured off the recorded frame, tested the
-   way `LdPlayerReadingTest` tests gear's.
-6. `kinds/hero/HeroScannable.kt`: `object HeroScannable : Scannable<ScannedHero>`.
-7. `Kind.HEROES`; the compiler then asks for its branch in `Kind.scannable()` and its string in
-   `Kind.label()`.
-8. Tell the lab the `hero` shape: `kind` names it and `entries[].card` is shaped by it.
+1. Record the kind's screen inside LDPlayer through the overlay's Read, on every tab its panel is
+   read under, and keep one whole frame under the tests as `ldplayer-storage-1280x720.json`,
+   `ldplayer-heroes-1280x720.json` and `ldplayer-artifacts-1280x720.json` are kept. The panels'
+   lines go inline into the kind's test; colours the reading needs are measured then and written
+   into the plan, not kept as images. This is where the walk's assumption is checked: a grid with a
+   side panel redrawn on tap, and a word printed below each tile to find it by.
+2. `kinds/<kind>/Scanned<Kind>.kt`: the record, `@Serializable`, what the panel may fail to name
+   nullable.
+3. `kinds/<kind>/<Kind>Roster.kt` (or `Storage`): its `GridLayout`, and any spot it taps or samples,
+   measured off the recorded frame and tested the way `LdPlayerReadingTest` tests gear's.
+4. `kinds/<kind>/<Kind>Scan.kt`: one `object` extending `Scan<T>`, its `readTile` using what
+   `Tapped` lends and its model of the panel written with `text/`'s instruments and `game/`'s
+   readings; its `tileAt` where its tiles print no word below them, as the artifacts' face. Words go in the
+   kind's package where the record names catalogue entries, as gear's sets do, transcribed from the
+   wiki as it spells them; where the lab can identify from what is printed, it is kept as printed.
+5. `Kind.<KIND>`; the compiler then asks for its branch in `Kind.scan()` and in the app's
+   `Kind.named`.
+6. Tell the lab the kind's shape: `kind` names it and `entries[].card` is shaped by it.
 
 ## State
 
@@ -98,31 +118,39 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
 ## Persistence
 
 - No database. A scan is a JSON file in the app's external files directory, `version` 2 with the
-  `kind` it scanned; a new scan is a new file, never a merge. The user takes it out through the share sheet or saves it to Downloads via
-  MediaStore. Sending straight to the lab is a later option.
+  `kind` it scanned; a new scan is a new file, never a merge. The user takes it out through the share
+  sheet or saves it into the folder the emulator shares with the PC. Sending straight to the lab is a
+  later option.
 - What leaves the app is named `wor-<kind>-<stamp>`: `wor-gear-20260907-130812.json`, with a scan's
   kept panels beside it as `wor-gear-20260907-130812-<tile>.png`. On disk the names stay `scan.json`
   and `<tile>.png`; `Exports` copies each file under the name its caller gives, which is what keeps
-  two exports of the same kind apart in one Downloads folder. The share sheet stages its copies in
+  two exports of the same kind apart in one folder. The share sheet stages its copies in
   the cache so the other app is shown those same names.
 - Every entry in the JSON carries the raw OCR lines it was read from.
 - The panel PNG is kept only for a piece the reader did not close: set or slot null, or the card
   refused. A full run keeps no other image.
-- A scan leaves an emulator by the folder it shares with the PC: LDPlayer mounts `/mnt/shared/Pictures`
-  inside Android and shows it under the Windows Documents folder, so "Save to Pictures" writes there.
-  The clipboard does not cross that border, and the two apps are not linked over the network.
-- Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, which
-  the home screen picks and the overlay obeys.
+- A scan leaves an emulator by the folder that emulator shares with the PC. `Emulator` holds the mounts
+  each one is known by and the file system says which is running: LDPlayer mounts `/mnt/shared/Pictures`,
+  which Windows shows under `Documents\LDPlayer\Pictures`; BlueStacks mounts its Media Manager's Shared
+  Folder at `/mnt/windows/BstSharedFolder`, shown under
+  `ProgramData\BlueStacks_nxt\Engine\UserData\SharedFolder`; it has moved between versions, so the
+  paths under `/sdcard` it used follow, and its own `/mnt/windows` closes the list. Files land in a `WoR Scanner` folder inside
+  it, and the export sheet names the emulator it found, says where the PC shows it, and lets a second one
+  be chosen over the first.
+- Neither mount needs a grant, both sitting outside the sdcard, so the app asks for no storage
+  permission at all; a device with no mount is told to use the share sheet instead.
+- The clipboard does not cross that border, and the two apps are not linked over the network.
+- Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, picked
+  on the home screen or in the overlay's menu, held at once and written behind.
 - Room enters only if scan history inside the app is ever wanted, and brings the no-destructive-
   migration rule with it.
 
 ## Navigation
 
-- One Activity, Compose, Navigation 3 from the start: the back stack is a state list the app owns,
-  which lets the service push the follow-up screen when a scan ends.
-- The overlay belongs to the service, not the Activity, and is drawn in Compose too. It is three
-  windows: the hairline pinned to the top, the capsule a finger drags, and the close target that
-  appears under it while it is held.
+- One Activity, Compose, Navigation 3 from the start: the back stack is a state list the app owns.
+- The overlay belongs to the service, not the Activity, and is drawn in Compose too. It is four
+  windows: the hairline pinned to the top, the capsule a finger drags, the menu its tap opens beside
+  it, and the close target that appears under it while it is held.
 
 ## Error handling
 
@@ -132,7 +160,7 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
   not stop.
 - `resultOf` wraps the calls that throw: a capture, an OCR pass, a gesture.
 - The end of a scan is a sealed type of its own, not a `Result`: finished, stopped for a named
-  reason (storage closed, the grid no longer matches, projection consent lost), failed with cause.
+  reason (the screen not open, the grid lost, stopped by the player), failed with cause.
   The UI renders each with its own verb.
 - A tile that reads badly is not a scan error: it lands in the JSON with nulls and its PNG, and
   the scan goes on. Only what prevents the next tap stops a scan.
@@ -143,8 +171,9 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
   capture the panel, next, with no back.
 - The grid scrolls continuously, seven per row, under a scrollbar. A swipe does not move an exact
   number of rows: the scan drags slowly (no fling), then finds where the last row it had seen now
-  sits by matching tiles, and takes its position from that. The header's count (`1,169/2,500`) gives
-  the number of rows and the stop.
+  sits by the framed tile, else by matching tiles' words, and takes its position from that. The
+  header's count (`1,169/2,500`) says the screen is open and what the progress counts to; the scan
+  ends where the rows run out, or where the kind says the tiles it scans end.
 - Two equal pieces give two equal panels, so a piece's identity is its grid position, never its
   content.
 - Positions are fractions of the display read at start, never pixels: the app runs on any
@@ -157,5 +186,5 @@ Written for heroes; the same for artifacts. The compiler enforces steps 4, 6 and
 - Interview the user to define which game languages the reader must know beyond English. Many
   players run the game in another language; the catalogue's ids stay English and each language
   adds its own words for the same entries.
-- Interview the user to define how a scan leaves the other emulators, BlueStacks first: LDPlayer's
-  shared `/mnt/shared/Pictures` is the only door wired today.
+- Interview the user to define which other emulators to wire. LDPlayer and BlueStacks are the two
+  `Emulator` knows; MEmu and Nox are mounts nobody has measured yet.

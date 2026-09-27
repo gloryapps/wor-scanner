@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.pm.ServiceInfo
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -23,10 +24,14 @@ import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.ui.label
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.scan.TouchState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
 /**
@@ -36,25 +41,30 @@ import org.koin.android.ext.android.inject
 class CaptureService : LifecycleService() {
     private val session: CaptureSession by inject()
     private val scanning: Scanning by inject()
+    private val touch: TouchState by inject()
+    private val readScreen: ReadScreen by inject()
     private var screen: ProjectionScreen? = null
     private var overlay: OverlayWindow? = null
     private var scan: Job? = null
-
-    override fun onCreate() {
-        super.onCreate()
-        lifecycleScope.launch { scanning.state.onEach(::show).collect() }
-    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_STOP -> stopSelf()
-            ACTION_SCAN -> startScan(Kind.valueOf(checkNotNull(intent.getStringExtra(EXTRA_KIND)) { "no kind to scan" }))
+            ACTION_SCAN -> startScan(intent.kind())
             ACTION_STOP_SCAN -> scan?.cancel()
+            ACTION_READ -> read(intent.kind())
             else -> intent?.consent()?.let(::open) ?: stopSelf()
         }
 
         return START_NOT_STICKY
+    }
+
+    /* The game turns the phone to landscape once it is in front; the mirror must show that, not the app's portrait. */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val metrics = realMetrics()
+        screen?.resize(metrics.widthPixels, metrics.heightPixels, metrics.densityDpi)
     }
 
     override fun onDestroy() {
@@ -74,8 +84,10 @@ class CaptureService : LifecycleService() {
             return
         }
         val metrics = realMetrics()
-        screen = ProjectionScreen(projection, metrics.widthPixels, metrics.heightPixels, metrics.densityDpi)
+        screen = ProjectionScreen(projection, metrics.widthPixels, metrics.heightPixels, metrics.densityDpi, onStop = ::stopSelf)
             .also(session::opened)
+        scanning.idle()
+        lifecycleScope.launch { scanning.state.onEach(::show).collect() }
         showOverlay()
     }
 
@@ -88,16 +100,42 @@ class CaptureService : LifecycleService() {
         overlay = null
     }
 
-    /* The overlay stays, showing the scan and its stop; the scan reads only the regions it knows, and the strip sits elsewhere. */
+    /* The overlay stays, showing the scan and its stop; it is captured with the game, so the capsule is to be kept off the grid and the panel. */
     private fun startScan(kind: Kind) {
-        if (scan?.isActive == true) return
+        if (scan?.isActive == true) {
+            scan?.cancel()
+            return
+        }
         /* A service reborn after its process died has no projection: there is nothing to scan with. */
         if (session.screen.value == null) {
             stopSelf()
             return
         }
-        scan = lifecycleScope.launch { scanning.run(kind) }
+        if (touch.hand.value == null) {
+            Toast.makeText(this, R.string.scan_needs_touch, Toast.LENGTH_LONG).show()
+            return
+        }
+        /* The walk reads pixels and waits on the recogniser; it runs off the thread the overlay draws on. */
+        scan = lifecycleScope.launch(Dispatchers.Default) {
+            sheetLeaves()
+            scanning.run(kind)
+        }
     }
+
+    /* Read here, not in the sheet that asked: the sheet closes on the tap and takes its coroutines with it. */
+    private fun read(kind: Kind) {
+        lifecycleScope.launch {
+            sheetLeaves()
+            val said = withContext(Dispatchers.Default) { readScreen.now(kind) }.fold(
+                onSuccess = { getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
+                onFailure = { getString(R.string.overlay_read_failed, it.message) },
+            )
+            Toast.makeText(this@CaptureService, said, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /* The sheet that asked closes on the same tap, but stays on the display a frame or two, over what is read first. */
+    private suspend fun sheetLeaves() = delay(SHEET_LEAVES_MS)
 
     private fun show(state: ScanState) {
         val text = when (state) {
@@ -146,6 +184,8 @@ class CaptureService : LifecycleService() {
         getSystemService(WindowManager::class.java).defaultDisplay.getRealMetrics(it)
     }
 
+    private fun Intent.kind(): Kind = Kind.valueOf(checkNotNull(getStringExtra(EXTRA_KIND)) { "no kind named" })
+
     private class Consent(val resultCode: Int, val data: Intent)
 
     private fun Intent.consent(): Consent? {
@@ -169,9 +209,11 @@ class CaptureService : LifecycleService() {
         private const val ACTION_STOP = "com.gloryapps.worscanner.STOP"
         private const val ACTION_SCAN = "com.gloryapps.worscanner.SCAN"
         private const val ACTION_STOP_SCAN = "com.gloryapps.worscanner.STOP_SCAN"
+        private const val ACTION_READ = "com.gloryapps.worscanner.READ"
         private const val EXTRA_RESULT_CODE = "resultCode"
         private const val EXTRA_RESULT_DATA = "resultData"
         private const val EXTRA_KIND = "kind"
+        private const val SHEET_LEAVES_MS = 250L
 
         /** Starts the service with the consent the projection dialog returned. */
         fun start(context: Context, resultCode: Int, data: Intent) {
@@ -185,7 +227,11 @@ class CaptureService : LifecycleService() {
             }
         }
 
+        /** Scans the kind, or stops the scan under way: the menu's one Scan line does both. */
         fun scan(context: Context, kind: Kind) = send(context, ACTION_SCAN) { putExtra(EXTRA_KIND, kind.name) }
+
+        /** Reads the frame on screen as one kind and says what it kept. */
+        fun read(context: Context, kind: Kind) = send(context, ACTION_READ) { putExtra(EXTRA_KIND, kind.name) }
 
         fun stopScan(context: Context) = send(context, ACTION_STOP_SCAN)
 

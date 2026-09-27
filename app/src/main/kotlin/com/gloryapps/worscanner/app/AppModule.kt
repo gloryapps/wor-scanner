@@ -1,10 +1,13 @@
 package com.gloryapps.worscanner.app
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.gloryapps.worscanner.BuildConfig
 import com.gloryapps.worscanner.capture.CaptureSession
 import com.gloryapps.worscanner.capture.Exports
 import com.gloryapps.worscanner.capture.MlKitTextReader
 import com.gloryapps.worscanner.capture.ReadScreen
 import com.gloryapps.worscanner.capture.Readings
+import com.gloryapps.worscanner.report.CrashReports
 import com.gloryapps.worscanner.scanner.senses.TextReader
 import com.gloryapps.worscanner.ui.ExportDelegate
 import com.gloryapps.worscanner.ui.home.HomeViewModel
@@ -18,14 +21,17 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val appModule = module {
+    /* A dev build crashes on the desk, in front of logcat; only releases report. */
+    single(createdAtStart = true) { CrashReports(FirebaseCrashlytics.getInstance(), collecting = !BuildConfig.DEBUG) }
     single { TouchState() }
     single { CaptureSession() }
     single { Readings(androidContext()) }
     single { Exports(androidContext()) }
     single<TextReader> { MlKitTextReader() }
-    factory { ReadScreen(get(), get(), get()) }
-    single { Scanning(androidContext(), get(), get(), get()) }
-    single { Chosen(androidContext()) }
+    factory { ReadScreen(get(), get(), get(), get()) }
+    single { Scanning(androidContext(), get(), get(), get(), get()) }
+    /* Read from the store at start, so the overlay's menu opens on the kind already chosen. */
+    single(createdAtStart = true) { Chosen(androidContext()) }
     single { Permissions(androidContext()) }
     factory { ExportDelegate(get(), androidContext()) }
     viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }

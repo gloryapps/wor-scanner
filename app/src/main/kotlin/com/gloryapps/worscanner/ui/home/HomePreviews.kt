@@ -47,7 +47,7 @@ private fun HomeScanningPreview() {
 @Preview(name = "Home · nothing granted, nothing kept", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun HomeEmptyPreview() {
-    ScannerTheme { Home(HomeUiState()) { } }
+    ScannerTheme { Home(HomeUiState(readings = emptyList())) { } }
 }
 
 @Preview(name = "Home · portrait", widthDp = TALL_W, heightDp = TALL_H)
@@ -59,7 +59,13 @@ private fun HomePortraitPreview() {
 @Preview(name = "Home · confirming a delete", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun HomeDeletingPreview() {
-    ScannerTheme { Home(READY.copy(deleting = STOPPED)) { } }
+    ScannerTheme { Home(READY.copy(deleting = listOf(STOPPED))) { } }
+}
+
+@Preview(name = "Home · confirming every delete", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun HomeDeletingAllPreview() {
+    ScannerTheme { Home(READY.copy(deleting = READY.readings.orEmpty())) { } }
 }
 
 @Preview(name = "Start · ready, capturing, half granted", widthDp = 560, heightDp = 900)

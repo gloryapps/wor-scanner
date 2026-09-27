@@ -44,7 +44,7 @@ private val PIECES = listOf(
     Piece(5, 0, 5, "Warden Plate", "T2 · +12 · Tempered Will · DEF 728", CARD, closed = true),
 )
 
-private val OPENED = ReadingUiState(kept = SCANNED, kind = Kind.GEAR, pieces = PIECES, file = CARD)
+private val OPENED = ReadingUiState(kept = SCANNED, pieces = PIECES, file = CARD)
 
 @Preview(name = "Reading · a piece", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
@@ -61,7 +61,7 @@ private fun ReadingFilePreview() {
 @Preview(name = "Reading · a scan that read nothing", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun ReadingEmptyPreview() {
-    val state = ReadingUiState(kept = STOPPED, kind = Kind.GEAR, file = CARD, showing = Showing.FILE)
+    val state = ReadingUiState(kept = STOPPED, file = CARD, showing = Showing.FILE)
     ScannerTheme { Reading(state) { } }
 }
 

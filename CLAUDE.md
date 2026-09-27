@@ -1,22 +1,22 @@
 # wor-scanner
 
 A native Android app that scans a Watcher of Realms storage on the device it runs on, reads each
-tile off its panel and writes a JSON the azhor lab imports. Gear today, heroes and artifacts as
-kinds to come. Shipped as an APK on GitHub.
+tile off its panel and writes a JSON the azhor lab imports: gear, legendary heroes and mythic
+artifacts. Shipped as an APK on GitHub.
 
 | Area | Read before working there |
 | --- | --- |
 | Architecture & code layout | `bootstrap/architecture.md` |
-| Design system (deferred) | `bootstrap/design-system.md` |
-| CI & release (deferred) | `bootstrap/ci.md` |
+| Design system | `bootstrap/design-system.md` |
+| CI & release | `bootstrap/ci.md` |
 
 ## Rules
 
 - `scanner` imports nothing from Android. `app` implements its interfaces.
-- A kind is a sub-package of `scanner`'s `kinds/` behind one `Scannable` object; its reader is its own model,
-  written with `text/`'s instruments. The scan names no kind: `Kind.scannable()` and
-  `Kind.label()` are the only two places that do. Adding one is the checklist in
-  `bootstrap/architecture.md`.
+- A kind is a sub-package of `scanner`'s `kinds/` with one `Scan` object: its layout, its record's
+  serializer, what it reads off a tile, and its own model of the panel, written with `text/`'s
+  instruments. The walk over the grid names no kind: `Kind.scan()` in `scanner` and `Kind.named` in the
+  app's `ui/Kinds.kt` are the only two places that do. Adding one is the checklist in `bootstrap/architecture.md`.
 - A kind's words are transcribed from the wiki, spelled as the page spells them. No code or data is shared with the azhor lab: the JSON the app writes is the whole contract.
 - Use `resultOf { }`, never `runCatching`: it swallows `CancellationException`.
 - A piece's identity is its grid position, never its content.
@@ -29,6 +29,10 @@ kinds to come. Shipped as an APK on GitHub.
 
 Concise, in English. One change is a single-line title; several changes are a title plus a few
 one-line factual bullets. No prose bodies.
+
+New work is on a new branch off `dev`; nothing is worked on or committed on `dev` itself. A branch
+lands on `dev` squashed. `dev` reaches `main` only by a pull request merged with a merge commit, and
+that merge is a release (`bootstrap/ci.md`).
 
 ## Tests
 

@@ -1,7 +1,11 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinxSerialization)
+    alias(libs.plugins.googleServices)
+    alias(libs.plugins.firebaseCrashlytics)
 }
 
 android {
@@ -12,16 +16,34 @@ android {
         applicationId = "com.gloryapps.worscanner"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
         versionName = "0.1.0"
+        versionCode = versionName!!.split('.').fold(0) { code, part -> code * 100 + part.toInt() }
+    }
+
+    signingConfigs {
+        System.getenv("KEYSTORE_FILE")?.let { keystore ->
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
+            versionNameSuffix = "-dev"
         }
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
+            optimization {
+                enable = true
+            }
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = true
+            }
         }
     }
 
@@ -63,6 +85,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.playServices)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.mlkit.textRecognition)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.junit)

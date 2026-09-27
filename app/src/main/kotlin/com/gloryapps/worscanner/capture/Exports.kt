@@ -5,32 +5,29 @@ import android.content.Intent
 import android.media.MediaScannerConnection
 import android.net.Uri
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /** One file on its way out and the name it leaves under, which is the caller's to say, never this file's. */
 data class Outbound(val file: File, val name: String)
 
-/** How a reading leaves the device: into the folder the emulator shares with the PC, or handed to another app. */
+/** How a reading leaves the device: into a folder an emulator shares with the PC, or handed to another app. */
 class Exports(private val context: Context) {
-    /**
-     * The folder an emulator shares with the PC: LDPlayer mounts it at `/mnt/shared/Pictures` and
-     * shows it under the Windows Documents folder, which is the shortest way from a scan to the lab.
-     * A device without that mount has no such door, and says so rather than writing where nobody looks.
-     */
-    fun toShared(files: List<Outbound>): List<String> {
-        val shared = File(SHARED_PICTURES)
-        check(shared.isDirectory && shared.canWrite()) { "no shared Pictures folder on this device" }
-        val folder = File(shared, FOLDER).apply { mkdirs() }
+    /** Into the folder an emulator shares with the PC, under this app's own name so the PC side stays tidy. */
+    suspend fun toShared(shared: SharedFolder, files: List<Outbound>): List<String> = withContext(Dispatchers.IO) {
+        val folder = File(shared.path, FOLDER).apply { mkdirs() }
+        check(folder.isDirectory) { "${shared.path} is not writable on this device" }
 
-        return files.map { ontoDisk(it, folder) }
+        files.map { ontoDisk(it, folder) }
     }
 
     /** The other app is shown the name the file goes out under, which is why each one is staged in the cache first. */
-    fun shareIntent(files: List<Outbound>): Intent {
+    suspend fun shareIntent(files: List<Outbound>): Intent = withContext(Dispatchers.IO) {
         val staged = File(context.cacheDir, OUTGOING).apply { deleteRecursively(); mkdirs() }
         val uris = ArrayList<Uri>(files.map { FileProvider.getUriForFile(context, "${context.packageName}.files", copied(it, staged)) })
 
-        return Intent.createChooser(
+        Intent.createChooser(
             Intent(Intent.ACTION_SEND_MULTIPLE)
                 .setType("*/*")
                 .putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
@@ -50,7 +47,6 @@ class Exports(private val context: Context) {
 
     private companion object {
         const val FOLDER = "WoR Scanner"
-        const val SHARED_PICTURES = "/mnt/shared/Pictures"
         const val OUTGOING = "outgoing"
     }
 }
