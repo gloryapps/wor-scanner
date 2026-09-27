@@ -27,6 +27,7 @@ import com.gloryapps.worscanner.scan.Scanning
 import com.gloryapps.worscanner.scan.TouchState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -115,12 +116,16 @@ class CaptureService : LifecycleService() {
             return
         }
         /* The walk reads pixels and waits on the recogniser; it runs off the thread the overlay draws on. */
-        scan = lifecycleScope.launch(Dispatchers.Default) { scanning.run(kind) }
+        scan = lifecycleScope.launch(Dispatchers.Default) {
+            sheetLeaves()
+            scanning.run(kind)
+        }
     }
 
     /* Read here, not in the sheet that asked: the sheet closes on the tap and takes its coroutines with it. */
     private fun read(kind: Kind) {
         lifecycleScope.launch {
+            sheetLeaves()
             val said = withContext(Dispatchers.Default) { readScreen.now(kind) }.fold(
                 onSuccess = { getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
                 onFailure = { getString(R.string.overlay_read_failed, it.message) },
@@ -128,6 +133,9 @@ class CaptureService : LifecycleService() {
             Toast.makeText(this@CaptureService, said, Toast.LENGTH_LONG).show()
         }
     }
+
+    /* The sheet that asked closes on the same tap, but stays on the display a frame or two, over what is read first. */
+    private suspend fun sheetLeaves() = delay(SHEET_LEAVES_MS)
 
     private fun show(state: ScanState) {
         val text = when (state) {
@@ -205,6 +213,7 @@ class CaptureService : LifecycleService() {
         private const val EXTRA_RESULT_CODE = "resultCode"
         private const val EXTRA_RESULT_DATA = "resultData"
         private const val EXTRA_KIND = "kind"
+        private const val SHEET_LEAVES_MS = 250L
 
         /** Starts the service with the consent the projection dialog returned. */
         fun start(context: Context, resultCode: Int, data: Intent) {

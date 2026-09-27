@@ -123,12 +123,12 @@ fun SheetContent(
         running = state is ScanState.Running,
         onChoose = chosen::choose,
         onScan = {
-            CaptureService.scan(context, kind)
             onDone()
+            CaptureService.scan(context, kind)
         },
         onRead = {
-            CaptureService.read(context, kind)
             onDone()
+            CaptureService.read(context, kind)
         },
         onApp = {
             context.openApp()
