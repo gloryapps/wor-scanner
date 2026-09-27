@@ -9,7 +9,7 @@ local.properties
 *.keystore
 *.apk
 *.aab
-mapping-*.txt
+mapping-*.txt*
 .claude/
 
 # Working notes: plans and reviews stay on the machine

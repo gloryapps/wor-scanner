@@ -29,7 +29,7 @@ On the merge, which is a merge commit so that `dev`'s commits reach `main` as th
 
 1. Reads the version, runs the tests and builds the signed APK again, from the merge commit.
 2. Creates the tag on the merge commit and a GitHub release holding `wor-scanner.apk` and
-   `mapping-<version>.txt`, with notes generated since the previous tag. The APK's name carries no
+   `mapping-<version>.txt.gz`, with notes generated since the previous tag. The APK's name carries no
    version, so `releases/latest/download/wor-scanner.apk` always downloads the newest one.
 3. Commits `Start <next minor>` to `dev`: pull `dev` before working on. A patch or a major is set in
    `versionName` on `dev` by hand, before its pull request.
@@ -46,7 +46,7 @@ Rulesets, available once the repository is public:
 
 Nobody bypasses them. Pull requests are for collaborators only.
 
-Crashes reported against a release are retraced with that release's `mapping-<version>.txt`.
+Crashes reported against a release are retraced with that release's `mapping-<version>.txt.gz`, unzipped.
 
 ## Signing
 
