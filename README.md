@@ -1,7 +1,8 @@
 # WoR Scanner
 
 An Android app that reads your Watcher of Realms gear, legendary heroes and mythic artifacts off the
-screen, one tile at a time, and writes a JSON file you import into WoR Lab.
+screen, one tile at a time, and writes a JSON file you import into
+[Azhor’s Master Smithy](https://azhor-wor.netlify.app).
 
 It is made for the game running in an emulator on a PC, LDPlayer or BlueStacks. It may work on a
 phone, but that has not been tried.
@@ -40,10 +41,10 @@ kept.
 
 Every scan is listed on the home screen. **Export** saves it into the folder the emulator shares with
 the PC (LDPlayer: `Documents\LDPlayer\Pictures\WoR Scanner`; BlueStacks: the Shared Folder's
-`WoR Scanner`), or hands it to another app. Import that JSON in WoR Lab.
+`WoR Scanner`), or hands it to another app. Import that JSON in Azhor’s Master Smithy.
 
 A tile the scanner could not read in full keeps a picture of its panel beside the JSON, so it can be
-fixed in the lab.
+fixed in Azhor’s Master Smithy.
 
 ## Privacy
 
