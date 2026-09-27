@@ -44,7 +44,7 @@ abstract class Scan<T> {
         screen: Screen,
         touch: Touch,
         reader: TextReader,
-        keeper: Keeper,
+        keeper: Keeper<T>,
         entries: MutableList<ScanEntry<T>>,
         settleMillis: Long = 250,
         progress: suspend (Progress) -> Unit = {},
@@ -88,7 +88,10 @@ sealed interface Read<out T> {
     class Lost(val detail: String) : Read<Nothing>
 }
 
-/** Where the panel of a tile the kind did not close goes, every frame's in one image under the entry's index, so the image can answer what the text could not. */
-fun interface Keeper {
-    suspend fun keep(frames: List<Frame>, index: Int): String
+/** Where what the walk reads goes the moment it is read, so that a scan cut short by anything still leaves it. */
+interface Keeper<T> {
+    /** The panel of a tile the kind did not close, every frame's in one image under the entry's index, so the image can answer what the text could not; the name it is kept under. */
+    suspend fun panel(frames: List<Frame>, index: Int): String
+
+    suspend fun entry(entry: ScanEntry<T>)
 }

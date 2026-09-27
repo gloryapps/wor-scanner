@@ -16,8 +16,19 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ScanTest {
-    private val kept = mutableListOf<Int>()
-    private val keeper = Keeper { _: List<Frame>, index -> kept += index; "$index.png" }
+    private val panels = mutableListOf<Int>()
+    private val journal = mutableListOf<ScanEntry<Int>>()
+    private val keeper = object : Keeper<Int> {
+        override suspend fun panel(frames: List<Frame>, index: Int): String {
+            panels += index
+
+            return "$index.png"
+        }
+
+        override suspend fun entry(entry: ScanEntry<Int>) {
+            journal += entry
+        }
+    }
 
     private suspend fun scanOver(
         storage: FakeStorage,
@@ -175,6 +186,23 @@ class ScanTest {
     }
 
     @Test
+    fun `each entry reaches the keeper the moment it is read, so a scan cut short has handed over every one`() = runTest {
+        val storage = FakeStorage(pieces = 30)
+        val touched = object : Touch by storage {
+            private var taps = 0
+
+            override suspend fun tap(x: Int, y: Int) {
+                if (++taps == 12) throw CancellationException("the process is going")
+                storage.tap(x, y)
+            }
+        }
+
+        assertFailsWith<CancellationException> { PieceScan(storage.layout).run(storage, touched, storage, keeper, mutableListOf(), 0) }
+        assertEquals((0 until 11).toList(), journal.map { it.card })
+        assertEquals((0 until 11).toList(), journal.map { it.index })
+    }
+
+    @Test
     fun `a tile tap the game dropped is tapped again, and every piece read in its place`() = runTest {
         val outcome = scanOver(FakeStorage(pieces = 10, droppedTileTaps = setOf(2)))
 
@@ -222,7 +250,7 @@ class ScanTest {
         val outcome = scanOver(FakeStorage(pieces = 5, unreadable = setOf(2)))
 
         assertIs<Outcome.Finished<Int>>(outcome)
-        assertEquals(listOf(2), kept)
+        assertEquals(listOf(2), panels)
         assertEquals("2.png", outcome.entries[2].png)
         assertEquals(5, outcome.entries.size)
     }

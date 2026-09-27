@@ -23,7 +23,7 @@ internal class Walk<T>(
     private val screen: Screen,
     private val touch: Touch,
     private val reader: TextReader,
-    private val keeper: Keeper,
+    private val keeper: Keeper<T>,
     private val settleMillis: Long,
     private val entries: MutableList<ScanEntry<T>>,
     private val progress: suspend (Progress) -> Unit,
@@ -125,8 +125,9 @@ internal class Walk<T>(
     /* Keeps what the kind read off the tile, its frames as an image where the record is not closed. */
     private suspend fun keep(tile: Read.Card<T>, column: Int) {
         var entry = ScanEntry(entries.size, row, column, tile.card, tile.rows)
-        if (!tile.closed) entry = entry.copy(png = keeper.keep(tile.frames, entry.index))
+        if (!tile.closed) entry = entry.copy(png = keeper.panel(tile.frames, entry.index))
         entries += entry
+        keeper.entry(entry)
         progress(Progress(entries.size, held))
     }
 

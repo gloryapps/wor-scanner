@@ -56,8 +56,8 @@ class Scanning(
             outcome = resultOf {
                 val screen: Screen = checkNotNull(session.screen.value) { "no capture session" }
                 val hand = checkNotNull(touch.hand.value) { "accessibility service not bound" }
-                first = (screen.capture() as BitmapFrame).also { reports.scanning(kind, it) }
-                scan.run(screen, hand, reader, writer.keeper, entries) { _state.value = ScanState.Running(kind, it) }
+                first = (screen.capture() as BitmapFrame).also { reports.scanning(kind, it); writer.begin(it) }
+                scan.run(screen, hand, reader, writer, entries) { _state.value = ScanState.Running(kind, it) }
             }.getOrElse { Outcome.Failed(it, entries) }
         } finally {
             /* A cancelled scan ends by its exception; what it read before is still worth writing. */

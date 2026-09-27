@@ -26,7 +26,8 @@ sealed interface Outcome<T> {
 
     data class Failed<T>(val cause: Throwable, override val entries: List<ScanEntry<T>>) : Outcome<T>
 
-    enum class Reason { STORAGE_NOT_OPEN, GRID_LOST, CANCELLED }
+    /** `CANCELLED` is the player's stop, `INTERRUPTED` the process dying before the scan ended; the walk ends by neither. */
+    enum class Reason { STORAGE_NOT_OPEN, GRID_LOST, CANCELLED, INTERRUPTED }
 
     val entries: List<ScanEntry<T>>
 }

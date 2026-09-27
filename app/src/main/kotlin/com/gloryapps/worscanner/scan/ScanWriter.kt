@@ -12,6 +12,7 @@ import com.gloryapps.worscanner.scanner.scan.Scan
 import com.gloryapps.worscanner.scanner.scan.ScanEntry
 import com.gloryapps.worscanner.scanner.senses.Frame
 import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -46,15 +47,15 @@ fun Outcome<*>.wire(): String = when (this) {
 /** How a file's outcome ended; null for a word no scan writes. */
 fun endedOf(wire: String): Ended? = Ended.entries.firstOrNull { wire.substringBefore(':') == it.name.lowercase() }
 
-/** One folder per scan: `scan.json` and the panel of every tile the reader did not close. */
-class ScanWriter<T>(private val context: Context, private val kind: Kind, private val scan: Scan<T>) {
-    private val json = Json { prettyPrint = true }
+/** One folder per scan: `scan.json` and the panel of every tile the reader did not close, and its journal until the file is written. */
+class ScanWriter<T>(private val context: Context, private val kind: Kind, private val scan: Scan<T>) : Keeper<T> {
     private val stamp: String = LocalDateTime.now().format(STAMP)
     /** Made when the first file goes in, so a scan that wrote nothing leaves no folder. */
     private val folder by lazy { File(File(context.getExternalFilesDir(null), "scans"), stamp).apply { mkdirs() } }
+    private val journal by lazy { Journal(folder, scan.serializer) }
 
     /* A tile read under several tabs keeps its panels side by side, in the order they were read. */
-    val keeper = Keeper { frames: List<Frame>, index: Int ->
+    override suspend fun panel(frames: List<Frame>, index: Int): String {
         val panels = frames.map { frame ->
             val box = scan.layout.panel.box(frame.width, frame.height)
             Bitmap.createBitmap((frame as BitmapFrame).bitmap, box.left, box.top, box.right - box.left, box.bottom - box.top)
@@ -63,14 +64,28 @@ class ScanWriter<T>(private val context: Context, private val kind: Kind, privat
         Canvas(sheet).let { canvas -> panels.fold(0f) { left, panel -> canvas.drawBitmap(panel, left, 0f, null); left + panel.width } }
         val file = File(folder, "$index.png")
         file.outputStream().use { sheet.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        file.name
+
+        return file.name
     }
 
-    /** The file the lab reads; a scan that never saw a frame writes a display of 0x0. */
+    /** Opens the journal once the scan has its first frame. */
+    fun begin(first: BitmapFrame) =
+        journal.open(fileOf(first, Outcome.Stopped(Outcome.Reason.INTERRUPTED, emptyList(), "the app was closed before the scan ended")))
+
+    override suspend fun entry(entry: ScanEntry<T>) = journal.append(entry)
+
+    /** The file the lab reads, which closes the journal; a scan that never saw a frame writes a display of 0x0. */
     fun write(first: BitmapFrame?, outcome: Outcome<T>) {
-        val entries = outcome.entries
+        /* A scan that read nothing leaves the frame it looked at, which is what tells why. */
+        if (outcome.entries.isEmpty() && first != null) File(folder, "first.png").outputStream().use { first.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        writeScan(folder, fileOf(first, outcome), scan.serializer)
+        journal.close()
+    }
+
+    private fun fileOf(first: BitmapFrame?, outcome: Outcome<T>): ScanFile<T> {
         val stopped = outcome as? Outcome.Stopped
-        val file = ScanFile(
+
+        return ScanFile(
             kind = kind.id,
             startedAt = stamp,
             width = first?.width ?: 0,
@@ -78,10 +93,14 @@ class ScanWriter<T>(private val context: Context, private val kind: Kind, privat
             outcome = outcome.wire(),
             detail = stopped?.detail ?: (outcome as? Outcome.Failed)?.cause?.stackTraceToString()?.lineSequence()?.take(4)?.joinToString(" | "),
             seen = stopped?.seen ?: (outcome as? Outcome.Finished)?.seen.orEmpty(),
-            entries = entries,
+            entries = outcome.entries,
         )
-        /* A scan that read nothing leaves the frame it looked at, which is what tells why. */
-        if (entries.isEmpty() && first != null) File(folder, "first.png").outputStream().use { first.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        File(folder, "scan.json").writeText(json.encodeToString(ScanFile.serializer(scan.serializer), file))
     }
 }
+
+fun <T> writeScan(folder: File, scan: ScanFile<T>, card: KSerializer<T>) = File(folder, SCAN).writeText(JSON.encodeToString(ScanFile.serializer(card), scan))
+
+fun <T> readScan(folder: File, card: KSerializer<T>): ScanFile<T> = JSON.decodeFromString(ScanFile.serializer(card), File(folder, SCAN).readText())
+
+private const val SCAN = "scan.json"
+private val JSON = Json { prettyPrint = true; ignoreUnknownKeys = true }
