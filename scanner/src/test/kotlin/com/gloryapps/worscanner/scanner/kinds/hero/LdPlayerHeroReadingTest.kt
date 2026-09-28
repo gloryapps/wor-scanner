@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 class LdPlayerHeroReadingTest {
     private val seen = recorded("ldplayer-heroes-1280x720.json")
     private val frame = seen.frame
-    private val layout = HERO_ROSTER
+    private val layout = HERO_CARDS
 
     @Test
     fun `the header's count is read from its region, the icon read into it as a letter`() {
@@ -37,7 +37,7 @@ class LdPlayerHeroReadingTest {
 
     @Test
     fun `the panel region reads the selected hero's name and level`() {
-        val hero = HeroScan.readScreen(seen)
+        val hero = HeroScan.Cards.readScreen(seen)
 
         assertEquals("INGRID", hero.name)
         assertEquals(60, hero.level)

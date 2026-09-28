@@ -16,15 +16,27 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ScanTest {
-    private val kept = mutableListOf<Int>()
-    private val keeper = Keeper { _: List<Frame>, index -> kept += index; "$index.png" }
+    private val panels = mutableListOf<Int>()
+    private val journal = mutableListOf<ScanEntry<Int>>()
+    private val keeper = object : Keeper<Int> {
+        override suspend fun panel(frames: List<Frame>, index: Int): String {
+            panels += index
+
+            return "$index.png"
+        }
+
+        override suspend fun entry(entry: ScanEntry<Int>) {
+            journal += entry
+        }
+    }
 
     private suspend fun scanOver(
         storage: FakeStorage,
         scan: Scan<Int> = PieceScan(storage.layout),
         entries: MutableList<ScanEntry<Int>> = mutableListOf(),
         settleMillis: Long = 0,
-    ) = scan.run(storage, storage, storage, keeper, entries, settleMillis)
+        progress: suspend (Progress) -> Unit = {},
+    ) = scan.run(storage, storage, storage, keeper, entries, settleMillis, progress)
 
     /** Every tab's panel for the piece, in the order the tabs sit. */
     private fun ScanEntry<Int>.underEveryTab(tabs: Int) = (0 until tabs).map { tab -> "Piece $card under tab $tab" }
@@ -63,6 +75,44 @@ class ScanTest {
         assertIs<Outcome.Finished<Int>>(outcome)
         assertEquals((0 until 30).toList(), outcome.pieces())
         assertTrue(storage.drags >= 1)
+    }
+
+    @Test
+    fun `a screen showing the grid another way is walked where that view puts its tiles`() = runTest {
+        val squares = FAKE_GRID.copy(columns = 5, tilePitchX = 0.11, tilePitchY = 0.15)
+        val storage = FakeStorage(pieces = 30, layout = squares)
+
+        val outcome = scanOver(storage, ViewedPieceScan(squares))
+
+        assertIs<Outcome.Finished<Int>>(outcome)
+        assertEquals((0 until 30).toList(), outcome.pieces())
+        assertTrue(storage.drags >= 1)
+    }
+
+    @Test
+    fun `a piece the kind skips is tapped and not kept, and the progress still counts it`() = runTest {
+        val storage = FakeStorage(pieces = 30)
+        val progress = mutableListOf<Progress>()
+
+        val outcome = scanOver(storage, PieceScan(storage.layout, skipped = setOf(3, 17))) { progress += it }
+
+        assertIs<Outcome.Finished<Int>>(outcome)
+        assertEquals((0 until 30) - setOf(3, 17), outcome.pieces())
+        assertEquals(outcome.entries, journal)
+        assertEquals(30, storage.taps.size)
+        assertEquals(Progress(30, 30), progress.last())
+        assertEquals(0 to 4, outcome.entries.single { it.card == 4 }.let { it.row to it.column })
+    }
+
+    @Test
+    fun `a drag is read once, on the frame the grid settled on, while the framed tile stays in view`() = runTest {
+        val storage = FakeStorage(pieces = 30)
+
+        val outcome = scanOver(storage)
+
+        assertIs<Outcome.Finished<Int>>(outcome)
+        assertTrue(storage.drags >= 1)
+        assertEquals(1 + storage.taps.size + storage.drags, storage.reads)
     }
 
     @Test
@@ -175,6 +225,23 @@ class ScanTest {
     }
 
     @Test
+    fun `each entry reaches the keeper the moment it is read, so a scan cut short has handed over every one`() = runTest {
+        val storage = FakeStorage(pieces = 30)
+        val touched = object : Touch by storage {
+            private var taps = 0
+
+            override suspend fun tap(x: Int, y: Int) {
+                if (++taps == 12) throw CancellationException("the process is going")
+                storage.tap(x, y)
+            }
+        }
+
+        assertFailsWith<CancellationException> { PieceScan(storage.layout).run(storage, touched, storage, keeper, mutableListOf(), 0) }
+        assertEquals((0 until 11).toList(), journal.map { it.card })
+        assertEquals((0 until 11).toList(), journal.map { it.index })
+    }
+
+    @Test
     fun `a tile tap the game dropped is tapped again, and every piece read in its place`() = runTest {
         val outcome = scanOver(FakeStorage(pieces = 10, droppedTileTaps = setOf(2)))
 
@@ -222,7 +289,7 @@ class ScanTest {
         val outcome = scanOver(FakeStorage(pieces = 5, unreadable = setOf(2)))
 
         assertIs<Outcome.Finished<Int>>(outcome)
-        assertEquals(listOf(2), kept)
+        assertEquals(listOf(2), panels)
         assertEquals("2.png", outcome.entries[2].png)
         assertEquals(5, outcome.entries.size)
     }

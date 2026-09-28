@@ -18,6 +18,6 @@ enum class Kind {
 /** The one place every kind is named: how it is scanned. */
 fun Kind.scan(): Scan<*> = when (this) {
     Kind.GEAR -> GearScan
-    Kind.HEROES -> HeroScan
+    Kind.HEROES -> HeroScan.Cards
     Kind.ARTIFACTS -> ArtifactScan
 }

@@ -60,6 +60,8 @@ class FakeStorage(
     val tabs = (0 until tabCount).map { Spot(TAB_X, 0.10 + 0.08 * it) }
     val taps = mutableListOf<Pair<Int, Int>>()
     var drags = 0
+    /** Frames handed to the recogniser. */
+    var reads = 0
     private var tabTaps = 0
     private var tileTaps = 0
     private var captures = 0
@@ -164,6 +166,7 @@ class FakeStorage(
     override fun toString() = "FakeStorage(scrolled=$scrolled, selected=$selected)"
 
     override suspend fun read(frame: Frame): List<Line> {
+        reads++
         val fake = frame as Fake
         /* The overlay's own words, outside every region the scan reads. */
         val lines = mutableListOf(Line("Scan Stop", Box(10, 10, 120, 30)))
@@ -214,12 +217,13 @@ class FakeStorage(
 }
 
 /** The kind a fake storage holds: a piece is the number its panel prints, so the walk is proven over no real kind. */
-open class PieceScan(override val layout: GridLayout = FAKE_GRID) : Scan<Int>() {
+open class PieceScan(override val layout: GridLayout = FAKE_GRID, private val skipped: Set<Int> = emptySet()) : Scan<Int>() {
     override val serializer = Int.serializer()
 
     override suspend fun readTile(tapped: Tapped): Read<Int> {
         val rows = tapped.seen.rowsIn(layout.panel)
         val piece = pieceIn(rows.single())
+        if (piece in skipped) return Read.Skipped
 
         return Read.Card(piece, rows, listOf(tapped.seen.frame), piece >= 0)
     }
@@ -227,6 +231,11 @@ open class PieceScan(override val layout: GridLayout = FAKE_GRID) : Scan<Int>() 
     override fun readScreen(seen: Seen): Int = pieceIn(seen.rowsIn(layout.panel).single())
 
     override fun titleOf(rows: List<String>): String? = rows.firstOrNull()
+}
+
+/** A kind whose screen shows its grid another way than its own layout, as the heroes' squares do, told off the frame. */
+class ViewedPieceScan(private val shown: GridLayout) : PieceScan() {
+    override fun viewOn(seen: Seen): Scan<Int> = PieceScan(shown)
 }
 
 /** A kind whose tiles print no word, found by the colour of their face as the artifacts' are. */

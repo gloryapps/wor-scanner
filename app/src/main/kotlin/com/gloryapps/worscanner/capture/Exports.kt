@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.MediaScannerConnection
 import android.net.Uri
-import androidx.core.content.FileProvider
+import com.gloryapps.worscanner.app.provided
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -25,7 +25,7 @@ class Exports(private val context: Context) {
     /** The other app is shown the name the file goes out under, which is why each one is staged in the cache first. */
     suspend fun shareIntent(files: List<Outbound>): Intent = withContext(Dispatchers.IO) {
         val staged = File(context.cacheDir, OUTGOING).apply { deleteRecursively(); mkdirs() }
-        val uris = ArrayList<Uri>(files.map { FileProvider.getUriForFile(context, "${context.packageName}.files", copied(it, staged)) })
+        val uris = ArrayList<Uri>(files.map { context.provided(copied(it, staged)) })
 
         Intent.createChooser(
             Intent(Intent.ACTION_SEND_MULTIPLE)

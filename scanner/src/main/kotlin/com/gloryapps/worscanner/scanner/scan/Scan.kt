@@ -28,6 +28,9 @@ abstract class Scan<T> {
     /** What a tile is called, off the rows its panel printed, for a person to find it by; null where that row did not read. */
     abstract fun titleOf(rows: List<String>): String?
 
+    /** The scan for the view the frame shows, where the kind's screen shows its grid more than one way; by default, this one. */
+    open fun viewOn(seen: Seen): Scan<T> = this
+
     /** Whether a tile sits at this column and row centre, the grid ending where none does; by default, by the word it prints below its centre. */
     open fun tileAt(seen: Seen, column: Int, centreY: Int): Boolean = labelledTileAt(seen.lines, layout, seen.frame, column, centreY)
 
@@ -44,7 +47,7 @@ abstract class Scan<T> {
         screen: Screen,
         touch: Touch,
         reader: TextReader,
-        keeper: Keeper,
+        keeper: Keeper<T>,
         entries: MutableList<ScanEntry<T>>,
         settleMillis: Long = 250,
         progress: suspend (Progress) -> Unit = {},
@@ -81,6 +84,9 @@ sealed interface Read<out T> {
     /** The record, the rows it was read from, the frames that show them, and whether it names what identifies it. */
     class Card<T>(val card: T, val rows: List<String>, val frames: List<Frame>, val closed: Boolean) : Read<T>
 
+    /** The tile holds nothing the kind keeps: the walk goes on past it. */
+    data object Skipped : Read<Nothing>
+
     /** The tile is past what the kind scans: the scan finishes before it. */
     data object Beyond : Read<Nothing>
 
@@ -88,7 +94,10 @@ sealed interface Read<out T> {
     class Lost(val detail: String) : Read<Nothing>
 }
 
-/** Where the panel of a tile the kind did not close goes, every frame's in one image under the entry's index, so the image can answer what the text could not. */
-fun interface Keeper {
-    suspend fun keep(frames: List<Frame>, index: Int): String
+/** Where what the walk reads goes the moment it is read, so that a scan cut short by anything still leaves it. */
+interface Keeper<T> {
+    /** The panel of a tile the kind did not close, every frame's in one image under the entry's index, so the image can answer what the text could not; the name it is kept under. */
+    suspend fun panel(frames: List<Frame>, index: Int): String
+
+    suspend fun entry(entry: ScanEntry<T>)
 }

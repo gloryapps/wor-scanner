@@ -2,8 +2,8 @@
 
 Settled 2026-09-06, kinds added 2026-09-07, heroes and artifacts 2026-09-26. A native Android app that scans a
 Watcher of Realms storage on the device it runs on (LDPlayer, BlueStacks or a phone), captures each
-tile's panel, reads it and writes a JSON the azhor lab imports: gear, legendary heroes and mythic
-artifacts. Distributed as an APK on GitHub, not on the Play Store.
+tile's panel, reads it and writes a JSON the azhor lab imports: gear, legendary and epic heroes,
+and artifacts. Distributed as an APK on GitHub, not on the Play Store.
 
 ## Modules
 
@@ -14,7 +14,8 @@ artifacts. Distributed as an APK on GitHub, not on the Play Store.
 - `app` — Android. Implements those interfaces with MediaProjection (frames), an
   `AccessibilityService` using `dispatchGesture` (taps and swipes, blind: the game is Unity and
   exposes no view tree), ML Kit (text) and the file writer; holds the foreground service that runs
-  the scan, the hairline and capsule drawn over the game, and the two screens.
+  the scan, the hairline and capsule drawn over the game, the two screens, and the update to the
+  latest GitHub release, handed to the system's installer.
 - The words (sets, slots, attribute names) are `scanner`'s own, transcribed
   from the wiki's Gear page. The app depends on no other repository: what it shares with the azhor
   lab is the JSON it writes, not code. A word the catalogue lacks reads as `null` beside the raw
@@ -39,7 +40,7 @@ that the walk over a grid is written once and a kind says only what its tiles ho
 | `game/` | `Attribute`, `ReadAttribute`, `attributesIn`, `headOf`, `exclusiveIn`: the words every kind shares and the rows they are read off | text |
 | `scan/` | `Scan<T>`, `Walk`, `Seen`, `Tapped`, `Read<T>`, `GridLayout`, `Region`, `Spot`, `ScanEntry<T>`, `Outcome<T>`, tiles, registration, count | senses, text |
 | `kinds/gear/` | `ScannedGear`, its words, `GEAR_STORAGE`, `GearScan` | scan, text, game |
-| `kinds/hero/` | `ScannedHero`, `HeroSkills`, `SkillLevel`, `HERO_ROSTER` and its spots, `HeroScan` | scan, text, senses |
+| `kinds/hero/` | `ScannedHero`, `HeroSkills`, `SkillLevel`, `HERO_CARDS`, `HERO_SQUARES`, their rank edges and spots, `HeroScan` and its two views | scan, text, senses |
 | `kinds/artifact/` | `ScannedArtifact`, `ARTIFACT_STORAGE`, `ArtifactScan` | scan, text, game |
 | `kinds/` | `Kind`, `Kind.scan()` | every kind |
 
@@ -50,17 +51,19 @@ that the walk over a grid is written once and a kind says only what its tiles ho
   is what the overlay lists, and a `when` over it is exhaustive.
 - `Scan<T>` is an abstract class: a kind's `GridLayout`, its serializer, `readTile` (what it reads
   off the tile the walk just tapped), `readScreen` (what it makes of a whole frame, for the
-  overlay's Read) and `tileAt` (whether a tile sits at a place, by default the word it prints
-  below its centre; an artifact's tile prints none and is told by the colour of its face). One
-  stateless `object` per kind extends it. Its `run` starts a `Walk`, created
+  overlay's Read), `tileAt` (whether a tile sits at a place, by default the word it prints
+  below its centre; an artifact's tile prints none and is told by the colour of its face, a hero's
+  by the rank its edge shows) and `viewOn` (the scan for the view the first frame shows, where the
+  screen shows its grid more than one way, as the hero roster's cards and squares). One
+  stateless `object` per kind, or per view, extends it. Its `run` starts a `Walk`, created
   per scan with the senses of the moment, which holds where the grid is and taps, verifies,
   drags and registers for every kind.
 - `readTile` gets a `Tapped`: the frame the tap left, the tile's rectangle on it, `show(tab)`
   (taps a tab until the panel changes, a dropped tap tapped again) and `regrip()` (once the kind's
   taps have moved the grid, finds the tile again by its frame anywhere in its column and takes the
   grid's place from it). It returns a `Read<T>`: `Card` (the record, its rows, its frames, whether
-  it is closed), `Beyond` (the scan finishes before this tile) or `Lost` (the scan stops, the grid
-  lost).
+  it is closed), `Skipped` (nothing kept, the walk goes on), `Beyond` (the scan finishes before this
+  tile) or `Lost` (the scan stops, the grid lost).
 - A kind's `Scan` object reads its panel with its own private helpers, its model of that panel:
   kinds share instruments, not an algorithm. There is no base reader and no shared card shape; a
   hero panel is not a gear panel.
@@ -126,6 +129,12 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   and `<tile>.png`; `Exports` copies each file under the name its caller gives, which is what keeps
   two exports of the same kind apart in one folder. The share sheet stages its copies in
   the cache so the other app is shown those same names.
+- Until `scan.json` is written, a scan is its `journal.jsonl`: a first line holding the file as it
+  reads should the process die, `stopped:interrupted`, then one line per entry, appended by the
+  walk's `Keeper` the moment the entry is read. Writing `scan.json` deletes it. `Readings` is made as
+  the process starts and closes every journal it finds into its `scan.json` before anything is
+  listed: no scan of the new process has begun by then. A process that dies loses at most the tile
+  it was reading.
 - Every entry in the JSON carries the raw OCR lines it was read from.
 - The panel PNG is kept only for a piece the reader did not close: set or slot null, or the card
   refused. A full run keeps no other image.
@@ -160,7 +169,8 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   not stop.
 - `resultOf` wraps the calls that throw: a capture, an OCR pass, a gesture.
 - The end of a scan is a sealed type of its own, not a `Result`: finished, stopped for a named
-  reason (the screen not open, the grid lost, stopped by the player), failed with cause.
+  reason (the screen not open, the grid lost, stopped by the player, the app closed mid-scan),
+  failed with cause.
   The UI renders each with its own verb.
 - A tile that reads badly is not a scan error: it lands in the JSON with nulls and its PNG, and
   the scan goes on. Only what prevents the next tap stops a scan.
@@ -170,8 +180,9 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
 - The piece's card is the right-hand panel, redrawn on tap, not a popup: the loop is tap, wait,
   capture the panel, next, with no back.
 - The grid scrolls continuously, seven per row, under a scrollbar. A swipe does not move an exact
-  number of rows: the scan drags slowly (no fling), then finds where the last row it had seen now
-  sits by the framed tile, else by matching tiles' words, and takes its position from that. The
+  number of rows: the scan drags and holds the finger still before it lifts (no fling), then finds
+  where the last row it had seen now sits by the framed tile, else by matching tiles' words, and
+  takes its position from that; only the frame the grid settles on is read. The
   header's count (`1,169/2,500`) says the screen is open and what the progress counts to; the scan
   ends where the rows run out, or where the kind says the tiles it scans end.
 - Two equal pieces give two equal panels, so a piece's identity is its grid position, never its

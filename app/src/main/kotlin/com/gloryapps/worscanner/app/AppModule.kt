@@ -16,16 +16,21 @@ import com.gloryapps.worscanner.ui.reading.ReadingViewModel
 import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.Scanning
 import com.gloryapps.worscanner.scan.TouchState
+import com.gloryapps.worscanner.update.GitHubReleases
+import com.gloryapps.worscanner.update.Updates
+import com.gloryapps.worscanner.update.Version
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import java.io.File
 
 val appModule = module {
     /* A dev build crashes on the desk, in front of logcat; only releases report. */
     single(createdAtStart = true) { CrashReports(FirebaseCrashlytics.getInstance(), collecting = !BuildConfig.DEBUG) }
     single { TouchState() }
     single { CaptureSession() }
-    single { Readings(androidContext()) }
+    /* Made at start, so the scans the last process died in the middle of are closed before any other begins. */
+    single(createdAtStart = true) { Readings(androidContext(), get()) }
     single { Exports(androidContext()) }
     single<TextReader> { MlKitTextReader() }
     factory { ReadScreen(get(), get(), get(), get()) }
@@ -34,6 +39,7 @@ val appModule = module {
     single(createdAtStart = true) { Chosen(androidContext()) }
     single { Permissions(androidContext()) }
     factory { ExportDelegate(get(), androidContext()) }
-    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
+    single { Updates(GitHubReleases(File(androidContext().cacheDir, "updates")), Version.of(BuildConfig.VERSION_NAME)) }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { (stamp: String) -> ReadingViewModel(stamp, get(), get()) }
 }

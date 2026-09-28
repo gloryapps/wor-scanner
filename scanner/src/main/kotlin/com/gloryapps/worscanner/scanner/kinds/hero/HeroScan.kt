@@ -1,11 +1,13 @@
 package com.gloryapps.worscanner.scanner.kinds.hero
 
+import com.gloryapps.worscanner.scanner.scan.GridLayout
 import com.gloryapps.worscanner.scanner.scan.Read
 import com.gloryapps.worscanner.scanner.scan.Scan
 import com.gloryapps.worscanner.scanner.scan.Seen
 import com.gloryapps.worscanner.scanner.scan.Spot
 import com.gloryapps.worscanner.scanner.scan.Tapped
 import com.gloryapps.worscanner.scanner.scan.spread
+import com.gloryapps.worscanner.scanner.scan.tileBox
 import com.gloryapps.worscanner.scanner.senses.Colour
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.text.Box
@@ -17,26 +19,29 @@ import com.gloryapps.worscanner.scanner.text.timesHeld
 import com.gloryapps.worscanner.scanner.text.wordIn
 
 /**
- * How legendary heroes are scanned: a tile's panel is read under Attributes, Skills and Awaken,
- * then left on Attributes, where the grid is found again; the first tile framed in an epic's
- * purple ends the scan. The panel's words are kept as printed and its skills by place: which hero
- * and which skill they are belongs to the lab.
+ * How legendary and epic heroes are scanned: a tile's panel is read under Attributes, Skills and
+ * Awaken, then left on Attributes, where the grid is found again. A tile is one the scan reads where
+ * its edge is a legendary's gold or an epic's purple, so the grid ends at the first hero below epic;
+ * that is told before the tile is tapped, since a square's selection frame is drawn over its edge.
+ * The panel's words are kept as printed and its skills by place: which hero and which skill they
+ * are belongs to the lab.
  */
-object HeroScan : Scan<ScannedHero>() {
-    override val layout = HERO_ROSTER
+sealed class HeroScan private constructor(override val layout: GridLayout, private val edge: RankEdge) : Scan<ScannedHero>() {
+    /** The roster as cards, each printing its level below. */
+    data object Cards : HeroScan(HERO_CARDS, CARDS_EDGE)
+
+    /** The roster as squares, which print no word: the scan begins on the selected hero or not at all. */
+    data object Squares : HeroScan(HERO_SQUARES, SQUARES_EDGE) {
+        override fun firstRowCentre(seen: Seen): Int? = null
+    }
+
     override val serializer = ScannedHero.serializer()
 
-    /** `Lvl. 49/50` on Attributes: two characters of cap, which no skill's `Lvl. 2/5` has. The cap may read `5O`. */
-    private val LEVEL = Regex("""L\S{0,3}\s*(\d{1,2})\s*/\s*[\dOo]{2}""")
+    override fun viewOn(seen: Seen): HeroScan = if (litness(seen.frame, SQUARES_BUTTON) > litness(seen.frame, CARDS_BUTTON)) Squares else Cards
 
-    /** A skill's `Lvl. 2/5` as the recogniser keeps it through `LV 2/5` and `Lyl, 1/S`: a number, a slash, a top. */
-    private val SKILL_LEVEL = Regex("""(\d{1,2})\s*/\s*[0-9SsOoIl]""")
-
-    /** The power under the name, `73,634 X`: digits grouped by commas. */
-    private val POWER = Regex("""\d{1,3}(,\d{3})+""")
+    override fun tileAt(seen: Seen, column: Int, centreY: Int): Boolean = isLegendaryOrEpic(seen.frame, layout.tileBox(seen.frame, column, centreY))
 
     override suspend fun readTile(tapped: Tapped): Read<ScannedHero> {
-        if (isEpic(tapped.seen.frame, tapped.tile)) return Read.Beyond
         val attributes = tapped.seen.takeIf { it.showsAttributes() } ?: tapped.show(ATTRIBUTES)
         val skills = tapped.show(SKILLS)
         val awaken = tapped.show(AWAKEN)
@@ -76,17 +81,33 @@ object HeroScan : Scan<ScannedHero>() {
         )
     }
 
-    /** Whether the tile's frame is an epic's purple rather than a legendary's gold, by the lower half of its left edge: the upper half carries the tile's gold icons. */
-    internal fun isEpic(frame: Frame, tile: Box): Boolean {
+    /**
+     * Whether the tile's edge is a legendary's gold or an epic's purple, where the view reads it. A
+     * rare's blue, an uncommon's green and an empty slot's slate are other hues; a common's grey leans
+     * gold but is dull.
+     */
+    internal fun isLegendaryOrEpic(frame: Frame, tile: Box): Boolean {
         val middle = (tile.top + tile.bottom) / 2
         val width = tile.right - tile.left
-        val band = (tile.left + (width * BORDER_FROM).toInt() until tile.left + (width * BORDER_TO).toInt())
-        val hues = spread(middle, middle + (tile.bottom - tile.top) / 2, EDGE_SAMPLES).map { y ->
+        val height = tile.bottom - tile.top
+        val band = (tile.left + (width * edge.across.start).toInt() until tile.left + (width * edge.across.endInclusive).toInt())
+        val border = spread(middle + (height * edge.down.start).toInt(), middle + (height * edge.down.endInclusive).toInt(), EDGE_SAMPLES).map { y ->
             /* The strongest colour across the band is the border's. */
-            band.map { x -> frame.colourAt(x, y) }.maxBy { it.saturation * maxOf(it.red, it.green, it.blue) }.hue
+            band.map { x -> frame.colourAt(x, y) }.maxBy { it.saturation * maxOf(it.red, it.green, it.blue) }
         }
 
-        return hues.count { it in PURPLE } > hues.count { it in GOLD }
+        return border.count { it.saturation > edge.saturated && (it.hue in GOLD || it.hue in PURPLE) } * 2 > border.size
+    }
+
+    /* How bright a button's face is, the lit one of two the brighter. */
+    private fun litness(frame: Frame, button: Spot): Int {
+        val (x, y) = button.on(frame)
+        val reachX = (frame.width * BUTTON_REACH).toInt()
+        val reachY = (frame.height * BUTTON_REACH).toInt()
+
+        return spread(x - reachX, x + reachX, BUTTON_SAMPLES).sumOf { sx ->
+            spread(y - reachY, y + reachY, BUTTON_SAMPLES).sumOf { sy -> frame.colourAt(sx, sy).let { maxOf(it.red, it.green, it.blue) } }
+        }
     }
 
     /** Whether the record names what identifies it, every skill label's level included; one that does not keeps its panels as an image. */
@@ -201,14 +222,25 @@ object HeroScan : Scan<ScannedHero>() {
     /** The word that tells apart the labels the Skills tab prints over the skills it names: `Lord Skill` and `Bond Skill` are too close whole. */
     private enum class Place(val word: String) { LORD("Lord"), ULTIMATE("Ultimate"), BOND("Bond") }
 
-    private const val EDGE_SAMPLES = 8
-    /** Where the border runs in from the tile's left edge, past the selection frame drawn on it: 2 to 12 px of a tile 83 wide. */
-    private const val BORDER_FROM = 0.025
-    private const val BORDER_TO = 0.145
-    /** Below this saturation a star slot is the grey of an empty one. */
-    private const val GREY = 0.15
-    /** Above this saturation a node is lit; a grey one sits near none. */
-    private const val LIT = 0.3
-    private val PURPLE = 240.0..300.0
-    private val GOLD = 25.0..70.0
+    private companion object {
+        /** `Lvl. 49/50` on Attributes: two characters of cap, which no skill's `Lvl. 2/5` has. The cap may read `5O`. */
+        val LEVEL = Regex("""L\S{0,3}\s*(\d{1,2})\s*/\s*[\dOo]{2}""")
+
+        /** A skill's `Lvl. 2/5` as the recogniser keeps it through `LV 2/5` and `Lyl, 1/S`: a number, a slash, a top. */
+        val SKILL_LEVEL = Regex("""(\d{1,2})\s*/\s*[0-9SsOoIl]""")
+
+        /** The power under the name, `73,634 X`: digits grouped by commas. */
+        val POWER = Regex("""\d{1,3}(,\d{3})+""")
+
+        const val EDGE_SAMPLES = 8
+        /** How far around a button's centre its face is taken, in shares of the display. */
+        const val BUTTON_REACH = 0.008
+        const val BUTTON_SAMPLES = 5
+        /** Below this saturation a star slot is the grey of an empty one. */
+        const val GREY = 0.15
+        /** Above this saturation a node is lit; a grey one sits near none. */
+        const val LIT = 0.3
+        val PURPLE = 240.0..300.0
+        val GOLD = 25.0..70.0
+    }
 }

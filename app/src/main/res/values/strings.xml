@@ -19,8 +19,11 @@
     <string name="home_grant">grant</string>
     <string name="home_scan_title">Scan your %1$s</string>
     <string name="home_scan_said_gear">Open Storage → Gear in the game, filtered and sorted as you want it scanned, and select the first piece. The overlay taps through the grid, scrolls it itself and stops at its end.</string>
-    <string name="home_scan_said_heroes">Open Hero in the game, sort by Rarity ↓ and select the first hero. The overlay reads each legendary under Attributes, Skills and Awaken and stops at the first epic, so keep epics out of your favourites.</string>
-    <string name="home_scan_said_artifacts">Open Storage → Artifact in the game, sort by Rarity ↓ and select the first artifact. The overlay reads each mythic, exclusives first, and stops at the first legendary.</string>
+    <string name="home_scan_said_heroes">Open Hero in the game, as cards or as squares, sort by Rarity ↓ and select the first hero. The overlay reads each legendary and epic under Attributes, Skills and Awaken and stops at the first hero below epic, so keep those out of your favourites.</string>
+    <string name="home_scan_said_artifacts">Open Storage → Artifact in the game, sorted as you want it scanned, and select the first artifact. The overlay reads every artifact to the end of the grid, skipping those never enhanced.</string>
+    <string name="home_update">Update to %1$s</string>
+    <string name="home_update_downloading">Downloading %1$s…</string>
+    <string name="home_update_page">Get %1$s on GitHub</string>
     <string name="home_start">Start</string>
     <string name="home_to_game">→ game</string>
     <string name="home_capturing">Capturing. Open the game as said above and press Scan on the capsule.</string>

@@ -9,6 +9,8 @@ import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
 import com.gloryapps.worscanner.ui.ExportDelegate
+import com.gloryapps.worscanner.update.Update
+import com.gloryapps.worscanner.update.Updates
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +28,7 @@ internal class HomeViewModel(
     private val chosen: Chosen,
     private val permissions: Permissions,
     private val readings: Readings,
+    private val updates: Updates,
     val export: ExportDelegate,
 ) : ViewModel() {
     private val kept = MutableStateFlow<List<Kept>?>(null)
@@ -38,6 +41,7 @@ internal class HomeViewModel(
     init {
         /* A scan that ends while the screen is in front is listed without waiting for the next return. */
         viewModelScope.launch { scanning.state.filterIsInstance<ScanState.Ended>().collect { relist() } }
+        viewModelScope.launch { updates.check() }
     }
 
     val state: StateFlow<HomeUiState> = combine(
@@ -56,6 +60,7 @@ internal class HomeViewModel(
         .combine(chosen.kind) { state, kind -> state.copy(kind = kind) }
         .combine(kept) { state, readings -> state.copy(readings = readings) }
         .combine(deleting) { state, kept -> state.copy(deleting = kept) }
+        .combine(updates.state) { state, update -> state.copy(update = update) }
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
@@ -66,6 +71,7 @@ internal class HomeViewModel(
                 capturing = session.screen.value != null,
                 kind = chosen.kind.value,
                 running = scanning.state.value as? ScanState.Running,
+                update = updates.state.value,
             ),
         )
 
@@ -92,6 +98,11 @@ internal class HomeViewModel(
                 }
             }
             HomeEvent.CancelDelete -> ask(emptyList(), all = false)
+            HomeEvent.Update -> when (val update = updates.state.value) {
+                is Update.Available -> viewModelScope.launch { updates.download()?.let { _effects.send(HomeEffect.Install(it)) } }
+                is Update.Failed -> send(HomeEffect.OpenPage(update.release.page))
+                Update.None, is Update.Downloading -> Unit
+            }
         }
     }
 

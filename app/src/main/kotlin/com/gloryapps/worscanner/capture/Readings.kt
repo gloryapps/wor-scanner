@@ -2,13 +2,18 @@ package com.gloryapps.worscanner.capture
 
 import android.content.Context
 import android.graphics.Bitmap
+import com.gloryapps.worscanner.report.CrashReports
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.text.Line
 import com.gloryapps.worscanner.scan.Ended
+import com.gloryapps.worscanner.scan.Journal
 import com.gloryapps.worscanner.scan.ScanFile
 import com.gloryapps.worscanner.scan.endedOf
+import com.gloryapps.worscanner.scan.readScan
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -49,11 +54,21 @@ sealed interface Kept {
 
 val STAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
-/** Where readings and scans go to be looked at later: the app's own external folder, read and written off the main thread. */
-class Readings(private val context: Context) {
+/**
+ * Where readings and scans go to be looked at later: the app's own external folder, read and written
+ * off the main thread. Made as the process starts, when it closes the journals of the scans the last
+ * one died in the middle of, before anything is listed.
+ */
+class Readings(private val context: Context, reports: CrashReports) {
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     private val readings: File get() = File(context.getExternalFilesDir(null), "readings").apply { mkdirs() }
     private val scans: File get() = File(context.getExternalFilesDir(null), "scans").apply { mkdirs() }
+    /* No scan of this process can hold a journal yet: one begins only after the projection's consent. */
+    private val recovered = CoroutineScope(Dispatchers.IO).async {
+        scans.listFiles { file -> Journal.heldBy(file) }.orEmpty().forEach { folder ->
+            resultOf { Journal.closeIn(folder) }.onFailure { reports.failed("closing the journal of scan ${folder.name}", it) }
+        }
+    }
 
     suspend fun <T> keep(frame: BitmapFrame, reading: ReadingFile<T>, card: KSerializer<T>): Kept = withContext(Dispatchers.IO) {
         val stamp = LocalDateTime.now().format(STAMP)
@@ -69,20 +84,21 @@ class Readings(private val context: Context) {
     suspend fun text(kept: Kept): String = withContext(Dispatchers.IO) { kept.files.first { it.extension == "json" }.readText() }
 
     /** A kept scan opened, every card left as the JSON it is; null for a reading, and for a file that will not read. */
-    suspend fun opened(kept: Kept): ScanFile<JsonElement>? = withContext(Dispatchers.IO) { kept.files.firstOrNull { it.name == "scan.json" }?.let(::scanIn) }
+    suspend fun opened(kept: Kept): ScanFile<JsonElement>? = withContext(Dispatchers.IO) { (kept as? Kept.Scan)?.let { scanIn(File(scans, it.stamp)) } }
 
     suspend fun delete(kept: Kept) = withContext(Dispatchers.IO) {
         kept.files.forEach { it.delete() }
         if (kept is Kept.Scan) File(scans, kept.stamp).delete()
     }
 
-    /** Clears the folders scans left without their file, cut short by a process that died: panels no list shows. Only while no scan runs. */
+    /** Clears the folders scans left without a file their journal could give them: panels no list shows. Only while no scan runs. */
     suspend fun sweep() = withContext(Dispatchers.IO) {
         scans.listFiles { file -> file.isDirectory && !File(file, "scan.json").exists() }.orEmpty().forEach { it.deleteRecursively() }
     }
 
     /** Newest first, which is the one the reader came to look at. */
     suspend fun list(): List<Kept> = withContext(Dispatchers.IO) {
+        recovered.await()
         val read = readings.listFiles { file -> file.extension == "json" }.orEmpty().map(::readingIn)
         /* A folder without its JSON is a scan still running. */
         val scanned = scans.listFiles { file -> file.isDirectory && File(file, "scan.json").exists() }.orEmpty().map(::scanKeptIn)
@@ -101,13 +117,12 @@ class Readings(private val context: Context) {
 
     /* The list wants the count and the outcome, not the cards, so each card stays whatever JSON it is. */
     private fun scanKeptIn(folder: File): Kept {
-        val scan = scanIn(File(folder, "scan.json"))
+        val scan = scanIn(folder)
 
         return Kept.Scan(folder.name, folder.listFiles().orEmpty().sortedBy { it.name }, kindOf(scan?.kind), scan?.entries?.size, scan?.outcome?.let(::endedOf), scan?.detail)
     }
 
-    private fun scanIn(file: File): ScanFile<JsonElement>? =
-        resultOf { json.decodeFromString(ScanFile.serializer(JsonElement.serializer()), file.readText()) }.getOrNull()
+    private fun scanIn(folder: File): ScanFile<JsonElement>? = resultOf { readScan(folder, JsonElement.serializer()) }.getOrNull()
 
     /** The kind a reading names, which is all the list wants of a file it does not otherwise open. */
     private fun kindIn(file: File): Kind? =

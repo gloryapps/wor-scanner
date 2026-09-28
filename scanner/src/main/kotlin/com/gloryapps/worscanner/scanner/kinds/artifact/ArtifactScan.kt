@@ -16,9 +16,9 @@ import com.gloryapps.worscanner.scanner.text.readsAsCapitals
 import com.gloryapps.worscanner.scanner.text.wordIn
 
 /**
- * How mythic artifacts are scanned: a tile's panel prints its rarity, its name, an exclusive's hero,
- * its level, its attributes and its skill's level, all read off the frame the tap left; the first
- * panel whose rarity reads below Mythic ends the scan.
+ * How artifacts are scanned: a tile's panel prints its rarity, its name, an exclusive's hero, its
+ * level, its attributes and its skill's level, all read off the frame the tap left. An artifact
+ * never enhanced is skipped, and the scan ends where the tiles do.
  */
 object ArtifactScan : Scan<ScannedArtifact>() {
     override val layout = ARTIFACT_STORAGE
@@ -32,8 +32,8 @@ object ArtifactScan : Scan<ScannedArtifact>() {
 
     override suspend fun readTile(tapped: Tapped): Read<ScannedArtifact> {
         val rows = tapped.seen.rowsIn(layout.panel)
-        if (rows.firstOrNull()?.let(::rarityIn)?.scanned == false) return Read.Beyond
         val artifact = read(rows)
+        if (artifact.level == NEVER_ENHANCED) return Read.Skipped
 
         return Read.Card(artifact, rows, listOf(tapped.seen.frame), closed(artifact))
     }
@@ -96,10 +96,12 @@ object ArtifactScan : Scan<ScannedArtifact>() {
     /** `Artifact Skills`, which the recogniser also reads `Artifact Skils`; the effect's text below it names attributes too. */
     private fun isSkillsRow(row: String): Boolean = holdsName(row, "Artifact Skills")
 
+    /** The level an artifact comes at, `+ 1/10`, whose tile prints no `+`. */
+    private const val NEVER_ENHANCED = 1
     private const val FACE_SAMPLES = 8
     /** Above this mean saturation a face is a tile's: 0.31 to 0.54 on the tiles measured, 0.16 to 0.18 on the empty slots. */
     private const val FACE = 0.25
 
-    /** The rarities a panel prints, and whether the scan reads them. */
-    private enum class Rarity(val word: String, val scanned: Boolean) { MYTHIC("Mythic", true), LEGENDARY("Legendary", false), EPIC("Epic", false) }
+    /** The rarities a panel prints, which the wiki's Artifact page lists: none is lower than Epic. */
+    private enum class Rarity(val word: String) { MYTHIC("Mythic"), LEGENDARY("Legendary"), EPIC("Epic") }
 }

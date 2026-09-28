@@ -5,6 +5,7 @@ import com.gloryapps.worscanner.scanner.senses.Screen
 import com.gloryapps.worscanner.scanner.senses.TextReader
 import com.gloryapps.worscanner.scanner.senses.Touch
 import com.gloryapps.worscanner.scanner.text.Box
+import com.gloryapps.worscanner.scanner.text.Line
 import com.gloryapps.worscanner.scanner.text.rowsOf
 import kotlinx.coroutines.delay
 import kotlin.math.abs
@@ -19,21 +20,24 @@ import kotlin.math.roundToInt
  * and ends where the rows run out. A tile's identity is its place in the walk, never its content.
  */
 internal class Walk<T>(
-    private val scan: Scan<T>,
+    /** The kind's scan, then the one for the view the first frame shows. */
+    private var scan: Scan<T>,
     private val screen: Screen,
     private val touch: Touch,
     private val reader: TextReader,
-    private val keeper: Keeper,
+    private val keeper: Keeper<T>,
     private val settleMillis: Long,
     private val entries: MutableList<ScanEntry<T>>,
     private val progress: suspend (Progress) -> Unit,
 ) {
-    private val layout = scan.layout
+    private val layout: GridLayout get() = scan.layout
     /** The last frame looked at. */
     private lateinit var seen: Seen
     private lateinit var metrics: Metrics
     /** What the header counts. */
     private var held = 0
+    /** Tiles read, kept or skipped, which the progress counts against the header's. */
+    private var passed = 0
     /** The centre of the row the walk began on, which the grid carries upward as it scrolls. */
     private var origin = 0
     /** The framed tile, by its column and its centre's y, which the grid carries with it. */
@@ -50,6 +54,7 @@ internal class Walk<T>(
 
     suspend fun run(): Outcome<T> {
         seen = look()
+        scan = scan.viewOn(seen)
         held = countIn(seen.rowsIn(layout.count)) ?: return stopped(Outcome.Reason.STORAGE_NOT_OPEN, "no count like 1,169/2,500 in the header")
         metrics = Metrics(layout, seen.frame)
         begin()?.let { return it }
@@ -115,9 +120,11 @@ internal class Walk<T>(
     private suspend fun read(column: Int): Outcome<T>? {
         when (val tile = scan.readTile(Lent(seen, layout.tileBox(seen.frame, column, centreY)))) {
             is Read.Card -> keep(tile, column)
+            Read.Skipped -> Unit
             Read.Beyond -> return finished()
             is Read.Lost -> return stopped(Outcome.Reason.GRID_LOST, tile.detail)
         }
+        progress(Progress(++passed, held))
 
         return null
     }
@@ -125,9 +132,9 @@ internal class Walk<T>(
     /* Keeps what the kind read off the tile, its frames as an image where the record is not closed. */
     private suspend fun keep(tile: Read.Card<T>, column: Int) {
         var entry = ScanEntry(entries.size, row, column, tile.card, tile.rows)
-        if (!tile.closed) entry = entry.copy(png = keeper.keep(tile.frames, entry.index))
+        if (!tile.closed) entry = entry.copy(png = keeper.panel(tile.frames, entry.index))
         entries += entry
-        progress(Progress(entries.size, held))
+        keeper.entry(entry)
     }
 
     /* Once a kind's taps have moved the grid, waits for it to stop and takes its place from the framed tile, found anywhere in its column. */
@@ -169,37 +176,47 @@ internal class Walk<T>(
     /*
      * The frame once the grid has stopped moving, and how far it moved: by the framed tile, looked
      * for up to `reach` below where it was, else by the words on the tiles. A list keeps gliding
-     * after the finger lifts, so captures follow one another until two show the grid at the same place.
+     * after the finger lifts, so captures follow one another until two show the grid at the same place;
+     * while the framed tile is in view its pixels tell, and only the frame the grid settled on is read.
      */
     private suspend fun landed(reach: Int = metrics.pitch / 2): Pair<Seen, Int?> {
         fun framedIn(shot: Frame): Int? =
             framed?.let { (column, centre) -> framedCentre(shot, layout, column, metrics.grid.top + metrics.halfTile, minOf(centre + reach, metrics.floor)) }
         /* How far the grid moved: from where the framed tile was to where it is, else by the tiles' words. */
         fun shift(at: Int?, after: Seen): Int? = at?.let { framed!!.second - it } ?: shiftByText(seen.lines, after.lines, metrics.grid, metrics.columnPitch, metrics.pitch)
-        var shot = look()
+        var shot = Glance(screen.capture())
         var at = framedIn(shot.frame)
         repeat(GLIDES) {
             delay(settleMillis)
-            val again = look()
+            val again = Glance(screen.capture())
             val atAgain = framedIn(again.frame)
-            val still = if (at != null && atAgain != null) abs(at - atAgain) <= metrics.still else shiftByText(shot.lines, again.lines, metrics.grid, metrics.columnPitch, metrics.pitch)?.let { abs(it) <= metrics.still } ?: false
+            val still = if (at != null && atAgain != null) abs(at - atAgain) <= metrics.still else shiftByText(shot.lines(), again.lines(), metrics.grid, metrics.columnPitch, metrics.pitch)?.let { abs(it) <= metrics.still } ?: false
             shot = again
             at = atAgain
-            if (still) return shot to shift(at, shot)
+            if (still) return shot.seen().let { it to shift(at, it) }
         }
 
-        return shot to shift(at, shot)
+        return shot.seen().let { it to shift(at, it) }
     }
 
-    /* Dragged slowly so the grid stops near where the finger does; where exactly is measured after. */
+    /* Held still before it lifts, so the grid takes no fling and stops near where the finger does; where exactly is measured after. */
     private suspend fun scroll() {
         val x = (layout.dragX * seen.frame.width).toInt()
         val from = (layout.dragFromY * seen.frame.height).toInt()
         touch.drag(x, from, x, from - layout.rowsPerDrag * metrics.pitch, DRAG_MILLIS)
-        delay(settleMillis * SPRING_SETTLES)
+        delay(settleMillis)
     }
 
     private suspend fun look(): Seen = screen.capture().let { Seen(it, reader.read(it)) }
+
+    /** A capture read by the recogniser only once its lines are asked for. */
+    private inner class Glance(val frame: Frame) {
+        private var read: List<Line>? = null
+
+        suspend fun lines(): List<Line> = read ?: reader.read(frame).also { read = it }
+
+        suspend fun seen(): Seen = Seen(frame, lines())
+    }
 
     /* What the walk lends the kind for the tile just tapped: its eyes and hand, and the grid's place. */
     private inner class Lent(override val seen: Seen, override val tile: Box) : Tapped {
@@ -257,7 +274,7 @@ internal class Walk<T>(
     }
 
     private companion object {
-        const val DRAG_MILLIS = 900L
+        const val DRAG_MILLIS = 450L
         /** Captures given to a grid that keeps gliding before the walk takes the last as it is. */
         const val GLIDES = 6
         /** The share of a row's pitch the tiles may move between two captures and still count as stopped. */
@@ -268,8 +285,6 @@ internal class Walk<T>(
         const val SPRING = 8
         /** Drags in a row that moved nothing before the grid is taken to have ended. */
         const val STILL_DRAGS = 2
-        /** Settle times given to the spring-back after a drag before the first look. */
-        const val SPRING_SETTLES = 3
         /** Drags without a tile read after which the grid is lost. */
         const val IDLE_DRAGS = 4
     }

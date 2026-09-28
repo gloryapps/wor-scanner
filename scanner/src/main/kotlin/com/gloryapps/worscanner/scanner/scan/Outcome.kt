@@ -26,10 +26,11 @@ sealed interface Outcome<T> {
 
     data class Failed<T>(val cause: Throwable, override val entries: List<ScanEntry<T>>) : Outcome<T>
 
-    enum class Reason { STORAGE_NOT_OPEN, GRID_LOST, CANCELLED }
+    /** `CANCELLED` is the player's stop, `INTERRUPTED` the process dying before the scan ended; the walk ends by neither. */
+    enum class Reason { STORAGE_NOT_OPEN, GRID_LOST, CANCELLED, INTERRUPTED }
 
     val entries: List<ScanEntry<T>>
 }
 
-/** How many tiles are read, and how many the header says the screen holds. */
+/** How many tiles are read, kept or skipped, and how many the header says the screen holds. */
 data class Progress(val done: Int, val held: Int)
