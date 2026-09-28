@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.BuildConfig
 import com.gloryapps.worscanner.R
+import com.gloryapps.worscanner.app.provided
 import com.gloryapps.worscanner.capture.CaptureService
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.scan.ScanState
@@ -67,6 +68,7 @@ import com.gloryapps.worscanner.ui.said
 import com.gloryapps.worscanner.ui.shown
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.label
+import com.gloryapps.worscanner.update.Update
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -106,6 +108,11 @@ internal fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = ko
                 }
                 HomeEffect.StopCapture -> CaptureService.stop(context)
                 is HomeEffect.OpenReading -> open(effect.kept)
+                /* The system's installer asks the player to confirm, and the first time to let this app install others. */
+                is HomeEffect.Install -> context.startActivity(
+                    Intent(Intent.ACTION_VIEW).setDataAndType(context.provided(effect.apk), APK_TYPE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
+                )
+                is HomeEffect.OpenPage -> context.startActivity(Intent(Intent.ACTION_VIEW, effect.url.toUri()))
             }
         }
     }
@@ -121,7 +128,7 @@ internal fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = ko
 @Composable
 internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     Column(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) {
-        Header(state.running)
+        Header(state.running, state.update, onEvent)
         BoxWithConstraints(Modifier.weight(1f)) {
             val start: @Composable () -> Unit = { Start(state, onEvent) }
             val kept: @Composable () -> Unit = { state.readings?.let { Readings(it, onEvent) } }
@@ -156,7 +163,7 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
 }
 
 @Composable
-private fun Header(running: ScanState.Running?) {
+private fun Header(running: ScanState.Running?, update: Update, onEvent: (HomeEvent) -> Unit) {
     Column {
         Row(
             Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 24.dp),
@@ -167,6 +174,12 @@ private fun Header(running: ScanState.Running?) {
                 Spacer(Modifier.size(9.dp).background(Colors.accent, CircleShape))
                 Text(stringResource(R.string.app_name), style = Lettering.brand, color = Colors.text)
                 Text(BuildConfig.VERSION_NAME, style = Lettering.dataSmall, color = Colors.muted)
+                when (update) {
+                    is Update.Available -> Link(stringResource(R.string.home_update, update.release.version.toString())) { onEvent(HomeEvent.Update) }
+                    is Update.Downloading -> Text(stringResource(R.string.home_update_downloading, update.release.version.toString()), style = Lettering.caption, color = Colors.muted)
+                    is Update.Failed -> Link(stringResource(R.string.home_update_page, update.release.version.toString())) { onEvent(HomeEvent.Update) }
+                    Update.None -> Unit
+                }
             }
             running?.let {
                 Text(
@@ -309,3 +322,4 @@ private fun MediaProjectionManager.wholeDisplayIntent(): Intent =
     }
 
 private val WIDE = 720.dp
+private const val APK_TYPE = "application/vnd.android.package-archive"

@@ -14,6 +14,10 @@ phone, but that has not been tried.
    installing apps from that source.
 3. Open WoR Scanner and grant the two permissions its home screen lists.
 
+When a newer release is out, the home screen's header offers it beside the version. Tapping it
+downloads the release and Android asks to install it over the one you have, your readings kept; the
+first time, Android also asks to let WoR Scanner install apps.
+
 ## What it asks for, and why
 
 | Permission | Why |
@@ -22,6 +26,7 @@ phone, but that has not been tried.
 | Draw over other apps | For the small capsule over the game that starts, shows and stops a scan. |
 | Screen capture | To read the game's screen. Frames are read on the device and never sent anywhere. |
 | Notifications (Android 13+) | For the notification that shows a scan's progress and its Stop. |
+| Install apps | To install a newer release it downloaded, once you confirm. |
 
 ## Scanning
 
