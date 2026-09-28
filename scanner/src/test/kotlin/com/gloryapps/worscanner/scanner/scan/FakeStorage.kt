@@ -60,6 +60,8 @@ class FakeStorage(
     val tabs = (0 until tabCount).map { Spot(TAB_X, 0.10 + 0.08 * it) }
     val taps = mutableListOf<Pair<Int, Int>>()
     var drags = 0
+    /** Frames handed to the recogniser. */
+    var reads = 0
     private var tabTaps = 0
     private var tileTaps = 0
     private var captures = 0
@@ -164,6 +166,7 @@ class FakeStorage(
     override fun toString() = "FakeStorage(scrolled=$scrolled, selected=$selected)"
 
     override suspend fun read(frame: Frame): List<Line> {
+        reads++
         val fake = frame as Fake
         /* The overlay's own words, outside every region the scan reads. */
         val lines = mutableListOf(Line("Scan Stop", Box(10, 10, 120, 30)))

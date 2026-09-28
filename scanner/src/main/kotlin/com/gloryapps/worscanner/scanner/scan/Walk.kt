@@ -5,6 +5,7 @@ import com.gloryapps.worscanner.scanner.senses.Screen
 import com.gloryapps.worscanner.scanner.senses.TextReader
 import com.gloryapps.worscanner.scanner.senses.Touch
 import com.gloryapps.worscanner.scanner.text.Box
+import com.gloryapps.worscanner.scanner.text.Line
 import com.gloryapps.worscanner.scanner.text.rowsOf
 import kotlinx.coroutines.delay
 import kotlin.math.abs
@@ -170,37 +171,47 @@ internal class Walk<T>(
     /*
      * The frame once the grid has stopped moving, and how far it moved: by the framed tile, looked
      * for up to `reach` below where it was, else by the words on the tiles. A list keeps gliding
-     * after the finger lifts, so captures follow one another until two show the grid at the same place.
+     * after the finger lifts, so captures follow one another until two show the grid at the same place;
+     * while the framed tile is in view its pixels tell, and only the frame the grid settled on is read.
      */
     private suspend fun landed(reach: Int = metrics.pitch / 2): Pair<Seen, Int?> {
         fun framedIn(shot: Frame): Int? =
             framed?.let { (column, centre) -> framedCentre(shot, layout, column, metrics.grid.top + metrics.halfTile, minOf(centre + reach, metrics.floor)) }
         /* How far the grid moved: from where the framed tile was to where it is, else by the tiles' words. */
         fun shift(at: Int?, after: Seen): Int? = at?.let { framed!!.second - it } ?: shiftByText(seen.lines, after.lines, metrics.grid, metrics.columnPitch, metrics.pitch)
-        var shot = look()
+        var shot = Glance(screen.capture())
         var at = framedIn(shot.frame)
         repeat(GLIDES) {
             delay(settleMillis)
-            val again = look()
+            val again = Glance(screen.capture())
             val atAgain = framedIn(again.frame)
-            val still = if (at != null && atAgain != null) abs(at - atAgain) <= metrics.still else shiftByText(shot.lines, again.lines, metrics.grid, metrics.columnPitch, metrics.pitch)?.let { abs(it) <= metrics.still } ?: false
+            val still = if (at != null && atAgain != null) abs(at - atAgain) <= metrics.still else shiftByText(shot.lines(), again.lines(), metrics.grid, metrics.columnPitch, metrics.pitch)?.let { abs(it) <= metrics.still } ?: false
             shot = again
             at = atAgain
-            if (still) return shot to shift(at, shot)
+            if (still) return shot.seen().let { it to shift(at, it) }
         }
 
-        return shot to shift(at, shot)
+        return shot.seen().let { it to shift(at, it) }
     }
 
-    /* Dragged slowly so the grid stops near where the finger does; where exactly is measured after. */
+    /* Held still before it lifts, so the grid takes no fling and stops near where the finger does; where exactly is measured after. */
     private suspend fun scroll() {
         val x = (layout.dragX * seen.frame.width).toInt()
         val from = (layout.dragFromY * seen.frame.height).toInt()
         touch.drag(x, from, x, from - layout.rowsPerDrag * metrics.pitch, DRAG_MILLIS)
-        delay(settleMillis * SPRING_SETTLES)
+        delay(settleMillis)
     }
 
     private suspend fun look(): Seen = screen.capture().let { Seen(it, reader.read(it)) }
+
+    /** A capture read by the recogniser only once its lines are asked for. */
+    private inner class Glance(val frame: Frame) {
+        private var read: List<Line>? = null
+
+        suspend fun lines(): List<Line> = read ?: reader.read(frame).also { read = it }
+
+        suspend fun seen(): Seen = Seen(frame, lines())
+    }
 
     /* What the walk lends the kind for the tile just tapped: its eyes and hand, and the grid's place. */
     private inner class Lent(override val seen: Seen, override val tile: Box) : Tapped {
@@ -258,7 +269,7 @@ internal class Walk<T>(
     }
 
     private companion object {
-        const val DRAG_MILLIS = 900L
+        const val DRAG_MILLIS = 450L
         /** Captures given to a grid that keeps gliding before the walk takes the last as it is. */
         const val GLIDES = 6
         /** The share of a row's pitch the tiles may move between two captures and still count as stopped. */
@@ -269,8 +280,6 @@ internal class Walk<T>(
         const val SPRING = 8
         /** Drags in a row that moved nothing before the grid is taken to have ended. */
         const val STILL_DRAGS = 2
-        /** Settle times given to the spring-back after a drag before the first look. */
-        const val SPRING_SETTLES = 3
         /** Drags without a tile read after which the grid is lost. */
         const val IDLE_DRAGS = 4
     }

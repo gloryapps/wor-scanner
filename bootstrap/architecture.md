@@ -177,8 +177,9 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
 - The piece's card is the right-hand panel, redrawn on tap, not a popup: the loop is tap, wait,
   capture the panel, next, with no back.
 - The grid scrolls continuously, seven per row, under a scrollbar. A swipe does not move an exact
-  number of rows: the scan drags slowly (no fling), then finds where the last row it had seen now
-  sits by the framed tile, else by matching tiles' words, and takes its position from that. The
+  number of rows: the scan drags and holds the finger still before it lifts (no fling), then finds
+  where the last row it had seen now sits by the framed tile, else by matching tiles' words, and
+  takes its position from that; only the frame the grid settles on is read. The
   header's count (`1,169/2,500`) says the screen is open and what the progress counts to; the scan
   ends where the rows run out, or where the kind says the tiles it scans end.
 - Two equal pieces give two equal panels, so a piece's identity is its grid position, never its

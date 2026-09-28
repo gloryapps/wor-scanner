@@ -77,6 +77,17 @@ class ScanTest {
     }
 
     @Test
+    fun `a drag is read once, on the frame the grid settled on, while the framed tile stays in view`() = runTest {
+        val storage = FakeStorage(pieces = 30)
+
+        val outcome = scanOver(storage)
+
+        assertIs<Outcome.Finished<Int>>(outcome)
+        assertTrue(storage.drags >= 1)
+        assertEquals(1 + storage.taps.size + storage.drags, storage.reads)
+    }
+
+    @Test
     fun `a drag that stops between two rows is found out by the tiles, not assumed`() = runTest {
         val outcome = scanOver(FakeStorage(pieces = 35, rowsPerDrag = 1.4))
 
