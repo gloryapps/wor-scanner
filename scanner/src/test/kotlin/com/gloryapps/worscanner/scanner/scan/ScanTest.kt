@@ -35,7 +35,8 @@ class ScanTest {
         scan: Scan<Int> = PieceScan(storage.layout),
         entries: MutableList<ScanEntry<Int>> = mutableListOf(),
         settleMillis: Long = 0,
-    ) = scan.run(storage, storage, storage, keeper, entries, settleMillis)
+        progress: suspend (Progress) -> Unit = {},
+    ) = scan.run(storage, storage, storage, keeper, entries, settleMillis, progress)
 
     /** Every tab's panel for the piece, in the order the tabs sit. */
     private fun ScanEntry<Int>.underEveryTab(tabs: Int) = (0 until tabs).map { tab -> "Piece $card under tab $tab" }
@@ -74,6 +75,33 @@ class ScanTest {
         assertIs<Outcome.Finished<Int>>(outcome)
         assertEquals((0 until 30).toList(), outcome.pieces())
         assertTrue(storage.drags >= 1)
+    }
+
+    @Test
+    fun `a screen showing the grid another way is walked where that view puts its tiles`() = runTest {
+        val squares = FAKE_GRID.copy(columns = 5, tilePitchX = 0.11, tilePitchY = 0.15)
+        val storage = FakeStorage(pieces = 30, layout = squares)
+
+        val outcome = scanOver(storage, ViewedPieceScan(squares))
+
+        assertIs<Outcome.Finished<Int>>(outcome)
+        assertEquals((0 until 30).toList(), outcome.pieces())
+        assertTrue(storage.drags >= 1)
+    }
+
+    @Test
+    fun `a piece the kind skips is tapped and not kept, and the progress still counts it`() = runTest {
+        val storage = FakeStorage(pieces = 30)
+        val progress = mutableListOf<Progress>()
+
+        val outcome = scanOver(storage, PieceScan(storage.layout, skipped = setOf(3, 17))) { progress += it }
+
+        assertIs<Outcome.Finished<Int>>(outcome)
+        assertEquals((0 until 30) - setOf(3, 17), outcome.pieces())
+        assertEquals(outcome.entries, journal)
+        assertEquals(30, storage.taps.size)
+        assertEquals(Progress(30, 30), progress.last())
+        assertEquals(0 to 4, outcome.entries.single { it.card == 4 }.let { it.row to it.column })
     }
 
     @Test

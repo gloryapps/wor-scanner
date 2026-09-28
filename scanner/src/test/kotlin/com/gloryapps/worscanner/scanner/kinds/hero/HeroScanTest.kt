@@ -4,6 +4,7 @@ import com.gloryapps.worscanner.scanner.scan.Read
 import com.gloryapps.worscanner.scanner.scan.Seen
 import com.gloryapps.worscanner.scanner.scan.Spot
 import com.gloryapps.worscanner.scanner.scan.Tapped
+import com.gloryapps.worscanner.scanner.scan.tileBox
 import com.gloryapps.worscanner.scanner.senses.Colour
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.text.Box
@@ -14,6 +15,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class HeroScanTest {
@@ -216,7 +218,7 @@ class HeroScanTest {
 
     @Test
     fun `Ingrid reads whole, her name, her level, six promoted stars, three awakenings and every skill at its top`() {
-        val hero = HeroScan.read(
+        val hero = HeroScan.Cards.read(
             Seen(starred(purple = 6, gold = 0), ingridAttributes),
             Seen(Painted(), ingridSkills),
             Seen(awakened(3), ingridAwaken),
@@ -231,9 +233,9 @@ class HeroScanTest {
 
     @Test
     fun `the name is the row in capitals, past the title above it and a number read before it`() {
-        assertEquals("MAW", HeroScan.read(Seen(Painted(), mawAttributes), null, null).name)
-        assertEquals("BAYEK", HeroScan.read(Seen(Painted(), bayekAttributes), null, null).name)
-        assertEquals("KIGIRI", HeroScan.read(Seen(Painted(), kigiriAttributes), null, null).name)
+        assertEquals("MAW", HeroScan.Cards.read(Seen(Painted(), mawAttributes), null, null).name)
+        assertEquals("BAYEK", HeroScan.Cards.read(Seen(Painted(), bayekAttributes), null, null).name)
+        assertEquals("KIGIRI", HeroScan.Cards.read(Seen(Painted(), kigiriAttributes), null, null).name)
     }
 
     /** Rows as the recogniser read them down the Attributes panel, one line each. */
@@ -241,7 +243,7 @@ class HeroScanTest {
 
     @Test
     fun `a name in small capitals reads whole in capitals, though the recogniser lowers a letter of it here and there`() {
-        fun nameIn(vararg rows: String) = HeroScan.read(Seen(Painted(), rowsDown(*rows)), null, null).name
+        fun nameIn(vararg rows: String) = HeroScan.Cards.read(Seen(Painted(), rowsDown(*rows)), null, null).name
 
         assertEquals("ROSALIA", nameIn("20", "The Paintress", "RoSALIA", "73,634 X", "AoE M. ATK"))
         assertEquals("EZIO AUDITORE", nameIn("18", "Master Assassin", "Ezio AUDITORE", "32,910", "Single-Target P. ATK"))
@@ -251,26 +253,26 @@ class HeroScanTest {
 
     @Test
     fun `the name is the row nearest above the power, past icons that read as capitals above the title`() {
-        assertEquals("PRAETUS", HeroScan.read(Seen(Painted(), rowsDown("AY", "The Sun Supreme", "PRAETUS", "31,887 X", "Single-Target M. ATK")), null, null).name)
+        assertEquals("PRAETUS", HeroScan.Cards.read(Seen(Painted(), rowsDown("AY", "The Sun Supreme", "PRAETUS", "31,887 X", "Single-Target M. ATK")), null, null).name)
     }
 
     @Test
     fun `a hero is called by the name its Attributes print, among every tab's rows`() {
-        val rows = listOf(ingridAttributes, ingridSkills, ingridAwaken).flatMap { Seen(Painted(), it).rowsIn(HERO_ROSTER.panel) }
+        val rows = listOf(ingridAttributes, ingridSkills, ingridAwaken).flatMap { Seen(Painted(), it).rowsIn(HERO_CARDS.panel) }
 
-        assertEquals("INGRID", HeroScan.titleOf(rows))
+        assertEquals("INGRID", HeroScan.Cards.titleOf(rows))
     }
 
     @Test
     fun `where the power did not read, the name is the row in capitals nearest above the level`() {
         val rows = rowsDown("AY", "The Sun Supreme", "PRAETUS", "31.887 X", "Single-Target M. ATK", "Lvl. 60/60")
 
-        assertEquals("PRAETUS", HeroScan.read(Seen(Painted(), rows), null, null).name)
+        assertEquals("PRAETUS", HeroScan.Cards.read(Seen(Painted(), rows), null, null).name)
     }
 
     @Test
     fun `a skill's level reads through the recogniser's slips, each keeping its place in the row`() {
-        fun skillsIn(vararg rows: String) = HeroScan.read(null, Seen(Painted(), rowsDown(*rows)), null).skills
+        fun skillsIn(vararg rows: String) = HeroScan.Cards.read(null, Seen(Painted(), rowsDown(*rows)), null).skills
 
         assertEquals(
             HeroSkills(ultimate = SkillLevel.Max, row = List(3) { SkillLevel.Max }),
@@ -292,7 +294,7 @@ class HeroScanTest {
 
     @Test
     fun `a level read all in capitals is still a level, its label's`() {
-        fun skillsIn(vararg rows: String) = HeroScan.read(null, Seen(Painted(), rowsDown(*rows)), null).skills
+        fun skillsIn(vararg rows: String) = HeroScan.Cards.read(null, Seen(Painted(), rowsDown(*rows)), null).skills
 
         assertEquals(
             HeroSkills(ultimate = SkillLevel.Of(2), row = listOf(SkillLevel.Of(1), SkillLevel.Of(3), SkillLevel.Max)),
@@ -306,7 +308,7 @@ class HeroScanTest {
 
     @Test
     fun `a label whose level did not read takes none, and no level moves up a place`() {
-        fun skillsIn(vararg rows: String) = HeroScan.read(null, Seen(Painted(), rowsDown(*rows)), null).skills
+        fun skillsIn(vararg rows: String) = HeroScan.Cards.read(null, Seen(Painted(), rowsDown(*rows)), null).skills
 
         assertEquals(
             HeroSkills(ultimate = SkillLevel.Of(2), row = List(2) { SkillLevel.Max }),
@@ -320,15 +322,15 @@ class HeroScanTest {
 
     @Test
     fun `a bond still to unlock reads through a misread letter`() {
-        val skills = HeroScan.read(null, Seen(Painted(), rowsDown("Skills", "Auto Ultimate", "Max Level", "Passive Bond Skill", "Obtain Yuri to unIock", "Max Level")), null).skills
+        val skills = HeroScan.Cards.read(null, Seen(Painted(), rowsDown("Skills", "Auto Ultimate", "Max Level", "Passive Bond Skill", "Obtain Yuri to unIock", "Max Level")), null).skills
 
         assertEquals(listOf(SkillLevel.Of(0)), skills.bonds)
     }
 
     @Test
     fun `a bond is a place of its own, earned or still to unlock`() {
-        val maw = HeroScan.read(null, Seen(Painted(), mawSkills), null).skills
-        val kigiri = HeroScan.read(null, Seen(Painted(), kigiriSkills), null).skills
+        val maw = HeroScan.Cards.read(null, Seen(Painted(), mawSkills), null).skills
+        val kigiri = HeroScan.Cards.read(null, Seen(Painted(), kigiriSkills), null).skills
 
         assertEquals(HeroSkills(ultimate = SkillLevel.Max, bonds = listOf(SkillLevel.Max), row = List(3) { SkillLevel.Max }), maw)
         assertEquals(HeroSkills(ultimate = SkillLevel.Max, bonds = listOf(SkillLevel.Of(0)), row = List(3) { SkillLevel.Max }), kigiri)
@@ -336,8 +338,8 @@ class HeroScanTest {
 
     @Test
     fun `a skill below its top reads as its number, the icon row left to right`() {
-        val bayek = HeroScan.read(null, Seen(Painted(), bayekSkills), null).skills
-        val laseer = HeroScan.read(null, Seen(Painted(), laseerSkills), null).skills
+        val bayek = HeroScan.Cards.read(null, Seen(Painted(), bayekSkills), null).skills
+        val laseer = HeroScan.Cards.read(null, Seen(Painted(), laseerSkills), null).skills
 
         assertEquals(HeroSkills(ultimate = SkillLevel.Of(1), row = listOf(SkillLevel.Max, SkillLevel.Of(2), SkillLevel.Of(2))), bayek)
         assertEquals(HeroSkills(ultimate = SkillLevel.Of(2), row = listOf(SkillLevel.Of(2), SkillLevel.Of(4), SkillLevel.Of(2))), laseer)
@@ -345,14 +347,14 @@ class HeroScanTest {
 
     @Test
     fun `the level is the number before the slash, a cap read as 5O included`() {
-        assertEquals(2, HeroScan.read(Seen(Painted(), bayekAttributes), null, null).level)
-        assertEquals(1, HeroScan.read(Seen(Painted(), laseerAttributes), null, null).level)
+        assertEquals(2, HeroScan.Cards.read(Seen(Painted(), bayekAttributes), null, null).level)
+        assertEquals(1, HeroScan.Cards.read(Seen(Painted(), laseerAttributes), null, null).level)
     }
 
     @Test
     fun `stars count the purple and the gold slots, promotion only the purple`() {
-        val bayek = HeroScan.read(Seen(starred(purple = 2, gold = 3), bayekAttributes), null, null)
-        val laseer = HeroScan.read(Seen(starred(purple = 0, gold = 5), laseerAttributes), null, null)
+        val bayek = HeroScan.Cards.read(Seen(starred(purple = 2, gold = 3), bayekAttributes), null, null)
+        val laseer = HeroScan.Cards.read(Seen(starred(purple = 0, gold = 5), laseerAttributes), null, null)
 
         assertEquals(5 to 2, bayek.stars to bayek.promotion)
         assertEquals(5 to 0, laseer.stars to laseer.promotion)
@@ -360,17 +362,50 @@ class HeroScanTest {
 
     @Test
     fun `awakening counts the lit nodes, none lit at A0`() {
-        assertEquals(5, HeroScan.read(null, null, Seen(awakened(5), emptyList())).awakening)
-        assertEquals(0, HeroScan.read(null, null, Seen(awakened(0), emptyList())).awakening)
+        assertEquals(5, HeroScan.Cards.read(null, null, Seen(awakened(5), emptyList())).awakening)
+        assertEquals(0, HeroScan.Cards.read(null, null, Seen(awakened(0), emptyList())).awakening)
+    }
+
+    /** Column 0's left edge, a sixth of the tile wide, where the view puts that tile at [CENTRE]. */
+    private fun edgeOf(scan: HeroScan): Box = scan.layout.tileBox(Painted(), 0, CENTRE).let { Box(it.left, it.top, it.left + (it.right - it.left) / 6, it.bottom) }
+
+    @Test
+    fun `as cards, a tile edged in a legendary's gold or an epic's purple is read, one in a rare's blue, an uncommon's green or a common's grey is not`() {
+        fun edged(colour: Colour) = HeroScan.Cards.tileAt(Seen(Painted(listOf(edgeOf(HeroScan.Cards) to colour)), emptyList()), 0, CENTRE)
+
+        assertTrue(edged(GOLD_FRAME))
+        assertTrue(edged(PURPLE_FRAME))
+        assertFalse(edged(BLUE_FRAME))
+        assertFalse(edged(GREEN_FRAME))
+        assertFalse(edged(GREY_FRAME))
     }
 
     @Test
-    fun `a tile framed in gold is a legendary's, one framed in purple an epic's`() {
-        val tile = Box(28, 115, 111, 242)
-        fun framed(colour: Colour) = Painted(listOf(Box(tile.left + 3, tile.top, tile.left + 6, tile.bottom) to colour))
+    fun `as squares, the same ranks are told off their paler edges, and an empty slot is no tile`() {
+        fun edged(colour: Colour) = HeroScan.Squares.tileAt(Seen(Painted(listOf(edgeOf(HeroScan.Squares) to colour)), emptyList()), 0, CENTRE)
 
-        assertFalse(HeroScan.isEpic(framed(GOLD_FRAME), tile))
-        assertTrue(HeroScan.isEpic(framed(PURPLE_FRAME), tile))
+        assertTrue(edged(SQUARE_GOLD))
+        assertTrue(edged(SQUARE_PURPLE))
+        assertFalse(edged(SQUARE_BLUE))
+        assertFalse(edged(SQUARE_GREEN))
+        assertFalse(edged(SQUARE_GREY))
+        assertFalse(edged(EMPTY_SLOT))
+    }
+
+    @Test
+    fun `the roster is scanned in the view whose button is lit`() {
+        fun face(spot: Spot, colour: Colour) = square(spot, colour).let { (box, _) -> Box(box.left - 9, box.top - 9, box.right + 9, box.bottom + 9) to colour }
+        val squares = Seen(Painted(listOf(face(SQUARES_BUTTON, LIT_BUTTON), face(CARDS_BUTTON, UNLIT_BUTTON))), emptyList())
+        val cards = Seen(Painted(listOf(face(SQUARES_BUTTON, UNLIT_BUTTON), face(CARDS_BUTTON, LIT_BUTTON))), emptyList())
+
+        assertEquals(HeroScan.Squares, HeroScan.Cards.viewOn(squares))
+        assertEquals(HeroScan.Cards, HeroScan.Cards.viewOn(cards))
+        assertEquals(HeroScan.Cards, HeroScan.Squares.viewOn(cards))
+    }
+
+    @Test
+    fun `as squares, the scan begins on the selected hero, no word finding a row`() {
+        assertNull(HeroScan.Squares.firstRowCentre(Seen(Painted(), ingridAttributes)))
     }
 
     @Test
@@ -391,12 +426,12 @@ class HeroScanTest {
 
     @Test
     fun `a whole frame of Awaken reads its lit nodes`() {
-        assertEquals(3, HeroScan.readScreen(Seen(awakened(3), ingridAwaken)).awakening)
+        assertEquals(3, HeroScan.Cards.readScreen(Seen(awakened(3), ingridAwaken)).awakening)
     }
 
     @Test
     fun `a whole frame reads what its tab shows, and nothing of the tabs it does not`() {
-        val hero = HeroScan.readScreen(Seen(Painted(), ingridSkills))
+        val hero = HeroScan.Cards.readScreen(Seen(Painted(), ingridSkills))
 
         assertEquals(null, hero.name)
         assertEquals(null, hero.awakening)
@@ -424,7 +459,7 @@ class HeroScanTest {
     fun `a tile is read under Attributes, Skills and Awaken, then left on Attributes and the grid found again`() = runTest {
         val lent = Lent(ingrid.getValue(ATTRIBUTES), ingrid)
 
-        val read = HeroScan.readTile(lent)
+        val read = HeroScan.Cards.readTile(lent)
 
         assertIs<Read.Card<ScannedHero>>(read)
         assertEquals(listOf(SKILLS, AWAKEN, ATTRIBUTES), lent.shown)
@@ -438,7 +473,7 @@ class HeroScanTest {
     fun `a tile the game left on another tab is read from Attributes first`() = runTest {
         val lent = Lent(ingrid.getValue(SKILLS), ingrid)
 
-        val read = HeroScan.readTile(lent)
+        val read = HeroScan.Cards.readTile(lent)
 
         assertIs<Read.Card<ScannedHero>>(read)
         assertEquals(listOf(ATTRIBUTES, SKILLS, AWAKEN, ATTRIBUTES), lent.shown)
@@ -446,17 +481,8 @@ class HeroScanTest {
     }
 
     @Test
-    fun `an epic's tile ends the scan before any tab is tapped`() = runTest {
-        val frame = Painted(listOf(Box(31, 115, 34, 242) to PURPLE_FRAME))
-        val lent = Lent(Seen(frame, ingridAttributes), ingrid)
-
-        assertEquals(Read.Beyond, HeroScan.readTile(lent))
-        assertTrue(lent.shown.isEmpty())
-    }
-
-    @Test
     fun `an Awaken tap that left another tab on screen reads no awakening, and the panels are kept`() = runTest {
-        val read = HeroScan.readTile(Lent(ingrid.getValue(ATTRIBUTES), ingrid + (AWAKEN to ingrid.getValue(SKILLS))))
+        val read = HeroScan.Cards.readTile(Lent(ingrid.getValue(ATTRIBUTES), ingrid + (AWAKEN to ingrid.getValue(SKILLS))))
 
         assertIs<Read.Card<ScannedHero>>(read)
         assertEquals(null, read.card.awakening)
@@ -467,7 +493,7 @@ class HeroScanTest {
     fun `a skill label whose level did not read keeps the panels`() = runTest {
         val skills = Seen(Painted(), ingridSkills.filterNot { it.box.top == 311 })
 
-        val read = HeroScan.readTile(Lent(ingrid.getValue(ATTRIBUTES), ingrid + (SKILLS to skills)))
+        val read = HeroScan.Cards.readTile(Lent(ingrid.getValue(ATTRIBUTES), ingrid + (SKILLS to skills)))
 
         assertIs<Read.Card<ScannedHero>>(read)
         assertEquals(null, read.card.skills.lord)
@@ -477,7 +503,7 @@ class HeroScanTest {
 
     @Test
     fun `a frame whose stars did not show keeps the panels`() = runTest {
-        val read = HeroScan.readTile(Lent(Seen(Painted(), ingridAttributes), ingrid))
+        val read = HeroScan.Cards.readTile(Lent(Seen(Painted(), ingridAttributes), ingrid))
 
         assertIs<Read.Card<ScannedHero>>(read)
         assertFalse(read.closed)
@@ -487,7 +513,7 @@ class HeroScanTest {
     fun `a grid not found again once back on Attributes stops the scan`() = runTest {
         val lent = Lent(ingrid.getValue(ATTRIBUTES), ingrid, regrips = false)
 
-        assertIs<Read.Lost>(HeroScan.readTile(lent))
+        assertIs<Read.Lost>(HeroScan.Cards.readTile(lent))
     }
 
     private companion object {
@@ -499,5 +525,19 @@ class HeroScanTest {
         val GREY_NODE = Colour(0x222222)
         val GOLD_FRAME = Colour(0xC5AA55)
         val PURPLE_FRAME = Colour(0x4B236C)
+        /* Measured inside LDPlayer on 2026-09-28 on the tiles' left edges, as cards, then as squares, then the view buttons' faces. */
+        val BLUE_FRAME = Colour(0x2C3D63)
+        val GREEN_FRAME = Colour(0x35502D)
+        val GREY_FRAME = Colour(0x655441)
+        val SQUARE_GOLD = Colour(0xAE8850)
+        val SQUARE_PURPLE = Colour(0x7B63C3)
+        val SQUARE_BLUE = Colour(0x5A688F)
+        val SQUARE_GREEN = Colour(0x597D5C)
+        val SQUARE_GREY = Colour(0x6E7078)
+        val EMPTY_SLOT = Colour(0x404758)
+        val LIT_BUTTON = Colour(0xB99F7C)
+        val UNLIT_BUTTON = Colour(0x8E8069)
+        /** Where the tile whose edge is painted sits, well inside either view's grid. */
+        const val CENTRE = 300
     }
 }

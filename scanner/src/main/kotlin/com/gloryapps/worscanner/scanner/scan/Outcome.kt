@@ -32,5 +32,5 @@ sealed interface Outcome<T> {
     val entries: List<ScanEntry<T>>
 }
 
-/** How many tiles are read, and how many the header says the screen holds. */
+/** How many tiles are read, kept or skipped, and how many the header says the screen holds. */
 data class Progress(val done: Int, val held: Int)

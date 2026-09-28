@@ -1,7 +1,7 @@
 # WoR Scanner
 
-An Android app that reads your Watcher of Realms gear, legendary heroes and mythic artifacts off the
-screen, one tile at a time, and writes a JSON file you import into
+An Android app that reads your Watcher of Realms gear, legendary and epic heroes, and artifacts off
+the screen, one tile at a time, and writes a JSON file you import into
 [Azhor’s Master Smithy](https://azhor-wor.netlify.app).
 
 It is made for the game running in an emulator on a PC, LDPlayer or BlueStacks. It may work on a
@@ -29,10 +29,11 @@ Pick what to scan on the home screen or in the capsule's menu, press **Start**, 
 press **Scan** on the capsule.
 
 - **Gear**: open Storage → Gear, filtered and sorted as you want it scanned, and select the first piece.
-- **Heroes**: open Hero, sort by Rarity ↓ and select the first hero. The scan reads every legendary
-  and stops at the first epic, so keep epics out of your favourites.
-- **Artifacts**: open Storage → Artifact, sort by Rarity ↓ and select the first artifact. The scan
-  reads every mythic, exclusives first, and stops at the first legendary.
+- **Heroes**: open Hero, as cards or as squares, sort by Rarity ↓ and select the first hero. The
+  scan reads every legendary and epic and stops at the first hero below epic, so keep those out of
+  your favourites.
+- **Artifacts**: open Storage → Artifact, sorted as you want it scanned, and select the first
+  artifact. The scan reads every artifact to the end of the grid, skipping those never enhanced.
 
 The scan taps and scrolls the grid itself; touching the screen stops it, and what it read so far is
 kept.

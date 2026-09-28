@@ -147,13 +147,32 @@ class ArtifactScanTest {
     }
 
     @Test
-    fun `the first legendary or epic ends the scan`() = runTest {
-        assertEquals(Read.Beyond, ArtifactScan.readTile(Lent(panelOf(tumultuousHorn))))
-        assertEquals(Read.Beyond, ArtifactScan.readTile(Lent(panelOf(keenWisdom))))
+    fun `a legendary and an epic are read like a mythic`() = runTest {
+        val legendary = ArtifactScan.readTile(Lent(panelOf(tumultuousHorn)))
+        val epic = ArtifactScan.readTile(Lent(panelOf(keenWisdom)))
+
+        assertIs<Read.Card<ScannedArtifact>>(legendary)
+        assertIs<Read.Card<ScannedArtifact>>(epic)
+        assertEquals("Tumultuous Horn", legendary.card.name)
+        assertEquals("Keen Wisdom", epic.card.name)
     }
 
     @Test
-    fun `a rarity that does not read ends nothing, though the effect below names one`() = runTest {
+    fun `an artifact never enhanced is skipped`() = runTest {
+        assertEquals(Read.Skipped, ArtifactScan.readTile(Lent(panelOf(tomeOfGreed))))
+        assertEquals(Read.Skipped, ArtifactScan.readTile(Lent(panelOf(ironbloomOfMercy))))
+    }
+
+    @Test
+    fun `an artifact whose level did not read is kept, open`() = runTest {
+        val read = ArtifactScan.readTile(Lent(panelOf(ironbloomOfMercy.filterNot { it == "+ 1/10" })))
+
+        assertIs<Read.Card<ScannedArtifact>>(read)
+        assertFalse(read.closed)
+    }
+
+    @Test
+    fun `a rarity that does not read leaves the artifact open, though the effect below names one`() = runTest {
         val unread = listOf("Mxthxc Artxfact") + hatesContagion.drop(1).dropLast(1) + "the Epic hero's allies"
 
         val read = ArtifactScan.readTile(Lent(panelOf(unread)))

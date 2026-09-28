@@ -2,8 +2,8 @@
 
 Settled 2026-09-06, kinds added 2026-09-07, heroes and artifacts 2026-09-26. A native Android app that scans a
 Watcher of Realms storage on the device it runs on (LDPlayer, BlueStacks or a phone), captures each
-tile's panel, reads it and writes a JSON the azhor lab imports: gear, legendary heroes and mythic
-artifacts. Distributed as an APK on GitHub, not on the Play Store.
+tile's panel, reads it and writes a JSON the azhor lab imports: gear, legendary and epic heroes,
+and artifacts. Distributed as an APK on GitHub, not on the Play Store.
 
 ## Modules
 
@@ -39,7 +39,7 @@ that the walk over a grid is written once and a kind says only what its tiles ho
 | `game/` | `Attribute`, `ReadAttribute`, `attributesIn`, `headOf`, `exclusiveIn`: the words every kind shares and the rows they are read off | text |
 | `scan/` | `Scan<T>`, `Walk`, `Seen`, `Tapped`, `Read<T>`, `GridLayout`, `Region`, `Spot`, `ScanEntry<T>`, `Outcome<T>`, tiles, registration, count | senses, text |
 | `kinds/gear/` | `ScannedGear`, its words, `GEAR_STORAGE`, `GearScan` | scan, text, game |
-| `kinds/hero/` | `ScannedHero`, `HeroSkills`, `SkillLevel`, `HERO_ROSTER` and its spots, `HeroScan` | scan, text, senses |
+| `kinds/hero/` | `ScannedHero`, `HeroSkills`, `SkillLevel`, `HERO_CARDS`, `HERO_SQUARES`, their rank edges and spots, `HeroScan` and its two views | scan, text, senses |
 | `kinds/artifact/` | `ScannedArtifact`, `ARTIFACT_STORAGE`, `ArtifactScan` | scan, text, game |
 | `kinds/` | `Kind`, `Kind.scan()` | every kind |
 
@@ -50,17 +50,19 @@ that the walk over a grid is written once and a kind says only what its tiles ho
   is what the overlay lists, and a `when` over it is exhaustive.
 - `Scan<T>` is an abstract class: a kind's `GridLayout`, its serializer, `readTile` (what it reads
   off the tile the walk just tapped), `readScreen` (what it makes of a whole frame, for the
-  overlay's Read) and `tileAt` (whether a tile sits at a place, by default the word it prints
-  below its centre; an artifact's tile prints none and is told by the colour of its face). One
-  stateless `object` per kind extends it. Its `run` starts a `Walk`, created
+  overlay's Read), `tileAt` (whether a tile sits at a place, by default the word it prints
+  below its centre; an artifact's tile prints none and is told by the colour of its face, a hero's
+  by the rank its edge shows) and `viewOn` (the scan for the view the first frame shows, where the
+  screen shows its grid more than one way, as the hero roster's cards and squares). One
+  stateless `object` per kind, or per view, extends it. Its `run` starts a `Walk`, created
   per scan with the senses of the moment, which holds where the grid is and taps, verifies,
   drags and registers for every kind.
 - `readTile` gets a `Tapped`: the frame the tap left, the tile's rectangle on it, `show(tab)`
   (taps a tab until the panel changes, a dropped tap tapped again) and `regrip()` (once the kind's
   taps have moved the grid, finds the tile again by its frame anywhere in its column and takes the
   grid's place from it). It returns a `Read<T>`: `Card` (the record, its rows, its frames, whether
-  it is closed), `Beyond` (the scan finishes before this tile) or `Lost` (the scan stops, the grid
-  lost).
+  it is closed), `Skipped` (nothing kept, the walk goes on), `Beyond` (the scan finishes before this
+  tile) or `Lost` (the scan stops, the grid lost).
 - A kind's `Scan` object reads its panel with its own private helpers, its model of that panel:
   kinds share instruments, not an algorithm. There is no base reader and no shared card shape; a
   hero panel is not a gear panel.

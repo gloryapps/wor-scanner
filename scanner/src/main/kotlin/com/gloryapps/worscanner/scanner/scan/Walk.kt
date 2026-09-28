@@ -20,7 +20,8 @@ import kotlin.math.roundToInt
  * and ends where the rows run out. A tile's identity is its place in the walk, never its content.
  */
 internal class Walk<T>(
-    private val scan: Scan<T>,
+    /** The kind's scan, then the one for the view the first frame shows. */
+    private var scan: Scan<T>,
     private val screen: Screen,
     private val touch: Touch,
     private val reader: TextReader,
@@ -29,12 +30,14 @@ internal class Walk<T>(
     private val entries: MutableList<ScanEntry<T>>,
     private val progress: suspend (Progress) -> Unit,
 ) {
-    private val layout = scan.layout
+    private val layout: GridLayout get() = scan.layout
     /** The last frame looked at. */
     private lateinit var seen: Seen
     private lateinit var metrics: Metrics
     /** What the header counts. */
     private var held = 0
+    /** Tiles read, kept or skipped, which the progress counts against the header's. */
+    private var passed = 0
     /** The centre of the row the walk began on, which the grid carries upward as it scrolls. */
     private var origin = 0
     /** The framed tile, by its column and its centre's y, which the grid carries with it. */
@@ -51,6 +54,7 @@ internal class Walk<T>(
 
     suspend fun run(): Outcome<T> {
         seen = look()
+        scan = scan.viewOn(seen)
         held = countIn(seen.rowsIn(layout.count)) ?: return stopped(Outcome.Reason.STORAGE_NOT_OPEN, "no count like 1,169/2,500 in the header")
         metrics = Metrics(layout, seen.frame)
         begin()?.let { return it }
@@ -116,9 +120,11 @@ internal class Walk<T>(
     private suspend fun read(column: Int): Outcome<T>? {
         when (val tile = scan.readTile(Lent(seen, layout.tileBox(seen.frame, column, centreY)))) {
             is Read.Card -> keep(tile, column)
+            Read.Skipped -> Unit
             Read.Beyond -> return finished()
             is Read.Lost -> return stopped(Outcome.Reason.GRID_LOST, tile.detail)
         }
+        progress(Progress(++passed, held))
 
         return null
     }
@@ -129,7 +135,6 @@ internal class Walk<T>(
         if (!tile.closed) entry = entry.copy(png = keeper.panel(tile.frames, entry.index))
         entries += entry
         keeper.entry(entry)
-        progress(Progress(entries.size, held))
     }
 
     /* Once a kind's taps have moved the grid, waits for it to stop and takes its place from the framed tile, found anywhere in its column. */
