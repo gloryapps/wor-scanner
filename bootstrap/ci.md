@@ -14,6 +14,9 @@ test or a key that does not sign, and Actions minutes are spent only there.
 `dev` is always on the version it is building: `versionName` in `app/build.gradle.kts`, which debug
 builds show with a `-dev` suffix. `versionCode` derives from it (`0.1.0` → `100`).
 
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), written for whoever
+scans: a change lands with its line under `## [Unreleased]`, and a release's notes are that section.
+
 A release is a pull request from `dev` to `main` (`gh pr create --base main --head dev`), and
 `.github/workflows/release.yml` runs on both ends of it: as the pull request's check, and on the
 merge. One run per ref at a time; the runner sets up Java 17 for the build and 25 for the Gradle
@@ -22,19 +25,24 @@ daemon, and hands the keystore's secret to the script through `env:`.
 On the pull request:
 
 1. Fails one from any branch but `dev`.
-2. Reads the version and fails if the tag `v<version>` already exists.
+2. Reads the version and fails if the tag `v<version>` already exists, or if `CHANGELOG.md` has
+   nothing under `## [Unreleased]`.
 3. Runs the tests and builds the release APK, R8-optimized and signed.
 
 On the merge, which is a merge commit so that `dev`'s commits reach `main` as they are:
 
 1. Reads the version, runs the tests and builds the signed APK again, from the merge commit.
 2. Creates the tag on the merge commit and a GitHub release holding `wor-scanner.apk` and
-   `mapping-<version>.txt.gz`, with notes generated since the previous tag. The APK's name carries no
+   `mapping-<version>.txt.gz`, with `CHANGELOG.md`'s unreleased notes. The APK's name carries no
    version, so `releases/latest/download/wor-scanner.apk` always downloads the newest one. The
    app's update link reads the latest release through GitHub's API and installs its
    `wor-scanner.apk`, so the asset keeps that name.
-3. Commits `Start <next minor>` to `dev`: pull `dev` before working on. A patch or a major is set in
-   `versionName` on `dev` by hand, before its pull request.
+3. Commits `Start <next minor>` to `dev`, which also heads those notes `## [<version>] - <date>` under
+   an empty `## [Unreleased]` and adds the version's compare link: pull `dev` before working on. A
+   patch or a major is set in `versionName` on `dev` by hand, before its pull request.
+
+A merge whose run GitHub never started is released by running the workflow on `main` by hand,
+which does what the merge does: `gh workflow run release.yml --ref main`.
 
 ## Repository rules
 
