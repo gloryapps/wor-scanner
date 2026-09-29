@@ -1,6 +1,6 @@
 name: Release
 
-# A pull request from dev to main builds the release it would publish; merging it, or running this by hand on main, publishes it.
+# A pull request from dev to main builds the release it would publish; merging it, or running this by hand on main, publishes that build.
 on:
   pull_request:
     branches: [main]
@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -17,10 +18,11 @@ concurrency:
 
 jobs:
   release:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Refuse a pull request from anywhere but dev
-        if: github.event_name == 'pull_request' && github.head_ref != 'dev'
+        if: github.head_ref != 'dev'
         run: |
           echo "main takes pull requests from dev only, not from ${{ github.head_ref }}" >&2
           exit 1
@@ -49,8 +51,9 @@ jobs:
 
       - name: Read the release's notes from the changelog
         run: |
-          awk '$0 == "## [Unreleased]" { found = 1; next } found && (/^## / || /^\[[^]]+\]: /) { exit } found' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
-          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md"; then
+          mkdir "$RUNNER_TEMP/release"
+          awk '$0 == "## [Unreleased]" { found = 1; next } found && (/^## / || /^\[[^]]+\]: /) { exit } found' CHANGELOG.md > "$RUNNER_TEMP/release/notes.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release/notes.md"; then
             echo "CHANGELOG.md has nothing under ## [Unreleased]" >&2
             exit 1
           fi
@@ -68,20 +71,61 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew test :app:assembleRelease
 
+      - name: Keep what the merge publishes
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/release/wor-scanner.apk"
+          gzip -9 -c app/build/outputs/mapping/release/mapping.txt > "$RUNNER_TEMP/release/mapping-$VERSION.txt.gz"
+          echo "$VERSION" > "$RUNNER_TEMP/release/version"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: ${{ runner.temp }}/release
+
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The merge commit's second parent is the head the pull request's check built.
+      - name: Find the pull request's build of what was merged
+        id: build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head=$(git rev-parse HEAD^2)
+          run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/runs?event=pull_request&status=success&head_sha=$head" --jq '.workflow_runs[0].id // empty')
+          if [ -z "$run" ]; then
+            echo "no pull request built $head" >&2
+            exit 1
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          run-id: ${{ steps.build.outputs.run }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/release
+
+      - name: Read the version being released
+        id: version
+        run: echo "name=$(cat "$RUNNER_TEMP/release/version")" >> "$GITHUB_OUTPUT"
+
       - name: Publish the GitHub release
-        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.name }}
+        working-directory: ${{ runner.temp }}/release
         run: |
-          cp app/build/outputs/apk/release/app-release.apk "wor-scanner.apk"
-          gzip -9 -c app/build/outputs/mapping/release/mapping.txt > "mapping-$VERSION.txt.gz"
-          gh release create "v$VERSION" "wor-scanner.apk" "mapping-$VERSION.txt.gz" \
-            --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md" --target "$GITHUB_SHA"
+          gh release create "v$VERSION" "wor-scanner.apk" "mapping-$VERSION.txt.gz" --repo "$GITHUB_REPOSITORY" \
+            --title "v$VERSION" --notes-file notes.md --target "$GITHUB_SHA"
 
       # dev moves to the next minor and dates what was unreleased; a patch or a major is set on dev by hand before its pull request.
       - name: Start the next version on dev
-        if: github.ref == 'refs/heads/main'
         env:
           VERSION: ${{ steps.version.outputs.name }}
         run: |
