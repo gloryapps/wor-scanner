@@ -16,7 +16,7 @@ android {
         applicationId = "com.gloryapps.worscanner"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionName = "0.2.1"
+        versionName = "0.3.0"
         versionCode = versionName!!.split('.').fold(0) { code, part -> code * 100 + part.toInt() }
     }
 

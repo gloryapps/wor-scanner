@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-29
+
 ### Changed
 
 - The text model ships inside the app, which grows to about 20 MB.
@@ -53,7 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scans gear, legendary heroes and mythic artifacts off the game's screen and writes a JSON for Azhor’s Master Smithy.
 - Exports a scan into the folder LDPlayer or BlueStacks shares with the PC, or through Android's share sheet.
 
-[unreleased]: https://github.com/gloryapps/wor-scanner/compare/v0.2.0...HEAD
+[unreleased]: https://github.com/gloryapps/wor-scanner/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/gloryapps/wor-scanner/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/gloryapps/wor-scanner/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/gloryapps/wor-scanner/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/gloryapps/wor-scanner/compare/v0.1.0...v0.1.1
