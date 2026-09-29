@@ -47,13 +47,11 @@ jobs:
             exit 1
           fi
 
-      - name: Read the version's notes from the changelog
-        env:
-          VERSION: ${{ steps.version.outputs.name }}
+      - name: Read the release's notes from the changelog
         run: |
-          awk -v heading="## $VERSION" '$0 == heading { found = 1; next } found && /^## / { exit } found' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          awk '$0 == "## [Unreleased]" { found = 1; next } found && (/^## / || /^\[[^]]+\]: /) { exit } found' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
           if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md"; then
-            echo "CHANGELOG.md has no notes under ## $VERSION" >&2
+            echo "CHANGELOG.md has nothing under ## [Unreleased]" >&2
             exit 1
           fi
 
@@ -81,7 +79,7 @@ jobs:
           gh release create "v$VERSION" "wor-scanner.apk" "mapping-$VERSION.txt.gz" \
             --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md" --target "$GITHUB_SHA"
 
-      # dev moves to the next minor; a patch or a major is set on dev by hand before its pull request.
+      # dev moves to the next minor and dates what was unreleased; a patch or a major is set on dev by hand before its pull request.
       - name: Start the next version on dev
         if: github.ref == 'refs/heads/main'
         env:
@@ -91,6 +89,10 @@ jobs:
           IFS=. read -r major minor patch <<< "$VERSION"
           next="$major.$((minor + 1)).0"
           sed -i "s/versionName = \"$VERSION\"/versionName = \"$next\"/" app/build.gradle.kts
+          sed -i \
+            -e "s/^## \[Unreleased\]$/## [Unreleased]\n\n## [$VERSION] - $(date -u +%F)/" \
+            -e "s|^\[unreleased\]: \(.*\)/compare/\(v[0-9.]*\)\.\.\.HEAD$|[unreleased]: \1/compare/v$VERSION...HEAD\n[$VERSION]: \1/compare/\2...v$VERSION|" \
+            CHANGELOG.md
           if git diff --quiet; then
             echo "dev is already past $VERSION"
             exit 0

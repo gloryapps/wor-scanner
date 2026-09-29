@@ -30,8 +30,8 @@ and artifacts. Shipped as an APK on GitHub.
 Concise, in English. One change is a single-line title; several changes are a title plus a few
 one-line factual bullets. No prose bodies.
 
-A change a player notices adds its line to `CHANGELOG.md`, under the version `dev` is building: those
-lines are the release's notes (`bootstrap/ci.md`).
+A change a player notices adds its line to `CHANGELOG.md` under `## [Unreleased]`, in Keep a
+Changelog's sections: those lines are the next release's notes (`bootstrap/ci.md`).
 
 New work is on a new branch off `dev`; nothing is worked on or committed on `dev` itself. A branch
 lands on `dev` squashed. `dev` reaches `main` only by a pull request merged with a merge commit, and
