@@ -290,10 +290,10 @@ private fun Reading(kept: Kept, newest: Boolean, onEvent: (HomeEvent) -> Unit) {
             .background(if (newest) Colors.accentWash else Colors.raised)
             .clickable { onEvent(HomeEvent.Open(kept)) }
             .padding(horizontal = 16.dp, vertical = 13.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(kept.shown(), style = Lettering.subtitle, color = Colors.text)
             Text(kept.said(context), style = Lettering.caption, color = Colors.muted)
             (kept as? Kept.Scan)?.detail?.let { Text(it, style = Lettering.caption, color = Colors.warning, maxLines = 2) }

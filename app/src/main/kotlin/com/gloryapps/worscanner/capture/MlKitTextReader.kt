@@ -9,7 +9,7 @@ import com.gloryapps.worscanner.scanner.text.Box
 import com.gloryapps.worscanner.scanner.text.Line
 import kotlinx.coroutines.tasks.await
 
-/** ML Kit's Latin model, served by Play services: the manifest asks for it at install time. */
+/** ML Kit's Latin model, bundled in the APK: a sideloaded app gets no install-time download from Play services. */
 class MlKitTextReader : TextReader {
     private val recogniser = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 

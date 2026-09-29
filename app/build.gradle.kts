@@ -16,7 +16,7 @@ android {
         applicationId = "com.gloryapps.worscanner"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionName = "0.3.0"
+        versionName = "0.2.1"
         versionCode = versionName!!.split('.').fold(0) { code, part -> code * 100 + part.toInt() }
     }
 
@@ -50,6 +50,11 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    // The bundled OCR libraries are 42 MB stored and 18 MB compressed, and the APK is downloaded, not served by a store.
+    packaging {
+        jniLibs.useLegacyPackaging = true
     }
 
     compileOptions {
