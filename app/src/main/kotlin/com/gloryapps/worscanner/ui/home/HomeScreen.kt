@@ -36,6 +36,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +61,7 @@ import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Confirm
 import com.gloryapps.worscanner.ui.Edged
 import com.gloryapps.worscanner.ui.ExportSheet
+import com.gloryapps.worscanner.ui.Field
 import com.gloryapps.worscanner.ui.Inline
 import com.gloryapps.worscanner.ui.Link
 import com.gloryapps.worscanner.ui.Panel
@@ -227,6 +231,34 @@ internal fun Start(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
         Text(stringResource(R.string.home_kinds), style = Lettering.caption, color = Colors.muted)
         Kind.entries.forEach { each ->
             Pill(stringResource(each.label), chosen = each == state.kind, onClick = { onEvent(HomeEvent.Choose(each)) })
+        }
+    }
+
+    Smithy(state.site, onEvent)
+}
+
+/** The link to the site the scans are sent to: the code it showed typed here once, and the way to undo it. */
+@Composable
+private fun Smithy(site: SiteLink, onEvent: (HomeEvent) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Section(stringResource(R.string.home_smithy))
+        Card(Modifier.fillMaxWidth()) {
+            if (site.linked) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.home_smithy_linked), Modifier.weight(1f), style = Lettering.body, color = Colors.text)
+                    Inline(stringResource(R.string.home_smithy_unlink), onClick = { onEvent(HomeEvent.Unlink) })
+                }
+            } else {
+                var code by rememberSaveable { mutableStateOf("") }
+                val asked = { if (code.isNotBlank() && !site.asking) onEvent(HomeEvent.Link(code.trim())) }
+
+                Text(stringResource(R.string.home_smithy_said), style = Lettering.body, color = Colors.muted)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Field(code, { code = it }, stringResource(R.string.home_smithy_hint), Modifier.weight(1f), onDone = asked)
+                    Edged(stringResource(if (site.asking) R.string.home_smithy_linking else R.string.home_smithy_link), onClick = asked)
+                }
+                site.refused?.let { Text(stringResource(it), style = Lettering.caption, color = Colors.warning) }
+            }
         }
     }
 }

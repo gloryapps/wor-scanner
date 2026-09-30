@@ -16,6 +16,9 @@ import com.gloryapps.worscanner.ui.reading.ReadingViewModel
 import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.Scanning
 import com.gloryapps.worscanner.scan.TouchState
+import com.gloryapps.worscanner.smithy.Link
+import com.gloryapps.worscanner.smithy.PreferencesTokenStore
+import com.gloryapps.worscanner.smithy.SmithyHttp
 import com.gloryapps.worscanner.update.GitHubReleases
 import com.gloryapps.worscanner.update.Updates
 import com.gloryapps.worscanner.update.Version
@@ -38,8 +41,9 @@ val appModule = module {
     /* Read from the store at start, so the overlay's menu opens on the kind already chosen. */
     single(createdAtStart = true) { Chosen(androidContext()) }
     single { Permissions(androidContext()) }
-    factory { ExportDelegate(get(), androidContext()) }
+    factory { ExportDelegate(get(), androidContext(), get()) }
+    single { Link(SmithyHttp(BuildConfig.SMITHY_URL), PreferencesTokenStore(androidContext())) }
     single { Updates(GitHubReleases(File(androidContext().cacheDir, "updates")), Version.of(BuildConfig.VERSION_NAME)) }
-    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { (stamp: String) -> ReadingViewModel(stamp, get(), get()) }
 }

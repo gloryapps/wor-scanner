@@ -29,6 +29,15 @@
     <string name="home_capturing">Capturing. Open the game as said above and press Scan on the capsule.</string>
     <string name="home_stop">Stop capturing</string>
     <string name="home_kinds">types</string>
+    <string name="home_smithy">Azhor’s Master Smithy</string>
+    <string name="home_smithy_said">Link the scanner to your account and send each scan from its export sheet. On the site, open Import a scan, press Link and type the code it shows here.</string>
+    <string name="home_smithy_hint">K7Q4-MPX2</string>
+    <string name="home_smithy_link">Link</string>
+    <string name="home_smithy_linking">Linking…</string>
+    <string name="home_smithy_linked">Linked. Scans you send wait in Import a scan on the site.</string>
+    <string name="home_smithy_unlink">unlink</string>
+    <string name="home_smithy_refused">The site knows no such code. Codes last ten minutes and link once: press Link on the site for a new one.</string>
+    <string name="home_smithy_unanswered">The site could not be reached. Check the connection and try again.</string>
     <string name="home_readings">Readings</string>
     <string name="home_export_all">export all</string>
     <string name="home_export">export</string>
@@ -66,6 +75,13 @@
     <string name="export_save">Save</string>
     <string name="export_to">→ %1$s</string>
     <string name="export_share">Share…</string>
+    <string name="export_send">Send to Azhor’s Master Smithy</string>
+    <string name="export_sending">Sending…</string>
+    <string name="export_send_link">Link the scanner on the home screen to send scans straight to your account.</string>
+    <string name="export_send_unanswered">The site could not be reached. Check the connection and send again.</string>
+    <string name="export_send_unlinked">The site no longer knows this scanner: it was unlinked there, or another was linked. Link it again on the home screen.</string>
+    <string name="export_send_refused">The site did not read this file as a scan.</string>
+    <string name="export_send_too_large">This scan is larger than the site keeps. Save it and import the file instead.</string>
     <string name="export_note">This is the file you open in Import a scan in Azhor’s Master Smithy.</string>
 
     <string name="back">Back</string>
@@ -114,6 +130,10 @@
     <plurals name="export_open">
         <item quantity="one">%1$d, a panel the reader could not fully read</item>
         <item quantity="other">%1$d, panels the reader could not fully read</item>
+    </plurals>
+    <plurals name="export_sent">
+        <item quantity="one">Sent, %1$d scan. Open Import a scan on the site.</item>
+        <item quantity="other">Sent, %1$d scans. Open Import a scan on the site.</item>
     </plurals>
     <plurals name="export_saved">
         <item quantity="one">Saved, %1$d file</item>

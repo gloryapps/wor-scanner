@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Nothing the app keeps is backed up or carried to a new device: a scan leaves by export. -->
+<!-- Nothing the app keeps is backed up or carried to a new device, the lab's token among it: a scan leaves by export. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" />

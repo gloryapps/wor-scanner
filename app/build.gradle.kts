@@ -18,6 +18,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionName = "0.3.0"
         versionCode = versionName!!.split('.').fold(0) { code, part -> code * 100 + part.toInt() }
+        // `-Psmithy.url=http://<the PC's address>:5173` points a build at the lab running on the PC.
+        buildConfigField("String", "SMITHY_URL", "\"${providers.gradleProperty("smithy.url").getOrElse("https://azhor-wor.netlify.app")}\"")
     }
 
     signingConfigs {

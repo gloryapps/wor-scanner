@@ -117,14 +117,17 @@ private fun ExportSheetPreview() {
                 name = "wor-gear-20260907-130841.json",
                 files = SCANNED.outbound(),
                 holds = listOf("Kind" to "Gear", "Read" to "1204", "Scan" to "complete", "Size" to "318 kB"),
-                forLab = true,
+                scans = listOf(java.io.File("scan.json")),
             ),
             failed = null,
             shared = listOf(LD_PLAYER, BLUE_STACKS),
             into = LD_PLAYER,
             onChoose = { },
             onShared = { },
+            linked = true,
+            sending = false,
             onShare = { },
+            onSend = { },
             onClose = { },
         )
     }
@@ -159,7 +162,10 @@ private fun ExportSheetFailedPreview() {
             into = BLUE_STACKS,
             onChoose = { },
             onShared = { },
+            linked = false,
+            sending = false,
             onShare = { },
+            onSend = { },
             onClose = { },
         )
     }
@@ -180,7 +186,10 @@ private fun ExportSheetNoFolderPreview() {
             into = null,
             onChoose = { },
             onShared = { },
+            linked = false,
+            sending = false,
             onShare = { },
+            onSend = { },
             onClose = { },
         )
     }

@@ -45,18 +45,25 @@ kept.
 
 ## Export
 
-Every scan is listed on the home screen. **Export** saves it into the folder the emulator shares with
-the PC (LDPlayer: `Documents\LDPlayer\Pictures\WoR Scanner`; BlueStacks: the Shared Folder's
-`WoR Scanner`), or hands it to another app. Import that JSON in Azhor’s Master Smithy.
+Every scan is listed on the home screen. **Export** sends it to your account on Azhor’s Master
+Smithy once the scanner is linked, saves it into the folder the emulator shares with the PC
+(LDPlayer: `Documents\LDPlayer\Pictures\WoR Scanner`; BlueStacks: the Shared Folder's
+`WoR Scanner`), or hands it to another app.
+
+To link the scanner, open **Import a scan** on the site and press **Link**. Type the code it shows
+into the home screen's Azhor’s Master Smithy card within ten minutes. From then on, **Send** in the
+export sheet puts the scan in **Import a scan**, where it waits until you import it. A saved or
+shared JSON is imported by dropping it on that same dialog.
 
 A tile the scanner could not read in full keeps a picture of its panel beside the JSON, so it can be
 fixed in Azhor’s Master Smithy.
 
 ## Privacy
 
-Scans stay on the device until you export them, and are not backed up. Release builds send crash
-reports to Firebase Crashlytics: the crash, the kind being scanned, the display's size and how a scan
-ended. Nothing else leaves the device.
+Scans stay on the device until you export them, and are not backed up. **Send** uploads a scan's JSON
+to Azhor’s Master Smithy, into the account the scanner is linked to; its pictures stay on the device.
+Release builds send crash reports to Firebase Crashlytics: the crash, the kind being scanned, the
+display's size and how a scan ended. Nothing else leaves the device.
 
 ## Building
 

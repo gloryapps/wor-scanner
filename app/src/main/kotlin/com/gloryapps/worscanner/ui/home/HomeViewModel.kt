@@ -2,12 +2,15 @@ package com.gloryapps.worscanner.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.CaptureSession
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.capture.Readings
 import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.smithy.Link
+import com.gloryapps.worscanner.smithy.Linking
 import com.gloryapps.worscanner.ui.ExportDelegate
 import com.gloryapps.worscanner.update.Update
 import com.gloryapps.worscanner.update.Updates
@@ -29,9 +32,11 @@ internal class HomeViewModel(
     private val permissions: Permissions,
     private val readings: Readings,
     private val updates: Updates,
+    private val link: Link,
     val export: ExportDelegate,
 ) : ViewModel() {
     private val kept = MutableStateFlow<List<Kept>?>(null)
+    private val site = MutableStateFlow(SiteLink())
     private val deleting = MutableStateFlow<List<Kept>>(emptyList())
     /** Whether the deletion asked about is every one, which also clears what interrupted scans left. */
     private var all = false
@@ -61,6 +66,7 @@ internal class HomeViewModel(
         .combine(kept) { state, readings -> state.copy(readings = readings) }
         .combine(deleting) { state, kept -> state.copy(deleting = kept) }
         .combine(updates.state) { state, update -> state.copy(update = update) }
+        .combine(combine(site, link.linked) { row, linked -> row.copy(linked = linked) }) { state, row -> state.copy(site = row) }
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
@@ -98,6 +104,17 @@ internal class HomeViewModel(
                 }
             }
             HomeEvent.CancelDelete -> ask(emptyList(), all = false)
+            is HomeEvent.Link -> viewModelScope.launch {
+                site.value = SiteLink(asking = true)
+                site.value = SiteLink(
+                    refused = when (link.link(event.code)) {
+                        is Linking.Linked -> null
+                        Linking.Refused -> R.string.home_smithy_refused
+                        Linking.Unanswered -> R.string.home_smithy_unanswered
+                    },
+                )
+            }
+            HomeEvent.Unlink -> viewModelScope.launch { link.forget() }
             HomeEvent.Update -> when (val update = updates.state.value) {
                 is Update.Available -> viewModelScope.launch { updates.download()?.let { _effects.send(HomeEffect.Install(it)) } }
                 is Update.Failed -> send(HomeEffect.OpenPage(update.release.page))

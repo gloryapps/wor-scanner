@@ -49,6 +49,8 @@ fun ExportSheet(export: ExportDelegate) {
             when (effect) {
                 is ExportEffect.Share -> context.startActivity(effect.intent)
                 is ExportEffect.Landed -> Toast.makeText(context, context.said(effect), Toast.LENGTH_LONG).show()
+                is ExportEffect.Sent ->
+                    Toast.makeText(context, context.resources.getQuantityString(R.plurals.export_sent, effect.scans, effect.scans), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -58,16 +60,20 @@ fun ExportSheet(export: ExportDelegate) {
         failed = state.failed,
         shared = state.shared,
         into = state.into,
+        linked = state.linked,
+        sending = state.sending,
         onChoose = { export.on(ExportEvent.Choose(it)) },
         onShared = { export.on(ExportEvent.Save) },
         onShare = { export.on(ExportEvent.Share) },
+        onSend = { export.on(ExportEvent.Send) },
         onClose = { export.on(ExportEvent.Close) },
     )
 }
 
 /**
  * The one way out of the app, wherever export was pressed: the file that goes, what it holds, and
- * the two doors it can leave by. It closes once the file has landed, and stays open to say why it did not.
+ * the doors it can leave by, the site first once the scanner is linked and a scan is among it. It
+ * closes once the file has landed, and stays open to say why it did not.
  */
 @Composable
 fun ExportSheet(
@@ -75,11 +81,16 @@ fun ExportSheet(
     failed: String?,
     shared: List<SharedFolder>,
     into: SharedFolder?,
+    linked: Boolean,
+    sending: Boolean,
     onChoose: (SharedFolder) -> Unit,
     onShared: () -> Unit,
     onShare: () -> Unit,
+    onSend: () -> Unit,
     onClose: () -> Unit,
 ) {
+    val sends = outgoing.forLab && linked
+
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
             Modifier
@@ -143,19 +154,28 @@ fun ExportSheet(
             Rule()
 
             Column(Modifier.padding(horizontal = 22.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (sends) {
+                    Accented(
+                        stringResource(if (sending) R.string.export_sending else R.string.export_send),
+                        Modifier.fillMaxWidth(),
+                        enabled = !sending,
+                        onClick = onSend,
+                    )
+                }
                 Landing(shared, into, onChoose)
                 if (failed != null) Landed(failed)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Accented(
-                        stringResource(R.string.export_save),
-                        Modifier.weight(1f),
-                        said = into?.let { stringResource(R.string.export_to, stringResource(it.emulator.label)) },
-                        enabled = into != null,
-                        onClick = onShared,
-                    )
+                    val said = into?.let { stringResource(R.string.export_to, stringResource(it.emulator.label)) }
+                    /* The site leads once a scan can go there; saving to the folder steps back beside Share. */
+                    if (sends) {
+                        Edged(listOfNotNull(stringResource(R.string.export_save), said).joinToString(" "), Modifier.weight(1f), onClick = { if (into != null) onShared() })
+                    } else {
+                        Accented(stringResource(R.string.export_save), Modifier.weight(1f), said = said, enabled = into != null, onClick = onShared)
+                    }
                     Edged(stringResource(R.string.export_share), onClick = onShare)
                 }
                 if (outgoing.forLab) Text(stringResource(R.string.export_note), style = Lettering.caption, color = Colors.muted)
+                if (outgoing.forLab && !linked) Text(stringResource(R.string.export_send_link), style = Lettering.caption, color = Colors.muted)
             }
         }
     }

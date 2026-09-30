@@ -1,6 +1,9 @@
 package com.gloryapps.worscanner.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +20,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -103,6 +109,34 @@ fun Segmented(labels: List<String>, chosen: Int, modifier: Modifier = Modifier, 
             }
         }
     }
+}
+
+/** A short line the player types, in the data face, `hint` showing while it is empty; Done on the keyboard is `onDone`. */
+@Composable
+fun Field(value: String, onValueChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, onDone: () -> Unit) {
+    BasicTextField(
+        value,
+        onValueChange,
+        modifier,
+        textStyle = Lettering.data.copy(color = Colors.text),
+        singleLine = true,
+        cursorBrush = SolidColor(Colors.accent),
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, autoCorrectEnabled = false, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { onDone() }),
+        decorationBox = { field ->
+            Row(
+                Modifier
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Colors.sunken)
+                    .border(1.dp, Colors.edge, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (value.isEmpty()) Text(hint, style = Lettering.data, color = Colors.faint) else field()
+            }
+        },
+    )
 }
 
 /** An action with no edge at all, which is how a screen says "and also". */

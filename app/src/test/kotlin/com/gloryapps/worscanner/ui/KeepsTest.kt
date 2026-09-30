@@ -41,5 +41,14 @@ class KeepsTest {
         assertEquals(listOf("wor-$stamp.json"), kept.outbound().map { it.name })
     }
 
+    @Test
+    fun `only a scan's JSON is sent to the site, never its panels or a reading's file`() {
+        val scan = Kept.Scan(stamp, listOf(file("scan.json"), file("3.png")), Kind.GEAR)
+        val read = Kept.Read(stamp, listOf(file("$stamp.json"), file("$stamp.png")), Kind.GEAR)
+
+        assertEquals(listOf(file("scan.json")), scan.scans())
+        assertEquals(emptyList(), read.scans())
+    }
+
     private fun file(name: String) = File("/scans/$stamp/$name")
 }

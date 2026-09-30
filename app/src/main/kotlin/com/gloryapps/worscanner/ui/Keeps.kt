@@ -6,6 +6,7 @@ import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.capture.Outbound
 import com.gloryapps.worscanner.scan.Ended
+import java.io.File
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -30,7 +31,7 @@ fun Kept.outgoing(context: Context): Outgoing {
     return Outgoing(
         name = outgoingName(),
         files = leaving,
-        forLab = this is Kept.Scan,
+        scans = scans(),
         holds = buildList {
             kind?.let { add(context.getString(R.string.export_kind) to context.getString(it.label)) }
             if (this@outgoing is Kept.Scan) {
@@ -42,6 +43,9 @@ fun Kept.outgoing(context: Context): Outgoing {
         },
     )
 }
+
+/** The JSON of a scan, which is what the lab imports; a Read's is not one. */
+internal fun Kept.scans(): List<File> = if (this is Kept.Scan) files.filter { it.extension == "json" } else emptyList()
 
 /** Why images travel with the JSON, said in the sheet so nobody wonders what the PNGs beside it are. */
 private fun Kept.images(context: Context): Pair<String, String>? {
@@ -62,7 +66,7 @@ fun Kept.outgoingName(): String = outbound().firstOrNull { it.file.extension == 
 fun List<Kept>.outgoing(context: Context): Outgoing = Outgoing(
     name = context.resources.getQuantityString(R.plurals.export_all_name, size, size),
     files = flatMap { it.outbound() },
-    forLab = any { it is Kept.Scan },
+    scans = flatMap { it.scans() },
     holds = listOf(
         context.getString(R.string.export_readings) to "$size",
         context.getString(R.string.export_size) to Formatter.formatShortFileSize(context, sumOf { it.weight() }),

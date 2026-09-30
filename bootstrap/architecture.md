@@ -122,8 +122,8 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
 
 - No database. A scan is a JSON file in the app's external files directory, `version` 2 with the
   `kind` it scanned; a new scan is a new file, never a merge. The user takes it out through the share
-  sheet or saves it into the folder the emulator shares with the PC. Sending straight to the lab is a
-  later option.
+  sheet, saves it into the folder the emulator shares with the PC, or sends it to the lab once the
+  scanner is linked.
 - What leaves the app is named `wor-<kind>-<stamp>`: `wor-gear-20260907-130812.json`, with a scan's
   kept panels beside it as `wor-gear-20260907-130812-<tile>.png`. On disk the names stay `scan.json`
   and `<tile>.png`; `Exports` copies each file under the name its caller gives, which is what keeps
@@ -148,9 +148,16 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   be chosen over the first.
 - Neither mount needs a grant, both sitting outside the sdcard, so the app asks for no storage
   permission at all; a device with no mount is told to use the share sheet instead.
-- The clipboard does not cross that border, and the two apps are not linked over the network.
-- Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, picked
-  on the home screen or in the overlay's menu, held at once and written behind.
+- The clipboard does not cross that border.
+- The network does, once the scanner is linked. The lab's Import a scan shows a code; the home screen
+  trades it at the lab's `POST /scanner/link` for a token, and `smithy/Link` keeps that token in a
+  DataStore of its own, `link`. The export sheet's Send posts each scan's `scan.json`, gzipped, to
+  `POST /scanner/scans` with the token as a bearer; the pictures stay behind. A 401 means the lab
+  no longer knows the token, and the scanner forgets it. The lab's address is `BuildConfig.SMITHY_URL`,
+  from the Gradle property `smithy.url`, and a debug build allows cleartext so it can point at the lab
+  running on the PC.
+- Preferences in DataStore. `Chosen` holds which kind the next scan reads, picked on the home screen
+  or in the overlay's menu, held at once and written behind; `link` holds the lab's token.
 - Room enters only if scan history inside the app is ever wanted, and brings the no-destructive-
   migration rule with it.
 
