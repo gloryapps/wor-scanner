@@ -12,7 +12,7 @@ phone, but that has not been tried.
 1. Download [`wor-scanner.apk`](../../releases/latest/download/wor-scanner.apk) from the latest [release](../../releases/latest).
 2. LDPlayer or BlueStacks: drag the APK onto the emulator's window. A phone: open the APK and allow
    installing apps from that source.
-3. Open WoR Scanner and grant the two permissions its home screen lists.
+3. Open WoR Scanner and press **Start**: it asks for each permission still off, and says why.
 
 When a newer release is out, the home screen's header offers it beside the version. Tapping it
 downloads the release and Android asks to install it over the one you have, your readings kept; the

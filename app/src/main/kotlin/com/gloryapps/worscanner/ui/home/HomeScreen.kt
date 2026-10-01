@@ -2,13 +2,12 @@ package com.gloryapps.worscanner.ui.home
 
 import android.Manifest
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -30,17 +29,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -58,8 +64,10 @@ import com.gloryapps.worscanner.ui.Accented
 import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Edged
+import com.gloryapps.worscanner.ui.Inline
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Link
+import com.gloryapps.worscanner.ui.Question
 import com.gloryapps.worscanner.ui.Reach
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
@@ -89,22 +97,25 @@ internal fun HomeScreen(onEarlier: () -> Unit, viewModel: HomeViewModel = koinVi
         val data = it.data
         if (it.resultCode == Activity.RESULT_OK && data != null) CaptureService.start(context, it.resultCode, data)
     }
-    /* Android 13 hides a notification the app was not let post, the scan's Stop with it: asked at Start, and the scan goes on either way. */
-    val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
+    val activity = LocalActivity.current
+    val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { given ->
+        /* Refused twice, Android stops showing its dialog, and the app's notification settings are the way left. */
+        if (!given && activity?.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) == false) {
+            context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
+        }
+        viewModel.returned()
     }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                HomeEffect.OpenAccessibilitySettings -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                HomeEffect.OpenOverlaySettings -> context.startActivity(
-                    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
-                )
-                HomeEffect.LaunchProjection -> if (context.mayNotNotify()) {
-                    notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
+                is HomeEffect.Grant -> when (effect.permission) {
+                    Permission.ACCESSIBILITY -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    Permission.OVERLAY -> context.startActivity(
+                        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
+                    )
+                    Permission.NOTIFICATIONS -> notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
+                HomeEffect.LaunchProjection -> projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
                 HomeEffect.StopCapture -> CaptureService.stop(context)
                 HomeEffect.OpenEarlier -> earlier()
                 /* The system's installer asks the player to confirm, and the first time to let this app install others. */
@@ -140,6 +151,74 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                 Kinds(wide, if (wide) Modifier.weight(1f) else Modifier)
             }
         }
+    }
+
+    if (state.asking) Ask(state.missing, state.ready, onEvent)
+}
+
+/**
+ * What is still off when Start is pressed, each with its way to be turned on and, under the info
+ * mark, why the scanner asks. The list follows the grants as they come back from the settings, and
+ * Start waits only for the ones a scan needs. `opened` is which reasons show to begin with.
+ */
+@Composable
+internal fun Ask(missing: List<Permission>, ready: Boolean, onEvent: (HomeEvent) -> Unit, opened: Set<Permission> = emptySet()) {
+    var open by rememberSaveable { mutableStateOf(opened) }
+
+    Question(480.dp, onDismiss = { onEvent(HomeEvent.Dismiss) }) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(R.string.home_ask_title), style = Lettering.title, color = Colors.text)
+            Text(stringResource(R.string.home_ask_said), style = Lettering.body, color = Colors.muted)
+        }
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Colors.sunken)) {
+            if (missing.isEmpty()) {
+                Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, Modifier.size(18.dp), tint = Colors.accent)
+                    Text(stringResource(R.string.home_ask_all_on), style = Lettering.body, color = Colors.accent)
+                }
+            }
+            missing.forEachIndexed { at, permission ->
+                if (at > 0) Rule()
+                Missing(
+                    permission,
+                    open = permission in open,
+                    onWhy = { open = if (permission in open) open - permission else open + permission },
+                    onGrant = { onEvent(HomeEvent.Grant(permission)) },
+                )
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
+            Edged(stringResource(R.string.cancel), onClick = { onEvent(HomeEvent.Dismiss) })
+            Accented(stringResource(R.string.home_start), enabled = ready, onClick = { onEvent(HomeEvent.Begin) })
+        }
+    }
+}
+
+@Composable
+private fun Missing(permission: Permission, open: Boolean, onWhy: () -> Unit, onGrant: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(permission.icon, contentDescription = null, Modifier.size(19.dp), tint = Colors.warning)
+        Text(stringResource(permission.label), Modifier.weight(1f), style = Lettering.body, color = Colors.text)
+        Icon(
+            Icons.Outlined.Info,
+            contentDescription = stringResource(R.string.permission_why),
+            Modifier.clip(CircleShape).clickable(onClick = onWhy).padding(4.dp).size(18.dp),
+            tint = if (open) Colors.accent else Colors.muted,
+        )
+        Inline(stringResource(R.string.permission_turn_on), accented = true, onClick = onGrant)
+    }
+    if (open) {
+        Rule()
+        Text(
+            stringResource(permission.why),
+            Modifier.padding(start = 45.dp, top = 10.dp, end = 14.dp, bottom = 14.dp),
+            style = Lettering.bodySmall,
+            color = Colors.muted,
+        )
     }
 }
 
@@ -209,7 +288,6 @@ private fun Steps(state: HomeUiState, wide: Boolean, onEvent: (HomeEvent) -> Uni
                 it,
                 said = stringResource(R.string.home_to_game),
                 reach = Reach.LARGE,
-                enabled = state.ready,
                 onClick = { onEvent(HomeEvent.Start) },
             )
         }
@@ -285,9 +363,6 @@ private val STEPS = listOf(
     ScanStep(R.string.home_step_capsule, R.string.home_step_capsule_said),
     ScanStep(R.string.home_step_scan, R.string.home_step_scan_said),
 )
-
-private fun Context.mayNotNotify(): Boolean =
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
 
 /* Android 14 offers "one app" by default and Unity games are one app, but the scan reads the display. */
 private fun MediaProjectionManager.wholeDisplayIntent(): Intent =

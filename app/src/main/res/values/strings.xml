@@ -38,6 +38,18 @@
     <string name="home_step_scan">Press Scan</string>
     <string name="home_step_scan_said">Touch the screen to stop. What was read is kept.</string>
     <string name="home_before">Before you press Scan, in the game</string>
+    <string name="home_ask_title">Turn on before scanning</string>
+    <string name="home_ask_said">These were switched off since you set up the scanner.</string>
+    <string name="home_ask_all_on">All on. You can start.</string>
+
+    <string name="permission_accessibility">Accessibility service</string>
+    <string name="permission_accessibility_why">Taps and scrolls the game’s grid during a scan. It reads nothing from any app.</string>
+    <string name="permission_overlay">Draw over other apps</string>
+    <string name="permission_overlay_why">Shows the capsule over the game that starts, shows and stops a scan.</string>
+    <string name="permission_notifications">Notifications</string>
+    <string name="permission_notifications_why">Shows a scan’s progress, and a Stop you can reach from anywhere.</string>
+    <string name="permission_turn_on">Turn on</string>
+    <string name="permission_why">Why it is asked</string>
 
     <string name="earlier_title">Earlier scans</string>
     <string name="earlier_smithy">Azhor’s Master Smithy</string>

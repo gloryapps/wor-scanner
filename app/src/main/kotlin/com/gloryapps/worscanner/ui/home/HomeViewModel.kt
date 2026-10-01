@@ -9,6 +9,7 @@ import com.gloryapps.worscanner.update.Update
 import com.gloryapps.worscanner.update.Updates
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -22,6 +23,7 @@ internal class HomeViewModel(
     private val permissions: Permissions,
     private val updates: Updates,
 ) : ViewModel() {
+    private val asking = MutableStateFlow(false)
     private val _effects = Channel<HomeEffect>(Channel.BUFFERED)
     val effects: Flow<HomeEffect> = _effects.receiveAsFlow()
 
@@ -30,15 +32,15 @@ internal class HomeViewModel(
     }
 
     val state: StateFlow<HomeUiState> = combine(
-        permissions.accessibilityOn,
-        permissions.overlayAllowed,
+        permissions.granted,
+        asking,
         session.screen,
         scanning.state,
         updates.state,
-    ) { accessibility, overlay, screen, scan, update ->
+    ) { granted, asking, screen, scan, update ->
         HomeUiState(
-            accessibilityOn = accessibility,
-            overlayAllowed = overlay,
+            granted = granted,
+            asking = asking,
             capturing = screen != null,
             running = scan as? ScanState.Running,
             update = update,
@@ -49,8 +51,7 @@ internal class HomeViewModel(
             SharingStarted.WhileSubscribed(5_000),
             /* What is known at once, so a start does not flash nothing granted. */
             HomeUiState(
-                accessibilityOn = permissions.accessibilityOn.value,
-                overlayAllowed = permissions.overlayAllowed.value,
+                granted = permissions.granted.value,
                 capturing = session.screen.value != null,
                 running = scanning.state.value as? ScanState.Running,
                 update = updates.state.value,
@@ -59,9 +60,13 @@ internal class HomeViewModel(
 
     fun on(event: HomeEvent) {
         when (event) {
-            HomeEvent.GrantAccessibility -> send(HomeEffect.OpenAccessibilitySettings)
-            HomeEvent.GrantOverlay -> send(HomeEffect.OpenOverlaySettings)
-            HomeEvent.Start -> send(HomeEffect.LaunchProjection)
+            is HomeEvent.Grant -> send(HomeEffect.Grant(event.permission))
+            HomeEvent.Start -> if (state.value.missing.isEmpty()) send(HomeEffect.LaunchProjection) else asking.value = true
+            HomeEvent.Begin -> {
+                asking.value = false
+                send(HomeEffect.LaunchProjection)
+            }
+            HomeEvent.Dismiss -> asking.value = false
             HomeEvent.Stop -> send(HomeEffect.StopCapture)
             HomeEvent.Earlier -> send(HomeEffect.OpenEarlier)
             HomeEvent.Update -> when (val update = updates.state.value) {
