@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,46 +24,73 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+/** How much room a filled action takes: in a strip, beside others, or as the one thing a screen is for. */
+enum class Reach(val height: Dp, val radius: Dp, val sides: Dp, val icon: Dp, val style: TextStyle, val said: TextStyle) {
+    SMALL(34.dp, 8.dp, 18.dp, 16.dp, Lettering.action, Lettering.dataSmall),
+    REGULAR(44.dp, 9.dp, 22.dp, 17.dp, Lettering.action, Lettering.dataSmall),
+    LARGE(52.dp, 10.dp, 30.dp, 19.dp, Lettering.actionLarge, Lettering.data),
+}
+
 /** The one action a screen leads with: filled with the accent. `said` is the hint printed beside it. */
 @Composable
-fun Accented(label: String, modifier: Modifier = Modifier, said: String? = null, enabled: Boolean = true, onClick: () -> Unit) {
-    Filled(label, modifier, Colors.accent, said, enabled, onClick)
+fun Accented(
+    label: String,
+    modifier: Modifier = Modifier,
+    said: String? = null,
+    icon: ImageVector? = null,
+    reach: Reach = Reach.REGULAR,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    Filled(label, modifier, Colors.accent, said, icon, reach, enabled, onClick)
 }
 
 /** The action that cannot be undone: filled too, but never in the accent, which is for what a screen wants. */
 @Composable
 fun Destructive(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Filled(label, modifier, Colors.failure, said = null, enabled = true, onClick = onClick)
+    Filled(label, modifier, Colors.failure, said = null, icon = null, reach = Reach.REGULAR, enabled = true, onClick = onClick)
 }
 
 @Composable
-private fun Filled(label: String, modifier: Modifier, ground: Color, said: String?, enabled: Boolean, onClick: () -> Unit) {
+private fun Filled(label: String, modifier: Modifier, ground: Color, said: String?, icon: ImageVector?, reach: Reach, enabled: Boolean, onClick: () -> Unit) {
     Row(
         modifier
-            .height(44.dp)
+            .height(reach.height)
             .alpha(if (enabled) 1f else 0.4f)
-            .clip(RoundedCornerShape(9.dp))
+            .clip(RoundedCornerShape(reach.radius))
             .background(ground)
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 22.dp),
+            .padding(horizontal = reach.sides),
         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, style = Lettering.action, color = Colors.onAccent)
-        if (said != null) Text(said, style = Lettering.dataSmall, color = Colors.onAccent.copy(alpha = 0.7f))
+        icon?.let { Icon(it, contentDescription = null, Modifier.size(reach.icon), tint = Colors.onAccent) }
+        Text(label, style = reach.style, color = Colors.onAccent)
+        if (said != null) Text(said, style = reach.said, color = Colors.onAccent.copy(alpha = 0.7f))
     }
 }
 
 /** An action beside the leading one, drawn as an edge with nothing inside. */
 @Composable
-fun Edged(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Ringed(label, modifier, 40.dp, 16.dp, RoundedCornerShape(9.dp), Colors.edge, Lettering.body, Colors.text, onClick)
+fun Edged(label: String, modifier: Modifier = Modifier, icon: ImageVector? = null, onClick: () -> Unit) {
+    Ringed(label, modifier, 40.dp, 16.dp, RoundedCornerShape(9.dp), Colors.edge, Lettering.body, Colors.text, onClick, icon = icon)
+}
+
+/** A permission's way to be given, where giving them is what the screen is for. */
+@Composable
+fun Grant(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Ringed(
+        label, modifier.width(110.dp), 38.dp, 0.dp, RoundedCornerShape(9.dp),
+        Colors.accentEdge, Lettering.action, Colors.accent, onClick,
+        ground = Colors.accentWash,
+    )
 }
 
 /** An action that lives inside a row of someone else's content: a grant, an export. */
@@ -157,6 +187,7 @@ private fun Ringed(
     colour: Color,
     onClick: (() -> Unit)?,
     ground: Color = Color.Transparent,
+    icon: ImageVector? = null,
 ) {
     Row(
         modifier
@@ -166,8 +197,10 @@ private fun Ringed(
             .border(1.dp, edge, shape)
             .let { if (onClick == null) it else it.clickable(onClick = onClick) }
             .padding(horizontal = sides),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        icon?.let { Icon(it, contentDescription = null, Modifier.size(17.dp), tint = colour) }
         Text(label, style = style, color = colour)
     }
 }

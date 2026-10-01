@@ -23,6 +23,7 @@ roles. A screen names a role, never a value and never a size.
 | `text` / `muted` / `faint` | `#E9EDF5` at 100 / 62 / 45% | read, said beside it, found when looked for |
 | `warning` | `#E8B34A` | a grant not given, a piece read badly |
 | `failure` | `#E08585` | a scan that failed |
+| `failureEdge` | `#E08585` 40% | the border of a send that failed |
 | `hairline` / `edge` | white 9% / 14% | a rule between rows, a border on a control |
 | `glass` / `glassSolid` / `glassThin` | `#0C0E14` at 86 / 92 / 72% | the capsule over the game; its menu; the close target |
 | `glassEdge` / `glassEdgeStrong` | white 13% / 22% | the capsule's edge; the stop's and the close target's |
@@ -38,15 +39,21 @@ No font file ships with the app.
 | --- | --- | --- |
 | `title` | sans 19 semibold | what a card or a screen is called |
 | `subtitle` | sans 16 medium | a reading's tile, a sheet's heading |
+| `display` / `lead` | sans 32 semibold / 15 | a first-run screen's heading; the prose under it |
+| `step` / `stepBody` | sans 15 medium / 14 | a step's name; a line of a kind's steps |
 | `brand` | sans 15 medium | the app's name in the header |
 | `section` | sans 10 medium, tracked, upper-cased by `Section` | the line above a group |
 | `body` | sans 13 | prose |
+| `bodySmall` | sans 12 | what is said under a step |
 | `caption` | sans 11 | what is said under a line of prose |
-| `action` | sans 13 medium | a button |
+| `action` / `actionLarge` | sans 13 / 15 medium | a button; a 52 dp one |
 | `data` / `dataSmall` | mono 12 / 10 | a stamp, a count, an id, a file name |
+| `count` / `code` / `numeral` | mono 64 / 20 tracked / 12, medium | how many a scan read; the link code; the number in a step's ring |
 | `label` / `mark` | mono 11 / mono 9 tracked | a row of the menu over the game; the one word on the idle capsule |
 
 ## Shapes
 
 6, 8, 10, 12, 14 dp, in Material's five slots from `extraSmall`; a pill is fully rounded. The capsule
-over the game and its close target are pills; a card is 10, a screen-sized panel 12, a sheet 12.
+over the game and its close target are pills; a card is 10, the card that leads 12, a screen-sized panel 12, a sheet 12.
+A filled action has a `Reach`: `SMALL` 34 dp tall in a strip, `REGULAR` 44 beside others, `LARGE` 52 as
+what the screen is for.
