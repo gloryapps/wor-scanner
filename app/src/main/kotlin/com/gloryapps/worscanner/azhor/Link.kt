@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.smithy
+package com.gloryapps.worscanner.azhor
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
@@ -18,10 +18,10 @@ interface TokenStore {
 }
 
 /** The scanner's link to the site: the token a code was traded for, and the scans sent with it. */
-class Link(private val smithy: Smithy, private val store: TokenStore) {
+class Link(private val api: AzhorApi, private val store: TokenStore) {
     val linked: Flow<Boolean> = store.token.map { it != null }
 
-    suspend fun link(code: String): Linking = smithy.link(code).also { if (it is Linking.Linked) store.keep(it.token) }
+    suspend fun link(code: String): Linking = api.link(code).also { if (it is Linking.Linked) store.keep(it.token) }
 
     suspend fun forget() = store.keep(null)
 
@@ -29,7 +29,7 @@ class Link(private val smithy: Smithy, private val store: TokenStore) {
     suspend fun send(scans: List<File>): Sending {
         val token = store.token.first() ?: return Sending.Unlinked
         for (scan in scans) {
-            val sent = smithy.send(token, scan)
+            val sent = api.send(token, scan)
             if (sent == Sending.Unlinked) forget()
             if (sent != Sending.Sent) return sent
         }

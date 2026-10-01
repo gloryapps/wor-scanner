@@ -1,9 +1,9 @@
-package com.gloryapps.worscanner.smithy
+package com.gloryapps.worscanner.azhor
 
 import java.io.File
 
 /** Azhor's Master Smithy, as a scanner reaches it: a code traded once for a token, and scans sent with that token. */
-interface Smithy {
+interface AzhorApi {
     /** What the site made of a code the player typed. */
     suspend fun link(code: String): Linking
 

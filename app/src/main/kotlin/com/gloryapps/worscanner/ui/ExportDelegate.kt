@@ -2,12 +2,12 @@ package com.gloryapps.worscanner.ui
 
 import android.content.Context
 import com.gloryapps.worscanner.R
+import com.gloryapps.worscanner.azhor.Link
+import com.gloryapps.worscanner.azhor.Sending
 import com.gloryapps.worscanner.capture.Exports
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.capture.sharedFolders
 import com.gloryapps.worscanner.scanner.resultOf
-import com.gloryapps.worscanner.smithy.Link
-import com.gloryapps.worscanner.smithy.Sending
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

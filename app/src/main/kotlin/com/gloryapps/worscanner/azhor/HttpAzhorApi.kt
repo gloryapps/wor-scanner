@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.smithy
+package com.gloryapps.worscanner.azhor
 
 import com.gloryapps.worscanner.scanner.resultOf
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +12,7 @@ import java.net.URL
 import java.util.zip.GZIPOutputStream
 
 /** The site at `site`, reached over its two addresses for a scanner: `/scanner/link` and `/scanner/scans`. */
-class SmithyHttp(private val site: String) : Smithy {
+class HttpAzhorApi(private val site: String) : AzhorApi {
     override suspend fun link(code: String): Linking = withContext(Dispatchers.IO) {
         resultOf {
             val connection = open("$site/scanner/link", "application/json")

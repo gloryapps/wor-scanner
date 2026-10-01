@@ -150,11 +150,11 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   permission at all; a device with no mount is told to use the share sheet instead.
 - The clipboard does not cross that border.
 - The network does, once the scanner is linked. The lab's Import a scan shows a code; the home screen
-  trades it at the lab's `POST /scanner/link` for a token, and `smithy/Link` keeps that token in a
+  trades it at the lab's `POST /scanner/link` for a token, and `azhor/Link` keeps that token in a
   DataStore of its own, `link`. The export sheet's Send posts each scan's `scan.json`, gzipped, to
   `POST /scanner/scans` with the token as a bearer; the pictures stay behind. A 401 means the lab
-  no longer knows the token, and the scanner forgets it. The lab's address is `BuildConfig.SMITHY_URL`,
-  from the Gradle property `smithy.url`, and a debug build allows cleartext so it can point at the lab
+  no longer knows the token, and the scanner forgets it. The lab's address is `BuildConfig.AZHOR_URL`,
+  from the Gradle property `azhor.url`, and a debug build allows cleartext so it can point at the lab
   running on the PC.
 - Preferences in DataStore. `Chosen` holds which kind the next scan reads, picked on the home screen
   or in the overlay's menu, held at once and written behind; `link` holds the lab's token.

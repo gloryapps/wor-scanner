@@ -3,14 +3,14 @@ package com.gloryapps.worscanner.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gloryapps.worscanner.R
+import com.gloryapps.worscanner.azhor.Link
+import com.gloryapps.worscanner.azhor.Linking
 import com.gloryapps.worscanner.capture.CaptureSession
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.capture.Readings
 import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
-import com.gloryapps.worscanner.smithy.Link
-import com.gloryapps.worscanner.smithy.Linking
 import com.gloryapps.worscanner.ui.ExportDelegate
 import com.gloryapps.worscanner.update.Update
 import com.gloryapps.worscanner.update.Updates

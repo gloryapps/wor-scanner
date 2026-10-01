@@ -1,4 +1,4 @@
-package com.gloryapps.worscanner.smithy
+package com.gloryapps.worscanner.azhor
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 
 class LinkTest {
     /** A site that trades one code for one token, and answers each scan sent as it is told to. */
-    private class Site(private val answers: List<Sending> = emptyList()) : Smithy {
+    private class Site(private val answers: List<Sending> = emptyList()) : AzhorApi {
         val sent = mutableListOf<Pair<String, File>>()
 
         override suspend fun link(code: String): Linking = if (code == CODE) Linking.Linked(TOKEN) else Linking.Refused
