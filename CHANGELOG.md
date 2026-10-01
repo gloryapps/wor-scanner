@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The scans kept on the device and the link to Azhor’s Master Smithy moved behind Earlier scans, in
   the home screen's header.
 - A permission that is off is asked for when Start is pressed, with why the scanner needs it.
+- A newer version is offered in a banner on the home screen.
 
 ## [0.2.1] - 2026-09-29
 

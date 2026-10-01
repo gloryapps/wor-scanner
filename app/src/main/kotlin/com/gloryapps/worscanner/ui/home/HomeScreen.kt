@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,9 +65,9 @@ import com.gloryapps.worscanner.ui.Edged
 import com.gloryapps.worscanner.ui.ExportEffects
 import com.gloryapps.worscanner.ui.Inline
 import com.gloryapps.worscanner.ui.Lettering
-import com.gloryapps.worscanner.ui.Link
 import com.gloryapps.worscanner.ui.Permission
 import com.gloryapps.worscanner.ui.Question
+import com.gloryapps.worscanner.ui.Reach
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
 import com.gloryapps.worscanner.ui.StepNumber
@@ -125,7 +126,9 @@ internal fun HomeScreen(onEarlier: () -> Unit, viewModel: HomeViewModel = koinVi
 @Composable
 internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     Column(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) {
-        Header(state.running, state.update, onEvent)
+        Header(state.running, onEvent)
+        /* Never beside a scan that just ended, so the update does not compete with sending it. */
+        if (state.justScanned == null) (state.update as? Update.Out)?.let { Offered(it, onEvent) }
         BoxWithConstraints(Modifier.weight(1f)) {
             val wide = maxWidth >= WIDE
             Column(
@@ -215,7 +218,7 @@ private fun Missing(permission: Permission, open: Boolean, onWhy: () -> Unit, on
 }
 
 @Composable
-private fun Header(running: ScanState.Running?, update: Update, onEvent: (HomeEvent) -> Unit) {
+private fun Header(running: ScanState.Running?, onEvent: (HomeEvent) -> Unit) {
     Column {
         Row(
             Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 16.dp),
@@ -225,12 +228,6 @@ private fun Header(running: ScanState.Running?, update: Update, onEvent: (HomeEv
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Brand()
                 Text(BuildConfig.VERSION_NAME, style = Lettering.dataSmall, color = Colors.muted)
-                when (update) {
-                    is Update.Available -> Link(stringResource(R.string.home_update, update.release.version.toString())) { onEvent(HomeEvent.Update) }
-                    is Update.Downloading -> Text(stringResource(R.string.home_update_downloading, update.release.version.toString()), style = Lettering.caption, color = Colors.muted)
-                    is Update.Failed -> Link(stringResource(R.string.home_update_page, update.release.version.toString())) { onEvent(HomeEvent.Update) }
-                    Update.None -> Unit
-                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 running?.let {
@@ -251,6 +248,30 @@ private fun Header(running: ScanState.Running?, update: Update, onEvent: (HomeEv
             }
         }
         Rule()
+    }
+}
+
+/** A newer release across the screen under the header: what it is, and the way to it as fetching it stands. */
+@Composable
+private fun Offered(update: Update.Out, onEvent: (HomeEvent) -> Unit) {
+    val version = update.release.version.toString()
+
+    Column {
+        Row(
+            Modifier.fillMaxWidth().height(40.dp).background(Colors.accentWash).padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Outlined.SystemUpdate, contentDescription = null, Modifier.size(18.dp), tint = Colors.accent)
+            Text(stringResource(R.string.home_update_out, version), style = Lettering.stepName, color = Colors.text)
+            Text(stringResource(R.string.home_update_keeps), Modifier.weight(1f), style = Lettering.caption, color = Colors.muted, maxLines = 1)
+            when (update) {
+                is Update.Available -> Accented(stringResource(R.string.home_update_now), reach = Reach.SMALL, onClick = { onEvent(HomeEvent.Update) })
+                is Update.Downloading -> Text(stringResource(R.string.home_update_downloading, version), style = Lettering.caption, color = Colors.muted)
+                is Update.Failed -> Accented(stringResource(R.string.home_update_page, version), reach = Reach.SMALL, onClick = { onEvent(HomeEvent.Update) })
+            }
+        }
+        Spacer(Modifier.fillMaxWidth().height(1.dp).background(Colors.accentEdge))
     }
 }
 

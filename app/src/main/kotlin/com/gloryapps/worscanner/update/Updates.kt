@@ -35,12 +35,17 @@ sealed interface Update {
     /** No newer release is known: none is out, or the check did not answer. */
     data object None : Update
 
-    data class Available(val release: Release) : Update
+    /** A newer release is out, whatever came of fetching it. */
+    sealed interface Out : Update {
+        val release: Release
+    }
 
-    data class Downloading(val release: Release) : Update
+    data class Available(override val release: Release) : Out
+
+    data class Downloading(override val release: Release) : Out
 
     /** The APK could not be had: the release's page is offered instead. */
-    data class Failed(val release: Release) : Update
+    data class Failed(override val release: Release) : Out
 }
 
 /** Whether a newer release than the running one is out, and its APK fetched for the system's installer. */

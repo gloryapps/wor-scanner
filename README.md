@@ -15,7 +15,7 @@ phone, but that has not been tried.
 3. Open WoR Scanner. The first time, it shows how a scan works and asks for its permissions, saying
    why; one turned off later is asked for again when **Start** is pressed.
 
-When a newer release is out, the home screen's header offers it beside the version. Tapping it
+When a newer release is out, a banner under the home screen's header offers it. **Update now**
 downloads the release and Android asks to install it over the one you have, your readings kept; the
 first time, Android also asks to let WoR Scanner install apps.
 

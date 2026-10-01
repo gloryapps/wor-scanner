@@ -88,7 +88,7 @@ internal sealed interface HomeEvent {
     /** The header's way to every scan kept on the device. */
     data object Earlier : HomeEvent
 
-    /** The header's update link: the newer release installed, or its page opened where its APK could not be had. */
+    /** The banner's update: the newer release installed, or its page opened where its APK could not be had. */
     data object Update : HomeEvent
 }
 

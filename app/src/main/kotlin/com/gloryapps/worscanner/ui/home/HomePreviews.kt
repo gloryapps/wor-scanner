@@ -18,13 +18,36 @@ import com.gloryapps.worscanner.ui.TALL_H
 import com.gloryapps.worscanner.ui.TALL_W
 import com.gloryapps.worscanner.ui.WIDE_H
 import com.gloryapps.worscanner.ui.WIDE_W
+import com.gloryapps.worscanner.update.Release
+import com.gloryapps.worscanner.update.Update
+import com.gloryapps.worscanner.update.Version
 
 private val READY = HomeUiState(granted = Permission.entries.toSet())
+
+private val RELEASE = Release(Version(listOf(1, 5, 0)), apk = "", page = "")
 
 @Preview(name = "Home · ready", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun HomePreview() {
     ScannerTheme { Home(READY) { } }
+}
+
+@Preview(name = "Home · update available", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun HomeUpdatePreview() {
+    ScannerTheme { Home(READY.copy(update = Update.Available(RELEASE))) { } }
+}
+
+@Preview(name = "Home · update downloading", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun HomeUpdateDownloadingPreview() {
+    ScannerTheme { Home(READY.copy(update = Update.Downloading(RELEASE))) { } }
+}
+
+@Preview(name = "Home · update failed", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun HomeUpdateFailedPreview() {
+    ScannerTheme { Home(READY.copy(update = Update.Failed(RELEASE))) { } }
 }
 
 @Preview(name = "Home · scanning", widthDp = WIDE_W, heightDp = WIDE_H)

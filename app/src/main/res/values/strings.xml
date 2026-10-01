@@ -24,7 +24,9 @@
     <string name="emulator_bluestacks">BlueStacks</string>
     <string name="emulator_bluestacks_pc">On Windows: ProgramData\\BlueStacks_nxt\\Engine\\UserData\\SharedFolder\\WoR Scanner</string>
 
-    <string name="home_update">Update to %1$s</string>
+    <string name="home_update_out">Version %1$s is out.</string>
+    <string name="home_update_keeps">Updating keeps every scan on this device.</string>
+    <string name="home_update_now">Update now</string>
     <string name="home_update_downloading">Downloading %1$s…</string>
     <string name="home_update_page">Get %1$s on GitHub</string>
     <string name="home_start">Start</string>
