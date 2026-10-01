@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Share
@@ -28,9 +29,9 @@ import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import java.io.File
 
-/** The board's own frames: the game's 1280x720 inside an emulator, and a phone held upright. */
-internal const val WIDE_W = 1280
-internal const val WIDE_H = 720
+/** The board's own frames: LDPlayer's 1280x720 window at its 240 dpi, and a phone held upright. */
+internal const val WIDE_W = 853
+internal const val WIDE_H = 480
 internal const val TALL_W = 412
 internal const val TALL_H = 915
 
@@ -73,11 +74,11 @@ private fun ControlsPreview() {
         ) {
             Section("Controls")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Accented("Start", said = "→ game", reach = Reach.LARGE) { }
                 Accented("Start", said = "→ game") { }
+                Accented("Next: permissions", trailing = Icons.AutoMirrored.Outlined.ArrowForward) { }
                 Accented("Update now", reach = Reach.SMALL) { }
             }
-            Accented("Send to Azhor’s Master Smithy", Modifier.fillMaxWidth(), icon = Icons.AutoMirrored.Outlined.Send, reach = Reach.LARGE) { }
+            Accented("Send to Azhor’s Master Smithy", Modifier.fillMaxWidth(), icon = Icons.AutoMirrored.Outlined.Send) { }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Edged("Save → LDPlayer", Modifier.weight(1f), icon = Icons.Outlined.Folder) { }
                 Edged("Share…", icon = Icons.Outlined.Share) { }
@@ -120,18 +121,15 @@ private fun LetteringPreview() {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("display · Three permissions", style = Lettering.display, color = Colors.text)
-            Text("lead · Android asks for each one on its own screen.", style = Lettering.lead, color = Colors.muted)
             Text("title · Scan your gear", style = Lettering.title, color = Colors.text)
             Text("subtitle · Vierna's Bangle", style = Lettering.subtitle, color = Colors.text)
-            Text("step · Press Start", style = Lettering.step, color = Colors.text)
-            Text("stepBody · Open Storage → Gear.", style = Lettering.stepBody, color = Colors.text)
+            Text("stepName · Press Start", style = Lettering.stepName, color = Colors.text)
             Text("brand · WoR Scanner", style = Lettering.brand, color = Colors.text)
             Section("section · permissions")
             Text("body · what the card says under its name.", style = Lettering.body, color = Colors.muted)
-            Text("bodySmall · what is said under a step.", style = Lettering.bodySmall, color = Colors.muted)
             Text("caption · and what is said under that.", style = Lettering.caption, color = Colors.muted)
             Text("action · Save", style = Lettering.action, color = Colors.text)
-            Text("actionLarge · Start", style = Lettering.actionLarge, color = Colors.text)
+            Text("actionSmall · Turn on", style = Lettering.actionSmall, color = Colors.text)
             Text("data · 20260907-130841", style = Lettering.data, color = Colors.text)
             Text("dataSmall · 1204/2500", style = Lettering.dataSmall, color = Colors.muted)
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {

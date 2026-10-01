@@ -39,22 +39,24 @@ No font file ships with the app.
 | --- | --- | --- |
 | `title` | sans 19 semibold | what a card or a screen is called |
 | `subtitle` | sans 16 medium | a reading's tile, a sheet's heading |
-| `display` / `lead` | sans 32 semibold / 15 | a first-run screen's heading; the prose under it |
-| `step` / `stepBody` | sans 15 medium / 14 | a step's name; a line of a kind's steps |
-| `kindName` | sans 17 semibold | a kind's name over its steps |
+| `display` | sans 22 semibold | a first-run screen's heading |
+| `stepName` | sans 13 medium, in lines | a step's name, a grant's, what the site answered |
 | `brand` | sans 15 medium | the app's name in the header |
 | `section` | sans 10 medium, tracked, upper-cased by `Section` | the line above a group |
 | `body` | sans 13 | prose |
-| `bodySmall` | sans 12 | what is said under a step |
 | `caption` | sans 11 | what is said under a line of prose |
-| `action` / `actionLarge` | sans 13 / 15 medium | a button; a 52 dp one |
+| `action` / `actionSmall` | sans 13 / 12 medium | a button; a grant's, a strip's |
 | `data` / `dataSmall` | mono 12 / 10 | a stamp, a count, an id, a file name |
-| `count` / `code` / `numeral` | mono 64 / 20 tracked / 12, medium | how many a scan read; the link code; the number in a step's ring |
+| `count` / `code` / `numeral` | mono 44 / 18 tracked / 10, medium | how many a scan read; the link code; a step's number |
 | `label` / `mark` | mono 11 / mono 9 tracked | a row of the menu over the game; the one word on the idle capsule |
 
 ## Shapes
 
 6, 8, 10, 12, 14 dp, in Material's five slots from `extraSmall`; a pill is fully rounded. The capsule
-over the game and its close target are pills; a card is 10, the card that leads 12, a screen-sized panel 12, a sheet 12.
-A filled action has a `Reach`: `SMALL` 34 dp tall in a strip, `REGULAR` 44 beside others, `LARGE` 52 as
-what the screen is for.
+over the game and its close target are pills; a card is 10, a screen-sized panel 12, a sheet 12.
+A filled action has a `Reach`: `SMALL` 30 dp tall in a strip over the screen, `REGULAR` 44 on it.
+
+## Frame
+
+The screens are drawn for LDPlayer's window: 1280x720 px at 240 dpi, 853x480 dp, the previews' wide
+frame. A larger window only adds room; below 720 dp wide the columns stack and scroll.

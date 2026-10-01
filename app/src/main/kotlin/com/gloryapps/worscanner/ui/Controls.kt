@@ -31,11 +31,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** How much room a filled action takes: in a strip, beside others, or as the one thing a screen is for. */
-enum class Reach(val height: Dp, val radius: Dp, val sides: Dp, val icon: Dp, val style: TextStyle, val said: TextStyle) {
-    SMALL(34.dp, 8.dp, 18.dp, 16.dp, Lettering.action, Lettering.dataSmall),
-    REGULAR(44.dp, 9.dp, 22.dp, 17.dp, Lettering.action, Lettering.dataSmall),
-    LARGE(52.dp, 10.dp, 30.dp, 19.dp, Lettering.actionLarge, Lettering.data),
+/** How much room a filled action takes: in a strip over the screen, or on the screen itself. */
+enum class Reach(val height: Dp, val radius: Dp, val sides: Dp, val icon: Dp, val style: TextStyle) {
+    SMALL(30.dp, 7.dp, 14.dp, 16.dp, Lettering.actionSmall),
+    REGULAR(44.dp, 9.dp, 22.dp, 18.dp, Lettering.action),
 }
 
 /** The one action a screen leads with: filled with the accent. `said` is the hint printed beside it; `trailing` points where it goes. */
@@ -84,7 +83,7 @@ private fun Filled(
     ) {
         icon?.let { Icon(it, contentDescription = null, Modifier.size(reach.icon), tint = Colors.onAccent) }
         Text(label, style = reach.style, color = Colors.onAccent)
-        if (said != null) Text(said, style = reach.said, color = Colors.onAccent.copy(alpha = 0.7f))
+        if (said != null) Text(said, style = Lettering.dataSmall, color = Colors.onAccent.copy(alpha = 0.7f))
         trailing?.let { Icon(it, contentDescription = null, Modifier.size(reach.icon), tint = Colors.onAccent) }
     }
 }
@@ -99,8 +98,8 @@ fun Edged(label: String, modifier: Modifier = Modifier, icon: ImageVector? = nul
 @Composable
 fun Grant(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Ringed(
-        label, modifier.width(110.dp), 38.dp, 0.dp, RoundedCornerShape(9.dp),
-        Colors.accentEdge, Lettering.action, Colors.accent, onClick,
+        label, modifier.width(84.dp), 32.dp, 0.dp, RoundedCornerShape(7.dp),
+        Colors.accentEdge, Lettering.actionSmall, Colors.accent, onClick,
         ground = Colors.accentWash,
     )
 }
@@ -209,10 +208,10 @@ private fun Ringed(
             .border(1.dp, edge, shape)
             .let { if (onClick == null) it else it.clickable(onClick = onClick) }
             .padding(horizontal = sides),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        icon?.let { Icon(it, contentDescription = null, Modifier.size(17.dp), tint = colour) }
-        Text(label, style = style, color = colour)
+        icon?.let { Icon(it, contentDescription = null, Modifier.size(16.dp), tint = colour) }
+        Text(label, style = style, color = colour, maxLines = 1, softWrap = false)
     }
 }

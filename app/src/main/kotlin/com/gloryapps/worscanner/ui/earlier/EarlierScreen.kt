@@ -87,8 +87,8 @@ internal fun Earlier(state: EarlierUiState, onEvent: (EarlierEvent) -> Unit) {
         Header(state.readings.orEmpty().isNotEmpty(), onEvent)
         Rule()
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 22.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             state.readings?.let { Readings(it, onEvent) }
             Smithy(state.site, onEvent)
@@ -112,7 +112,7 @@ internal fun Earlier(state: EarlierUiState, onEvent: (EarlierEvent) -> Unit) {
 @Composable
 private fun Header(any: Boolean, onEvent: (EarlierEvent) -> Unit) {
     Row(
-        Modifier.fillMaxWidth().height(58.dp).padding(end = 24.dp),
+        Modifier.fillMaxWidth().height(48.dp).padding(end = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

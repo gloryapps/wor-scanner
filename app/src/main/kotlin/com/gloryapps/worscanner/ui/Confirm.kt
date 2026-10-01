@@ -54,8 +54,8 @@ fun Question(width: Dp, onDismiss: () -> Unit, content: @Composable ColumnScope.
                 .background(Colors.raised)
                 .border(1.dp, Colors.edge, RoundedCornerShape(12.dp))
                 .verticalScroll(rememberScrollState())
-                .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content,
         )
     }

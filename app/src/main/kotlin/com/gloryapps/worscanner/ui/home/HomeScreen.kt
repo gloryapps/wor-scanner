@@ -13,7 +13,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -67,7 +66,6 @@ import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Link
 import com.gloryapps.worscanner.ui.Permission
 import com.gloryapps.worscanner.ui.Question
-import com.gloryapps.worscanner.ui.Reach
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
 import com.gloryapps.worscanner.ui.StepNumber
@@ -131,8 +129,8 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                 Modifier
                     .fillMaxSize()
                     .then(if (wide) Modifier else Modifier.verticalScroll(rememberScrollState()))
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
+                    .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Steps(state, wide, onEvent)
                 Kinds(wide, if (wide) Modifier.weight(1f) else Modifier)
@@ -152,14 +150,14 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
 internal fun Ask(missing: List<Permission>, ready: Boolean, onEvent: (HomeEvent) -> Unit, opened: Set<Permission> = emptySet()) {
     var open by rememberSaveable { mutableStateOf(opened) }
 
-    Question(480.dp, onDismiss = { onEvent(HomeEvent.Dismiss) }) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stringResource(R.string.home_ask_title), style = Lettering.title, color = Colors.text)
-            Text(stringResource(R.string.home_ask_said), style = Lettering.body, color = Colors.muted)
+    Question(400.dp, onDismiss = { onEvent(HomeEvent.Dismiss) }) {
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(stringResource(R.string.home_ask_title), style = Lettering.subtitle, color = Colors.text)
+            Text(stringResource(R.string.home_ask_said), style = Lettering.caption, color = Colors.muted)
         }
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Colors.sunken)) {
             if (missing.isEmpty()) {
-                Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.CheckCircle, contentDescription = null, Modifier.size(18.dp), tint = Colors.accent)
                     Text(stringResource(R.string.home_ask_all_on), style = Lettering.body, color = Colors.accent)
                 }
@@ -184,26 +182,25 @@ internal fun Ask(missing: List<Permission>, ready: Boolean, onEvent: (HomeEvent)
 @Composable
 private fun Missing(permission: Permission, open: Boolean, onWhy: () -> Unit, onGrant: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(permission.icon, contentDescription = null, Modifier.size(19.dp), tint = Colors.warning)
+        Icon(permission.icon, contentDescription = null, Modifier.size(18.dp), tint = Colors.warning)
         Text(stringResource(permission.label), Modifier.weight(1f), style = Lettering.body, color = Colors.text)
         Icon(
             Icons.Outlined.Info,
             contentDescription = stringResource(R.string.permission_why),
-            Modifier.clip(CircleShape).clickable(onClick = onWhy).padding(4.dp).size(18.dp),
+            Modifier.clip(CircleShape).clickable(onClick = onWhy).padding(6.dp).size(18.dp),
             tint = if (open) Colors.accent else Colors.muted,
         )
         Inline(stringResource(R.string.permission_turn_on), accented = true, onClick = onGrant)
     }
     if (open) {
-        Rule()
         Text(
             stringResource(permission.why),
-            Modifier.padding(start = 45.dp, top = 10.dp, end = 14.dp, bottom = 14.dp),
-            style = Lettering.bodySmall,
+            Modifier.padding(start = 40.dp, end = 12.dp, bottom = 10.dp),
+            style = Lettering.caption,
             color = Colors.muted,
         )
     }
@@ -213,11 +210,11 @@ private fun Missing(permission: Permission, open: Boolean, onWhy: () -> Unit, on
 private fun Header(running: ScanState.Running?, update: Update, onEvent: (HomeEvent) -> Unit) {
     Column {
         Row(
-            Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 24.dp),
+            Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(11.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Brand()
                 Text(BuildConfig.VERSION_NAME, style = Lettering.dataSmall, color = Colors.muted)
                 when (update) {
@@ -227,7 +224,7 @@ private fun Header(running: ScanState.Running?, update: Update, onEvent: (HomeEv
                     Update.None -> Unit
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 running?.let {
                     Text(
                         "${stringResource(it.kind.label)} ${it.progress.done}/${it.progress.held}",
@@ -236,7 +233,7 @@ private fun Header(running: ScanState.Running?, update: Update, onEvent: (HomeEv
                     )
                 }
                 Row(
-                    Modifier.clickable { onEvent(HomeEvent.Earlier) }.padding(vertical = 10.dp),
+                    Modifier.height(44.dp).clickable { onEvent(HomeEvent.Earlier) },
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -273,20 +270,19 @@ private fun Steps(state: HomeUiState, wide: Boolean, onEvent: (HomeEvent) -> Uni
                 stringResource(R.string.home_start),
                 it,
                 said = stringResource(R.string.home_to_game),
-                reach = Reach.LARGE,
                 onClick = { onEvent(HomeEvent.Start) },
             )
         }
     }
 
-    Card(Modifier.fillMaxWidth(), leading = true, padding = PaddingValues(horizontal = 24.dp, vertical = 22.dp)) {
+    Card(Modifier.fillMaxWidth(), leading = true) {
         if (wide) {
-            Row(horizontalArrangement = Arrangement.spacedBy(28.dp), verticalAlignment = Alignment.CenterVertically) {
-                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(24.dp)) { steps(Modifier.weight(1f)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) { steps(Modifier.weight(1f)) }
                 start(Modifier)
             }
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { steps(Modifier.fillMaxWidth()) }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { steps(Modifier.fillMaxWidth()) }
             start(Modifier.fillMaxWidth())
         }
     }
@@ -294,11 +290,11 @@ private fun Steps(state: HomeUiState, wide: Boolean, onEvent: (HomeEvent) -> Uni
 
 @Composable
 private fun Step(number: Int, name: String, said: String, saidColour: Color, modifier: Modifier) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
         StepNumber(number)
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(name, style = Lettering.step, color = Colors.text)
-            Text(said, style = Lettering.bodySmall, color = saidColour)
+        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(name, style = Lettering.stepName, color = Colors.text)
+            Text(said, style = Lettering.caption, color = saidColour)
         }
     }
 }
@@ -309,11 +305,11 @@ private fun Kinds(wide: Boolean, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Section(stringResource(R.string.home_before))
         if (wide) {
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Kind.entries.forEach { KindCard(it, Modifier.weight(1f).fillMaxHeight(), filling = true) }
             }
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Kind.entries.forEach { KindCard(it, Modifier.fillMaxWidth(), filling = false) }
             }
         }
@@ -323,20 +319,20 @@ private fun Kinds(wide: Boolean, modifier: Modifier) {
 /** A kind's steps, numbered, and what its scan does pinned under them; `filling` sends that note to the card's foot. */
 @Composable
 private fun KindCard(kind: Kind, modifier: Modifier, filling: Boolean) {
-    Card(modifier, padding = PaddingValues(horizontal = 20.dp, vertical = 18.dp)) {
-        Text(stringResource(kind.label), style = Lettering.kindName, color = Colors.text)
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Card(modifier, spacing = 8.dp) {
+        Text(stringResource(kind.label), style = Lettering.subtitle, color = Colors.text)
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             kind.steps.forEachIndexed { at, step ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("${at + 1}", Modifier.width(10.dp).alignByBaseline(), style = Lettering.numeral, color = Colors.accent)
-                    Text(stringResource(step), Modifier.alignByBaseline(), style = Lettering.stepBody, color = Colors.text)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("${at + 1}", Modifier.width(8.dp).alignByBaseline(), style = Lettering.numeral, color = Colors.accent)
+                    Text(stringResource(step), Modifier.alignByBaseline(), style = Lettering.body, color = Colors.text)
                 }
             }
         }
         if (filling) Spacer(Modifier.weight(1f))
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Rule()
-            Text(stringResource(kind.note), style = Lettering.bodySmall, color = Colors.muted)
+            Text(stringResource(kind.note), style = Lettering.caption, color = Colors.muted)
         }
     }
 }
