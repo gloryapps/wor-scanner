@@ -57,6 +57,7 @@ import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.label
+import com.gloryapps.worscanner.ui.reminder
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 
@@ -72,12 +73,15 @@ fun OverlayContent(
     onDragStart: () -> Unit,
     onDragEnd: () -> Unit,
     scanning: Scanning = koinInject(),
+    chosen: Chosen = koinInject(),
 ) {
     val context = LocalContext.current
     val state by scanning.state.collectAsStateWithLifecycle()
+    val kind by chosen.kind.collectAsStateWithLifecycle()
 
     Capsule(
         state = shownFor(state),
+        kind = kind,
         onOpen = onOpen,
         onStop = { CaptureService.stopScan(context) },
         onView = { context.openApp() },
@@ -139,24 +143,24 @@ fun SheetContent(
 }
 
 /**
- * Idle and capturing differ by rhythm, not by size or colour: a still dot beside the word that says
- * what a tap does, or a breathing one beside the count. The window is the touch target, 44dp tall
- * whatever the capsule paints.
+ * Idle and capturing differ by rhythm, not by size or colour: a still dot beside the words that say
+ * what the menu's Scan will read, or a breathing one beside the count. The window is the touch
+ * target, 44dp tall whatever the capsule paints.
  */
 @Composable
-internal fun Capsule(state: ScanState, onOpen: () -> Unit, onStop: () -> Unit, onView: () -> Unit, modifier: Modifier) {
+internal fun Capsule(state: ScanState, kind: Kind, onOpen: () -> Unit, onStop: () -> Unit, onView: () -> Unit, modifier: Modifier) {
     Box(
         modifier.height(TARGET).pointerInput(Unit) { detectTapGestures { onOpen() } },
         contentAlignment = Alignment.Center,
     ) {
         when (state) {
             ScanState.Idle -> Row(
-                Modifier.pill(IDLE, Colors.glassAccentEdge).padding(horizontal = 9.dp),
+                Modifier.pill(IDLE, Colors.glassAccentEdge).padding(horizontal = 11.dp),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.size(5.dp).background(Colors.accent, CircleShape))
-                Text(stringResource(R.string.overlay_open), style = Lettering.mark, color = Colors.text)
+                Text(stringResource(R.string.overlay_scan_kind, stringResource(kind.label)).uppercase(), style = Lettering.word, color = Colors.text)
             }
 
             is ScanState.Running -> Row(
@@ -251,12 +255,24 @@ internal fun Sheet(
             .padding(6.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Kinds(kind, onChoose)
-        Action(
-            label = stringResource(R.string.overlay_scan),
-            said = if (running) stringResource(R.string.overlay_running) else null,
-            onClick = onScan,
+        Text(
+            stringResource(R.string.overlay_what).uppercase(),
+            Modifier.padding(start = 9.dp, top = 6.dp, end = 9.dp, bottom = 2.dp),
+            style = Lettering.mark,
+            color = Colors.faint,
         )
+        Kinds(kind, onChoose)
+        Text(
+            stringResource(kind.reminder),
+            Modifier.padding(start = 9.dp, top = 3.dp, end = 9.dp, bottom = 5.dp),
+            style = Lettering.caption,
+            color = Colors.muted,
+        )
+        if (running) {
+            Action(label = stringResource(R.string.overlay_scan), said = stringResource(R.string.overlay_running), onClick = onScan)
+        } else {
+            Lead(stringResource(R.string.overlay_scan), stringResource(kind.label).lowercase(), onScan)
+        }
         Action(label = stringResource(R.string.overlay_read), onClick = onRead)
         Action(label = stringResource(R.string.overlay_app), onClick = onApp)
         Box(Modifier.padding(horizontal = 9.dp, vertical = 3.dp).fillMaxWidth().height(1.dp).background(Colors.hairline))
@@ -264,7 +280,7 @@ internal fun Sheet(
     }
 }
 
-/** What Scan and Read take, the chosen kind lit; a choice lasts until the next, here or in the app. */
+/** What Scan and Read take, the chosen kind lit; a choice lasts until the next. */
 @Composable
 private fun Kinds(kind: Kind, onChoose: (Kind) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -284,6 +300,23 @@ private fun Kinds(kind: Kind, onChoose: (Kind) -> Unit) {
                 maxLines = 1,
             )
         }
+    }
+}
+
+/** Scan, the line the menu leads with: on the accent, with the kind it will read on its right. */
+@Composable
+private fun Lead(label: String, kind: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(Colors.accent, RoundedCornerShape(6.dp))
+            .clickable(interactionSource = null, indication = null, onClick = onClick)
+            .padding(9.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = Lettering.label, color = Colors.onAccent)
+        Text(kind, style = Lettering.mark, color = Colors.onAccent.copy(alpha = 0.7f))
     }
 }
 
@@ -309,10 +342,10 @@ private fun android.content.Context.openApp() =
 
 /** The least a finger is given, whatever is painted inside it. */
 internal val TARGET = 44.dp
-internal val IDLE = 22.dp
+internal val IDLE = 24.dp
 private val CAPTURING = 26.dp
 private val ENDED = 24.dp
 private val STOP = 18.dp
-internal val SHEET = 200.dp
+internal val SHEET = 220.dp
 private const val BREATH_MS = 850
 private const val ENDED_SHOWN_MS = 8_000L

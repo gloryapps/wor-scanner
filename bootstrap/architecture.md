@@ -46,7 +46,7 @@ that the walk over a grid is written once and a kind says only what its tiles ho
 
 - Arrows point down only. `scan/` knows no kind; each kind's package extends its `Scan<T>`;
   `Kind.scan()` in `kinds/` is the one place every kind is named, and `Kind.named` in the app's
-  `ui/Kinds.kt` is the other, for its label and the home screen's instructions.
+  `ui/Kinds.kt` is the other, for its label, the home screen's steps and the menu's reminder.
 - `Kind` is an enum: identity only. Its id is the JSON's `kind` and the scan folder's, `entries`
   is what the overlay lists, and a `when` over it is exhaustive.
 - `Scan<T>` is an abstract class: a kind's `GridLayout`, its serializer, `readTile` (what it reads

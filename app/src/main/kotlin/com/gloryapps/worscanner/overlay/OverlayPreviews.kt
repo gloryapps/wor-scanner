@@ -38,7 +38,7 @@ private fun HairlinePreview() {
     }
 }
 
-@Preview(name = "Capsule · every state", widthDp = 320, heightDp = 150)
+@Preview(name = "Capsule · idle for each kind, under way, ended", widthDp = 320, heightDp = 300)
 @Composable
 private fun CapsulePreview() {
     ScannerTheme {
@@ -46,14 +46,14 @@ private fun CapsulePreview() {
             Modifier.fillMaxSize().background(GAME).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Capsule(ScanState.Idle, { }, { }, { }, Modifier)
-            Capsule(RUNNING, { }, { }, { }, Modifier)
-            Capsule(ENDED, { }, { }, { }, Modifier)
+            Kind.entries.forEach { Capsule(ScanState.Idle, it, { }, { }, { }, Modifier) }
+            Capsule(RUNNING, Kind.GEAR, { }, { }, { }, Modifier)
+            Capsule(ENDED, Kind.GEAR, { }, { }, { }, Modifier)
         }
     }
 }
 
-@Preview(name = "Capsule · the sheet open", widthDp = 320, heightDp = 260)
+@Preview(name = "Capsule · the sheet open", widthDp = 320, heightDp = 340)
 @Composable
 private fun SheetPreview() {
     ScannerTheme {
@@ -62,23 +62,23 @@ private fun SheetPreview() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Capsule(RUNNING, { }, { }, { }, Modifier)
+            Capsule(RUNNING, Kind.GEAR, { }, { }, { }, Modifier)
             Sheet(kind = Kind.GEAR, running = true, onChoose = { }, onScan = { }, onRead = { }, onApp = { }, onClose = { })
         }
     }
 }
 
-@Preview(name = "Sheet · nothing running", widthDp = 320, heightDp = 200)
+@Preview(name = "Sheet · each kind, nothing running", widthDp = 760, heightDp = 360)
 @Composable
 private fun SheetIdlePreview() {
     ScannerTheme {
-        Column(
-            Modifier.fillMaxSize().background(GAME).padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Capsule(ScanState.Idle, { }, { }, { }, Modifier)
-            Sheet(kind = Kind.ARTIFACTS, running = false, onChoose = { }, onScan = { }, onRead = { }, onApp = { }, onClose = { })
+        Row(Modifier.fillMaxSize().background(GAME).padding(20.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            Kind.entries.forEach { kind ->
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Capsule(ScanState.Idle, kind, { }, { }, { }, Modifier)
+                    Sheet(kind = kind, running = false, onChoose = { }, onScan = { }, onRead = { }, onApp = { }, onClose = { })
+                }
+            }
         }
     }
 }

@@ -49,7 +49,8 @@ object Lettering {
     val code = TextStyle(fontFamily = Fonts.mono, fontSize = 18.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.12.em)
     val numeral = TextStyle(fontFamily = Fonts.mono, fontSize = 10.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium)
 
-    /** A row of the menu over the game, and the one tracked word on its capsule. */
+    /** A row of the menu over the game, a small tracked word in it, and the words on its idle capsule. */
     val label = TextStyle(fontFamily = Fonts.mono, fontSize = 11.sp, lineHeight = 15.sp)
     val mark = TextStyle(fontFamily = Fonts.mono, fontSize = 9.sp, letterSpacing = 0.09.em)
+    val word = TextStyle(fontFamily = Fonts.mono, fontSize = 10.sp, letterSpacing = 0.09.em)
 }

@@ -49,7 +49,8 @@ No font file ships with the app.
 | `action` / `actionSmall` | sans 13 / 12 medium | a button; a grant's, a strip's |
 | `data` / `dataSmall` | mono 12 / 10 | a stamp, a count, an id, a file name |
 | `count` / `code` / `numeral` | mono 44 / 18 tracked / 10, medium | how many a scan read; the link code; a step's number |
-| `label` / `mark` | mono 11 / mono 9 tracked | a row of the menu over the game; the one word on the idle capsule |
+| `label` / `mark` | mono 11 / mono 9 tracked | a row of the menu over the game; a small word in it |
+| `word` | mono 10 tracked | what a tap on the idle capsule does: `SCAN GEAR` |
 
 ## Shapes
 

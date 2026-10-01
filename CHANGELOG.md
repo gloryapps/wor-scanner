@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The home screen shows how to scan each kind; the kind is chosen on the capsule.
+- The capsule says which kind it will scan, and its menu says in a line how to open it in the game.
 - The scans kept on the device and the link to Azhor’s Master Smithy moved behind Earlier scans, in
   the home screen's header.
 - A permission that is off is asked for when Start is pressed, with why the scanner needs it.

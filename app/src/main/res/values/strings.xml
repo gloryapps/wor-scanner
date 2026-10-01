@@ -9,6 +9,9 @@
     <string name="kind_gear_step_1">Open Storage → Gear.</string>
     <string name="kind_gear_step_2">Filter and sort it the way you want it scanned.</string>
     <string name="kind_gear_step_3">Select the first piece.</string>
+    <string name="kind_gear_reminder">Storage → Gear, sorted, first piece selected.</string>
+    <string name="kind_heroes_reminder">Hero, sorted by Rarity ↓, first hero selected.</string>
+    <string name="kind_artifacts_reminder">Storage → Artifact, sorted, first artifact selected.</string>
     <string name="kind_gear_note">The scan taps through the grid, scrolls it itself and stops at its end.</string>
     <string name="kind_heroes_step_1">Open Hero, as cards or as squares.</string>
     <string name="kind_heroes_step_2">Sort by Rarity ↓.</string>
@@ -178,9 +181,10 @@
     <string name="scan_stop">Stop</string>
     <string name="scan_needs_touch">The accessibility service is off, so the scan cannot tap. Turn it on in the app, then scan.</string>
 
-    <string name="overlay_open">OPEN</string>
+    <string name="overlay_scan_kind">Scan %1$s</string>
+    <string name="overlay_what">What to scan</string>
     <string name="overlay_scan">Scan</string>
-    <string name="overlay_read">Read</string>
+    <string name="overlay_read">Read one tile</string>
     <string name="overlay_app">Open the app</string>
     <string name="overlay_stop">Stop</string>
     <string name="overlay_close">Close overlay</string>
