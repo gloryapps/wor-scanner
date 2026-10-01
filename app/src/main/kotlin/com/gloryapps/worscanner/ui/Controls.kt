@@ -38,28 +38,39 @@ enum class Reach(val height: Dp, val radius: Dp, val sides: Dp, val icon: Dp, va
     LARGE(52.dp, 10.dp, 30.dp, 19.dp, Lettering.actionLarge, Lettering.data),
 }
 
-/** The one action a screen leads with: filled with the accent. `said` is the hint printed beside it. */
+/** The one action a screen leads with: filled with the accent. `said` is the hint printed beside it; `trailing` points where it goes. */
 @Composable
 fun Accented(
     label: String,
     modifier: Modifier = Modifier,
     said: String? = null,
     icon: ImageVector? = null,
+    trailing: ImageVector? = null,
     reach: Reach = Reach.REGULAR,
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
-    Filled(label, modifier, Colors.accent, said, icon, reach, enabled, onClick)
+    Filled(label, modifier, Colors.accent, said, icon, trailing, reach, enabled, onClick)
 }
 
 /** The action that cannot be undone: filled too, but never in the accent, which is for what a screen wants. */
 @Composable
 fun Destructive(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Filled(label, modifier, Colors.failure, said = null, icon = null, reach = Reach.REGULAR, enabled = true, onClick = onClick)
+    Filled(label, modifier, Colors.failure, said = null, icon = null, trailing = null, reach = Reach.REGULAR, enabled = true, onClick = onClick)
 }
 
 @Composable
-private fun Filled(label: String, modifier: Modifier, ground: Color, said: String?, icon: ImageVector?, reach: Reach, enabled: Boolean, onClick: () -> Unit) {
+private fun Filled(
+    label: String,
+    modifier: Modifier,
+    ground: Color,
+    said: String?,
+    icon: ImageVector?,
+    trailing: ImageVector?,
+    reach: Reach,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
     Row(
         modifier
             .height(reach.height)
@@ -74,6 +85,7 @@ private fun Filled(label: String, modifier: Modifier, ground: Color, said: Strin
         icon?.let { Icon(it, contentDescription = null, Modifier.size(reach.icon), tint = Colors.onAccent) }
         Text(label, style = reach.style, color = Colors.onAccent)
         if (said != null) Text(said, style = reach.said, color = Colors.onAccent.copy(alpha = 0.7f))
+        trailing?.let { Icon(it, contentDescription = null, Modifier.size(reach.icon), tint = Colors.onAccent) }
     }
 }
 

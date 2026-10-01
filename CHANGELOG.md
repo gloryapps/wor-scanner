@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A first run that explains the scanner and its permissions.
 - Send a scan straight to your account on Azhor’s Master Smithy from the export sheet, once the
   scanner is linked with the code the site's Import a scan shows.
 

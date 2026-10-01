@@ -14,8 +14,10 @@ import com.gloryapps.worscanner.report.CrashReports
 import com.gloryapps.worscanner.scanner.senses.TextReader
 import com.gloryapps.worscanner.ui.ExportDelegate
 import com.gloryapps.worscanner.ui.earlier.EarlierViewModel
+import com.gloryapps.worscanner.ui.firstrun.FirstRun
+import com.gloryapps.worscanner.ui.firstrun.GrantsViewModel
 import com.gloryapps.worscanner.ui.home.HomeViewModel
-import com.gloryapps.worscanner.ui.home.Permissions
+import com.gloryapps.worscanner.ui.Permissions
 import com.gloryapps.worscanner.ui.reading.ReadingViewModel
 import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.Scanning
@@ -42,10 +44,12 @@ val appModule = module {
     /* Read from the store at start, so the overlay's menu opens on the kind already chosen. */
     single(createdAtStart = true) { Chosen(androidContext()) }
     single { Permissions(androidContext()) }
+    single { FirstRun(androidContext(), get()) }
     factory { ExportDelegate(get(), androidContext(), get()) }
     single { Link(HttpAzhorApi(BuildConfig.AZHOR_URL), PreferencesTokenStore(androidContext())) }
     single { Updates(GitHubReleases(File(androidContext().cacheDir, "updates")), Version.of(BuildConfig.VERSION_NAME)) }
     viewModel { HomeViewModel(get(), get(), get(), get()) }
     viewModel { EarlierViewModel(get(), get(), get(), get()) }
+    viewModel { GrantsViewModel(get(), get()) }
     viewModel { (stamp: String) -> ReadingViewModel(stamp, get(), get()) }
 }

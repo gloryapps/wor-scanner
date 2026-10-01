@@ -5,6 +5,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.scan.Progress
+import com.gloryapps.worscanner.ui.Permission
 import com.gloryapps.worscanner.ui.ScannerTheme
 import com.gloryapps.worscanner.ui.TALL_H
 import com.gloryapps.worscanner.ui.TALL_W

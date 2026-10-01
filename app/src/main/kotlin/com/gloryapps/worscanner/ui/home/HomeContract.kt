@@ -1,6 +1,8 @@
 package com.gloryapps.worscanner.ui.home
 
 import com.gloryapps.worscanner.scan.ScanState
+import com.gloryapps.worscanner.ui.Permission
+import com.gloryapps.worscanner.ui.canScan
 import com.gloryapps.worscanner.update.Update
 import java.io.File
 
@@ -14,8 +16,7 @@ internal data class HomeUiState(
     val running: ScanState.Running? = null,
     val update: Update = Update.None,
 ) {
-    /** A scan can only start once the system lets the app both draw over the game and touch it. */
-    val ready: Boolean get() = Permission.entries.all { !it.needed || it in granted }
+    val ready: Boolean get() = granted.canScan
 
     /** The grants still off, in the order they are asked for. */
     val missing: List<Permission> get() = Permission.entries.filterNot { it in granted }

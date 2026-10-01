@@ -157,13 +157,15 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   from the Gradle property `azhor.url`, and a debug build allows cleartext so it can point at the lab
   running on the PC.
 - Preferences in DataStore. `Chosen` holds which kind the next scan reads, picked in the overlay's
-  menu, held at once and written behind; `link` holds the lab's token.
+  menu, held at once and written behind; `link` holds the lab's token; `first_run` whether the
+  first run was seen, set at once on an install that already held the grants a scan needs.
 - Room enters only if scan history inside the app is ever wanted, and brings the no-destructive-
   migration rule with it.
 
 ## Navigation
 
 - One Activity, Compose, Navigation 3 from the start: the back stack is a state list the app owns.
+  It starts on the first run until that is seen, on Home after; leaving the first run clears it.
 - The overlay belongs to the service, not the Activity, and is drawn in Compose too. It is four
   windows: the hairline pinned to the top, the capsule a finger drags, the menu its tap opens beside
   it, and the close target that appears under it while it is held.

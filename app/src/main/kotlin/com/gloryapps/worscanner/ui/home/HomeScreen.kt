@@ -1,13 +1,10 @@
 package com.gloryapps.worscanner.ui.home
 
-import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
 import android.os.Build
-import android.provider.Settings
-import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -61,12 +58,14 @@ import com.gloryapps.worscanner.capture.CaptureService
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Accented
+import com.gloryapps.worscanner.ui.Brand
 import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Edged
 import com.gloryapps.worscanner.ui.Inline
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Link
+import com.gloryapps.worscanner.ui.Permission
 import com.gloryapps.worscanner.ui.Question
 import com.gloryapps.worscanner.ui.Reach
 import com.gloryapps.worscanner.ui.Rule
@@ -74,6 +73,7 @@ import com.gloryapps.worscanner.ui.Section
 import com.gloryapps.worscanner.ui.StepNumber
 import com.gloryapps.worscanner.ui.label
 import com.gloryapps.worscanner.ui.note
+import com.gloryapps.worscanner.ui.rememberGrant
 import com.gloryapps.worscanner.ui.steps
 import com.gloryapps.worscanner.update.Update
 import org.koin.compose.viewmodel.koinViewModel
@@ -97,24 +97,11 @@ internal fun HomeScreen(onEarlier: () -> Unit, viewModel: HomeViewModel = koinVi
         val data = it.data
         if (it.resultCode == Activity.RESULT_OK && data != null) CaptureService.start(context, it.resultCode, data)
     }
-    val activity = LocalActivity.current
-    val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { given ->
-        /* Refused twice, Android stops showing its dialog, and the app's notification settings are the way left. */
-        if (!given && activity?.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) == false) {
-            context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
-        }
-        viewModel.returned()
-    }
+    val grant = rememberGrant(viewModel::returned)
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is HomeEffect.Grant -> when (effect.permission) {
-                    Permission.ACCESSIBILITY -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                    Permission.OVERLAY -> context.startActivity(
-                        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
-                    )
-                    Permission.NOTIFICATIONS -> notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
+                is HomeEffect.Grant -> grant(effect.permission)
                 HomeEffect.LaunchProjection -> projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
                 HomeEffect.StopCapture -> CaptureService.stop(context)
                 HomeEffect.OpenEarlier -> earlier()
@@ -231,8 +218,7 @@ private fun Header(running: ScanState.Running?, update: Update, onEvent: (HomeEv
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(11.dp), verticalAlignment = Alignment.CenterVertically) {
-                Spacer(Modifier.size(9.dp).background(Colors.accent, CircleShape))
-                Text(stringResource(R.string.app_name), style = Lettering.brand, color = Colors.text)
+                Brand()
                 Text(BuildConfig.VERSION_NAME, style = Lettering.dataSmall, color = Colors.muted)
                 when (update) {
                     is Update.Available -> Link(stringResource(R.string.home_update, update.release.version.toString())) { onEvent(HomeEvent.Update) }

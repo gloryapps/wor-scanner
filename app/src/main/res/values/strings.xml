@@ -49,7 +49,32 @@
     <string name="permission_notifications">Notifications</string>
     <string name="permission_notifications_why">Shows a scan’s progress, and a Stop you can reach from anywhere.</string>
     <string name="permission_turn_on">Turn on</string>
+    <string name="permission_on">On</string>
     <string name="permission_why">Why it is asked</string>
+
+    <string name="firstrun_title">Read your gear, heroes and artifacts straight off the game, into Azhor’s Master Smithy.</string>
+    <string name="firstrun_lead">The scanner taps through the game for you. Here’s how it works:</string>
+    <string name="firstrun_move_pick">Pick what to scan</string>
+    <string name="firstrun_move_pick_said">Gear, Heroes or Artifacts, on the capsule over the game.</string>
+    <string name="firstrun_move_pick_shot">capsule menu, kind chosen</string>
+    <string name="firstrun_move_open">Open it in the game</string>
+    <string name="firstrun_move_open_said">Sort it, then select the first tile. The app tells you how for each kind.</string>
+    <string name="firstrun_move_open_shot">game: Storage → Gear, first piece selected</string>
+    <string name="firstrun_move_scan">Press Scan on the capsule</string>
+    <string name="firstrun_move_scan_said">It taps and scrolls by itself. Touch the screen to stop; what was read is kept.</string>
+    <string name="firstrun_move_scan_shot">capsule counting 412/2,500</string>
+    <string name="firstrun_move_send">Send it to the site</string>
+    <string name="firstrun_move_send_said">One press puts it in Import a scan on Azhor’s Master Smithy.</string>
+    <string name="firstrun_move_send_shot">site: Import a scan</string>
+    <string name="firstrun_next">Next: permissions</string>
+    <string name="firstrun_grants_title">Three permissions, then you’re ready</string>
+    <string name="firstrun_grants_lead">Android asks for each one on its own screen. Turn it on there, then come back here.</string>
+    <string name="firstrun_capture">Android also asks to capture the screen %1$s. The app can’t skip that. Frames are read on the device and never sent.</string>
+    <string name="firstrun_capture_each">each time a scan starts</string>
+    <string name="firstrun_permissions">Permissions</string>
+    <string name="firstrun_all_set">All set</string>
+    <string name="firstrun_later">Later</string>
+    <string name="firstrun_done">Start using the scanner</string>
 
     <string name="earlier_title">Earlier scans</string>
     <string name="earlier_smithy">Azhor’s Master Smithy</string>
@@ -160,6 +185,10 @@
     <plurals name="export_saved">
         <item quantity="one">Saved, %1$d file</item>
         <item quantity="other">Saved, %1$d files</item>
+    </plurals>
+    <plurals name="firstrun_left">
+        <item quantity="one">%1$d left</item>
+        <item quantity="other">%1$d left</item>
     </plurals>
     <plurals name="export_all_name">
         <item quantity="one">%1$d reading</item>

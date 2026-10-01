@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.gloryapps.worscanner.capture.CaptureSession
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.ui.Permissions
 import com.gloryapps.worscanner.update.Update
 import com.gloryapps.worscanner.update.Updates
 import kotlinx.coroutines.channels.Channel

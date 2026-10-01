@@ -1,5 +1,6 @@
 package com.gloryapps.worscanner.ui.home
 
+import com.gloryapps.worscanner.ui.Permission
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
