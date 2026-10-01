@@ -13,6 +13,7 @@ import com.gloryapps.worscanner.capture.Readings
 import com.gloryapps.worscanner.report.CrashReports
 import com.gloryapps.worscanner.scanner.senses.TextReader
 import com.gloryapps.worscanner.ui.ExportDelegate
+import com.gloryapps.worscanner.ui.earlier.EarlierViewModel
 import com.gloryapps.worscanner.ui.home.HomeViewModel
 import com.gloryapps.worscanner.ui.home.Permissions
 import com.gloryapps.worscanner.ui.reading.ReadingViewModel
@@ -44,6 +45,7 @@ val appModule = module {
     factory { ExportDelegate(get(), androidContext(), get()) }
     single { Link(HttpAzhorApi(BuildConfig.AZHOR_URL), PreferencesTokenStore(androidContext())) }
     single { Updates(GitHubReleases(File(androidContext().cacheDir, "updates")), Version.of(BuildConfig.VERSION_NAME)) }
-    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get()) }
+    viewModel { EarlierViewModel(get(), get(), get(), get()) }
     viewModel { (stamp: String) -> ReadingViewModel(stamp, get(), get()) }
 }

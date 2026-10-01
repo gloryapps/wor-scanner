@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,14 +22,19 @@ import androidx.compose.ui.unit.dp
 
 /** A card on the screen. `leading` is the one the reader is meant to act on, and there is one of those. */
 @Composable
-fun Card(modifier: Modifier = Modifier, leading: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+fun Card(
+    modifier: Modifier = Modifier,
+    leading: Boolean = false,
+    padding: PaddingValues = PaddingValues(18.dp),
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val shape = RoundedCornerShape(if (leading) 12.dp else 10.dp)
     Column(
         modifier
             .clip(shape)
             .background(Colors.raised)
             .border(1.dp, if (leading) Colors.accentEdge else Colors.hairline, shape)
-            .padding(18.dp),
+            .padding(padding),
         verticalArrangement = Arrangement.spacedBy(14.dp),
         content = content,
     )

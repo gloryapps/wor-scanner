@@ -30,8 +30,8 @@ first time, Android also asks to let WoR Scanner install apps.
 
 ## Scanning
 
-Pick what to scan on the home screen or in the capsule's menu, press **Start**, go to the game, and
-press **Scan** on the capsule.
+Press **Start** on the home screen, go to the game, tap the capsule to pick what to scan, and press
+**Scan**.
 
 - **Gear**: open Storage → Gear, filtered and sorted as you want it scanned, and select the first piece.
 - **Heroes**: open Hero, as cards or as squares, sort by Rarity ↓ and select the first hero. The
@@ -45,14 +45,14 @@ kept.
 
 ## Export
 
-Every scan is listed on the home screen. **Export** sends it to your account on Azhor’s Master
-Smithy once the scanner is linked, saves it into the folder the emulator shares with the PC
+Every scan is listed under **Earlier scans**, in the home screen's header. **Export** sends it to
+your account on Azhor’s Master Smithy once the scanner is linked, saves it into the folder the emulator shares with the PC
 (LDPlayer: `Documents\LDPlayer\Pictures\WoR Scanner`; BlueStacks: the Shared Folder's
 `WoR Scanner`), or hands it to another app.
 
 To link the scanner, open **Import a scan** on the site and press **Link**. Type the code it shows
-into the home screen's Azhor’s Master Smithy card within ten minutes. From then on, **Send** in the
-export sheet puts the scan in **Import a scan**, where it waits until you import it. A saved or
+into the Azhor’s Master Smithy card under **Earlier scans** within ten minutes. From then on, **Send**
+in the export sheet puts the scan in **Import a scan**, where it waits until you import it. A saved or
 shared JSON is imported by dropping it on that same dialog.
 
 A tile the scanner could not read in full keeps a picture of its panel beside the JSON, so it can be

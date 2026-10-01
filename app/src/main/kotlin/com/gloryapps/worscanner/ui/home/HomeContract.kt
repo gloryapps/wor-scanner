@@ -1,10 +1,6 @@
 package com.gloryapps.worscanner.ui.home
 
-import com.gloryapps.worscanner.capture.Kept
-import com.gloryapps.worscanner.scan.Chosen
 import com.gloryapps.worscanner.scan.ScanState
-import com.gloryapps.worscanner.scanner.kinds.Kind
-import androidx.annotation.StringRes
 import com.gloryapps.worscanner.update.Update
 import java.io.File
 
@@ -12,22 +8,13 @@ internal data class HomeUiState(
     val accessibilityOn: Boolean = false,
     val overlayAllowed: Boolean = false,
     val capturing: Boolean = false,
-    val kind: Kind = Chosen.FIRST,
     /** The scan under way, for the header; null when none is running. */
     val running: ScanState.Running? = null,
-    /** Null until the store has answered, so a start does not show an empty list first. */
-    val readings: List<Kept>? = null,
-    /** The readings whose deletion is being asked about, one or every one; empty while none is. */
-    val deleting: List<Kept> = emptyList(),
     val update: Update = Update.None,
-    val site: SiteLink = SiteLink(),
 ) {
     /** A scan can only start once the system lets the app both see the screen and touch it. */
     val ready: Boolean get() = accessibilityOn && overlayAllowed
 }
-
-/** The scanner's link to Azhor's Master Smithy: whether it holds a token, whether a code is on its way, and why the last one did not link. */
-internal data class SiteLink(val linked: Boolean = false, val asking: Boolean = false, @StringRes val refused: Int? = null)
 
 internal sealed interface HomeEvent {
 
@@ -39,26 +26,8 @@ internal sealed interface HomeEvent {
 
     data object Stop : HomeEvent
 
-    data class Choose(val kind: Kind) : HomeEvent
-
-    data class Open(val kept: Kept) : HomeEvent
-
-    data class Export(val kept: Kept) : HomeEvent
-
-    data object ExportAll : HomeEvent
-
-    data class Delete(val kept: Kept) : HomeEvent
-
-    data object DeleteAll : HomeEvent
-
-    data object ConfirmDelete : HomeEvent
-
-    data object CancelDelete : HomeEvent
-
-    /** A code the site showed, typed into the scanner to link it. */
-    data class Link(val code: String) : HomeEvent
-
-    data object Unlink : HomeEvent
+    /** The header's way to every scan kept on the device. */
+    data object Earlier : HomeEvent
 
     /** The header's update link: the newer release installed, or its page opened where its APK could not be had. */
     data object Update : HomeEvent
@@ -75,7 +44,7 @@ internal sealed interface HomeEffect {
 
     data object StopCapture : HomeEffect
 
-    data class OpenReading(val kept: Kept) : HomeEffect
+    data object OpenEarlier : HomeEffect
 
     data class Install(val apk: File) : HomeEffect
 

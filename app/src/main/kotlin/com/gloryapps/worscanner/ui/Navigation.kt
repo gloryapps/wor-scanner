@@ -7,13 +7,18 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.gloryapps.worscanner.ui.earlier.EarlierScreen
 import com.gloryapps.worscanner.ui.home.HomeScreen
 import com.gloryapps.worscanner.ui.reading.ReadingScreen
 import kotlinx.serialization.Serializable
 
-/** Where a scan is started and what it left is found. */
+/** Where a scan is started. */
 @Serializable
 data object Home : NavKey
+
+/** Every reading kept on the device, newest first. */
+@Serializable
+data object Earlier : NavKey
 
 /** One reading, piece by piece. */
 @Serializable
@@ -31,7 +36,8 @@ fun Navigation() {
             rememberViewModelStoreNavEntryDecorator(),
         ),
         entryProvider = entryProvider {
-            entry<Home> { HomeScreen(onReading = { backStack.add(Reading(it.stamp)) }) }
+            entry<Home> { HomeScreen(onEarlier = { backStack.add(Earlier) }) }
+            entry<Earlier> { EarlierScreen(onReading = { backStack.add(Reading(it.stamp)) }, onBack = { backStack.removeLastOrNull() }) }
             entry<Reading> { ReadingScreen(it.stamp, onBack = { backStack.removeLastOrNull() }) }
         },
     )

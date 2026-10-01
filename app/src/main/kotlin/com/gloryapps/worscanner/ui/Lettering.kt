@@ -26,6 +26,9 @@ object Lettering {
     val step = TextStyle(fontFamily = Fonts.sans, fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.Medium)
     val stepBody = TextStyle(fontFamily = Fonts.sans, fontSize = 14.sp, lineHeight = 19.sp)
 
+    /** A kind's name over the steps that ready its scan. */
+    val kindName = TextStyle(fontFamily = Fonts.sans, fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+
     /** The app's own name in the header. */
     val brand = TextStyle(fontFamily = Fonts.sans, fontSize = 15.sp, fontWeight = FontWeight.Medium, letterSpacing = (-0.01).em)
 

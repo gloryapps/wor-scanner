@@ -28,6 +28,12 @@ import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import java.io.File
 
+/** The board's own frames: the game's 1280x720 inside an emulator, and a phone held upright. */
+internal const val WIDE_W = 1280
+internal const val WIDE_H = 720
+internal const val TALL_W = 412
+internal const val TALL_H = 915
+
 /**
  * What the previews are drawn from. A `Kept` names files that need not exist: only its stamp, its
  * counts and how it ended reach the screen, and a file that is not there weighs nothing.

@@ -13,12 +13,10 @@ import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.SCANNED
 import com.gloryapps.worscanner.ui.STOPPED
 import com.gloryapps.worscanner.ui.ScannerTheme
-
-/** The board's own frames: the game's 1280x720 inside an emulator, and a phone held upright. */
-private const val WIDE_W = 1280
-private const val WIDE_H = 720
-private const val TALL_W = 412
-private const val TALL_H = 915
+import com.gloryapps.worscanner.ui.TALL_H
+import com.gloryapps.worscanner.ui.TALL_W
+import com.gloryapps.worscanner.ui.WIDE_H
+import com.gloryapps.worscanner.ui.WIDE_W
 
 private val CARD = """
     {

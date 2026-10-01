@@ -41,6 +41,7 @@ No font file ships with the app.
 | `subtitle` | sans 16 medium | a reading's tile, a sheet's heading |
 | `display` / `lead` | sans 32 semibold / 15 | a first-run screen's heading; the prose under it |
 | `step` / `stepBody` | sans 15 medium / 14 | a step's name; a line of a kind's steps |
+| `kindName` | sans 17 semibold | a kind's name over its steps |
 | `brand` | sans 15 medium | the app's name in the header |
 | `section` | sans 10 medium, tracked, upper-cased by `Section` | the line above a group |
 | `body` | sans 13 | prose |

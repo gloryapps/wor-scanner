@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Send a scan straight to your account on Azhor’s Master Smithy from the export sheet, once the
   scanner is linked with the code the site's Import a scan shows.
 
+### Changed
+
+- The home screen shows how to scan each kind; the kind is chosen on the capsule.
+- The scans kept on the device and the link to Azhor’s Master Smithy moved behind Earlier scans, in
+  the home screen's header.
+
 ## [0.2.1] - 2026-09-29
 
 ### Changed
