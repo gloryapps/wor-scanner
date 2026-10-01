@@ -32,6 +32,9 @@ object Lettering {
 
     val body = TextStyle(fontFamily = Fonts.sans, fontSize = 13.sp, lineHeight = 18.sp)
     val caption = TextStyle(fontFamily = Fonts.sans, fontSize = 11.sp, lineHeight = 15.sp)
+
+    /** What is said under an action that fills its card: where the file lands, what happens next. */
+    val footnote = TextStyle(fontFamily = Fonts.sans, fontSize = 10.sp, lineHeight = 14.sp)
     val action = TextStyle(fontFamily = Fonts.sans, fontSize = 13.sp, fontWeight = FontWeight.Medium)
 
     /** A grant's button and a strip's, where the action is small beside what it acts on. */

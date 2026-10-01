@@ -6,6 +6,8 @@ import com.gloryapps.worscanner.azhor.Link
 import com.gloryapps.worscanner.azhor.Sending
 import com.gloryapps.worscanner.capture.Exports
 import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.capture.Outbound
+import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.capture.sharedFolders
 import com.gloryapps.worscanner.scanner.resultOf
 import kotlinx.coroutines.CoroutineScope
@@ -42,10 +44,20 @@ class ExportDelegate(private val exports: Exports, private val context: Context,
         when (event) {
             is ExportEvent.Choose -> _state.update { it.copy(into = event.shared, failed = null) }
             ExportEvent.Save -> scope.launch { save() }
-            ExportEvent.Share -> scope.launch { share() }
+            ExportEvent.Share -> scope.launch { _state.value.outgoing?.let { hand(it.files) } }
             ExportEvent.Send -> scope.launch { send() }
             ExportEvent.Close -> _state.update { it.copy(outgoing = null, failed = null) }
         }
+    }
+
+    /** A kept thing saved straight into a folder, the sheet left shut: why it did not land is said as it passes. */
+    fun save(kept: Kept, into: SharedFolder) {
+        scope.launch { land(kept.outbound(), into).onFailure { _effects.send(ExportEffect.Unlanded(it.message ?: it.toString())) } }
+    }
+
+    /** A kept thing handed to another app, the sheet left shut. */
+    fun share(kept: Kept) {
+        scope.launch { hand(kept.outbound()) }
     }
 
     fun clear() = scope.cancel()
@@ -59,13 +71,18 @@ class ExportDelegate(private val exports: Exports, private val context: Context,
     private suspend fun save() {
         val state = _state.value
         val outgoing = state.outgoing ?: return
-        resultOf { exports.toShared(state.into ?: error("no emulator shared folder on this device"), outgoing.files) }.fold(
-            onSuccess = { landed ->
-                _state.update { it.copy(outgoing = null, failed = null) }
-                _effects.send(ExportEffect.Landed(landed.first().substringBeforeLast('/'), landed.size))
-            },
+        land(outgoing.files, state.into).fold(
+            onSuccess = { _state.update { it.copy(outgoing = null, failed = null) } },
             onFailure = { failure -> _state.update { it.copy(failed = failure.message ?: failure.toString()) } },
         )
+    }
+
+    private suspend fun land(files: List<Outbound>, into: SharedFolder?): Result<Unit> =
+        resultOf { exports.toShared(into ?: error("no emulator shared folder on this device"), files) }
+            .map { landed -> _effects.send(ExportEffect.Landed(landed.first().substringBeforeLast('/'), landed.size)) }
+
+    private suspend fun hand(files: List<Outbound>) {
+        _effects.send(ExportEffect.Share(exports.shareIntent(files)))
     }
 
     private suspend fun send() {
@@ -81,11 +98,6 @@ class ExportDelegate(private val exports: Exports, private val context: Context,
         } else {
             _state.update { it.copy(failed = context.getString(unsent(sent))) }
         }
-    }
-
-    private suspend fun share() {
-        val outgoing = _state.value.outgoing ?: return
-        _effects.send(ExportEffect.Share(exports.shareIntent(outgoing.files)))
     }
 }
 

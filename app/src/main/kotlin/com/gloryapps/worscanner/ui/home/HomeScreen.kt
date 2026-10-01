@@ -61,6 +61,7 @@ import com.gloryapps.worscanner.ui.Brand
 import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Edged
+import com.gloryapps.worscanner.ui.ExportEffects
 import com.gloryapps.worscanner.ui.Inline
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Link
@@ -88,7 +89,7 @@ internal fun HomeScreen(onEarlier: () -> Unit, viewModel: HomeViewModel = koinVi
 
     LifecycleResumeEffect(Unit) {
         viewModel.returned()
-        onPauseOrDispose { }
+        onPauseOrDispose { viewModel.left() }
     }
 
     val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -113,11 +114,13 @@ internal fun HomeScreen(onEarlier: () -> Unit, viewModel: HomeViewModel = koinVi
     }
 
     Home(state, viewModel::on)
+    ExportEffects(viewModel.export)
 }
 
 /**
- * How a scan is made, step by step and kind by kind, beside the one action that begins it. The kinds
- * fill the screen where it is wide enough for them side by side, and stack where it is not.
+ * How a scan is made, step by step and kind by kind, beside the one action that begins it; once a scan
+ * ends, that scan and the ways it leaves, until it is put away. The kinds fill the screen where it is
+ * wide enough for them side by side, and stack where it is not.
  */
 @Composable
 internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
@@ -132,8 +135,13 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
                     .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Steps(state, wide, onEvent)
-                Kinds(wide, if (wide) Modifier.weight(1f) else Modifier)
+                val just = state.justScanned
+                if (just != null) {
+                    Scanned(just, wide, onEvent, if (wide) Modifier.weight(1f) else Modifier)
+                } else {
+                    Steps(state, wide, onEvent)
+                    Kinds(wide, if (wide) Modifier.weight(1f) else Modifier)
+                }
             }
         }
     }

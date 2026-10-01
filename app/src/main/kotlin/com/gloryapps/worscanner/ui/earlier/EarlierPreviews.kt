@@ -11,7 +11,7 @@ import com.gloryapps.worscanner.ui.TALL_W
 import com.gloryapps.worscanner.ui.WIDE_H
 import com.gloryapps.worscanner.ui.WIDE_W
 
-private val KEPT = EarlierUiState(readings = listOf(SCANNED, STOPPED, READ), site = SiteLink(linked = true))
+private val KEPT = EarlierUiState(readings = listOf(SCANNED, STOPPED, READ), linked = true)
 
 @Preview(name = "Earlier scans", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable

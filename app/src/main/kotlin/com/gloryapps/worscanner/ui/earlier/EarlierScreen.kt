@@ -22,10 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -36,18 +33,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.BuildConfig
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Kept
-import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Confirm
-import com.gloryapps.worscanner.ui.Edged
 import com.gloryapps.worscanner.ui.ExportSheet
-import com.gloryapps.worscanner.ui.Field
 import com.gloryapps.worscanner.ui.Inline
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Link
 import com.gloryapps.worscanner.ui.Panel
 import com.gloryapps.worscanner.ui.Rule
-import com.gloryapps.worscanner.ui.Section
 import com.gloryapps.worscanner.ui.said
 import com.gloryapps.worscanner.ui.shown
 import org.koin.compose.viewmodel.koinViewModel
@@ -91,7 +84,7 @@ internal fun Earlier(state: EarlierUiState, onEvent: (EarlierEvent) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             state.readings?.let { Readings(it, onEvent) }
-            Smithy(state.site, onEvent)
+            Site(state.linked, onEvent)
             Text(BuildConfig.VERSION_NAME, style = Lettering.dataSmall, color = Colors.faint)
         }
     }
@@ -178,28 +171,15 @@ private fun Reading(kept: Kept, newest: Boolean, onEvent: (EarlierEvent) -> Unit
     }
 }
 
-/** The link to the site the scans are sent to: the code it showed typed here once, and the way to undo it. */
+/** Whether scans can be sent to the site, and the way to undo it; the link itself is made from Home, the first time a scan is sent. */
 @Composable
-private fun Smithy(site: SiteLink, onEvent: (EarlierEvent) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Section(stringResource(R.string.earlier_smithy))
-        Card(Modifier.fillMaxWidth()) {
-            if (site.linked) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.earlier_smithy_linked), Modifier.weight(1f), style = Lettering.body, color = Colors.text)
-                    Inline(stringResource(R.string.earlier_smithy_unlink), onClick = { onEvent(EarlierEvent.Unlink) })
-                }
-            } else {
-                var code by rememberSaveable { mutableStateOf("") }
-                val asked = { if (code.isNotBlank() && !site.asking) onEvent(EarlierEvent.Link(code.trim())) }
-
-                Text(stringResource(R.string.earlier_smithy_said), style = Lettering.body, color = Colors.muted)
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Field(code, { code = it }, stringResource(R.string.earlier_smithy_hint), Modifier.weight(1f), onDone = asked)
-                    Edged(stringResource(if (site.asking) R.string.earlier_smithy_linking else R.string.earlier_smithy_link), onClick = asked)
-                }
-                site.refused?.let { Text(stringResource(it), style = Lettering.caption, color = Colors.warning) }
-            }
+private fun Site(linked: Boolean, onEvent: (EarlierEvent) -> Unit) {
+    if (linked) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.earlier_linked), style = Lettering.body, color = Colors.text)
+            Inline(stringResource(R.string.earlier_unlink), onClick = { onEvent(EarlierEvent.Unlink) })
         }
+    } else {
+        Text(stringResource(R.string.earlier_unlinked), style = Lettering.body, color = Colors.muted)
     }
 }

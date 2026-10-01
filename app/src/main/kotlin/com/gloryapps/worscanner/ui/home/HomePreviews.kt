@@ -2,10 +2,17 @@ package com.gloryapps.worscanner.ui.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.gloryapps.worscanner.azhor.Linking
+import com.gloryapps.worscanner.azhor.Sending
+import com.gloryapps.worscanner.capture.Emulator
+import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.scan.Progress
 import com.gloryapps.worscanner.ui.Permission
+import com.gloryapps.worscanner.ui.SCANNED
+import com.gloryapps.worscanner.ui.STOPPED
 import com.gloryapps.worscanner.ui.ScannerTheme
 import com.gloryapps.worscanner.ui.TALL_H
 import com.gloryapps.worscanner.ui.TALL_W
@@ -50,4 +57,75 @@ private fun HomeAskedPreview() {
         Home(READY) { }
         Ask(READY.missing, READY.ready, { })
     }
+}
+
+private val LD_PLAYER = SharedFolder(Emulator.LD_PLAYER, "/mnt/shared/Pictures")
+
+private fun scanned(send: Send, scan: Kept.Scan = SCANNED) =
+    READY.copy(justScanned = JustScanned(scan, Kind.GEAR, touched = true, shared = LD_PLAYER, send = send))
+
+@Preview(name = "Just scanned · linked", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedPreview() {
+    ScannerTheme { Home(scanned(Send.Idle)) { } }
+}
+
+@Preview(name = "Just scanned · stopped", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedStoppedPreview() {
+    ScannerTheme { Home(scanned(Send.Idle, STOPPED.copy(entries = 412, detail = "stopped by the user"))) { } }
+}
+
+@Preview(name = "Just scanned · stopped, not linked", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedStoppedLinkingPreview() {
+    ScannerTheme { Home(scanned(Send.Code(failed = Linking.Refused), STOPPED.copy(entries = 412, detail = "stopped by the user"))) { } }
+}
+
+@Preview(name = "Just scanned · not linked", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedLinkingPreview() {
+    ScannerTheme { Home(scanned(Send.Code())) { } }
+}
+
+@Preview(name = "Just scanned · code refused", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedRefusedCodePreview() {
+    ScannerTheme { Home(scanned(Send.Code(failed = Linking.Refused))) { } }
+}
+
+@Preview(name = "Just scanned · sending", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedSendingPreview() {
+    ScannerTheme { Home(scanned(Send.Underway)) { } }
+}
+
+@Preview(name = "Just scanned · unlinked", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedUnlinkedPreview() {
+    ScannerTheme { Home(scanned(Send.Unsent(Sending.Unlinked))) { } }
+}
+
+@Preview(name = "Just scanned · too large", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedTooLargePreview() {
+    ScannerTheme { Home(scanned(Send.Unsent(Sending.TooLarge))) { } }
+}
+
+@Preview(name = "Just scanned · unreachable", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedUnreachablePreview() {
+    ScannerTheme { Home(scanned(Send.Unsent(Sending.Unanswered))) { } }
+}
+
+@Preview(name = "Just scanned · sent", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedSentPreview() {
+    ScannerTheme { Home(scanned(Send.Sent)) { } }
+}
+
+@Preview(name = "Just scanned · portrait, no emulator folder", widthDp = TALL_W, heightDp = TALL_H)
+@Composable
+private fun ScannedPortraitPreview() {
+    ScannerTheme { Home(READY.copy(justScanned = JustScanned(SCANNED, Kind.GEAR, touched = false, shared = null, send = Send.Code()))) { } }
 }

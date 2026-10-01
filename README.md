@@ -46,15 +46,17 @@ kept.
 
 ## Export
 
-Every scan is listed under **Earlier scans**, in the home screen's header. **Export** sends it to
-your account on Azhor’s Master Smithy once the scanner is linked, saves it into the folder the emulator shares with the PC
-(LDPlayer: `Documents\LDPlayer\Pictures\WoR Scanner`; BlueStacks: the Shared Folder's
-`WoR Scanner`), or hands it to another app.
-
-To link the scanner, open **Import a scan** on the site and press **Link**. Type the code it shows
-into the Azhor’s Master Smithy card under **Earlier scans** within ten minutes. From then on, **Send**
-in the export sheet puts the scan in **Import a scan**, where it waits until you import it. A saved or
+When a scan ends, the home screen shows it. **Send to Azhor’s Master Smithy** puts it in **Import a
+scan** on the site, in your account, where it waits until you import it. **Save** puts the file in
+the folder the emulator shares with the PC (LDPlayer: `Documents\LDPlayer\Pictures\WoR Scanner`;
+BlueStacks: the Shared Folder's `WoR Scanner`), and **Share…** hands it to another app. A saved or
 shared JSON is imported by dropping it on that same dialog.
+
+The first send links the scanner to your account: open **Import a scan** on the site, press **Link**,
+and type the code it shows within ten minutes. From then on, Send is one press.
+
+Every scan is also listed under **Earlier scans**, in the home screen's header, where **export**
+saves or shares any of them, and sends it once the scanner is linked; unlink is there too.
 
 A tile the scanner could not read in full keeps a picture of its panel beside the JSON, so it can be
 fixed in Azhor’s Master Smithy.

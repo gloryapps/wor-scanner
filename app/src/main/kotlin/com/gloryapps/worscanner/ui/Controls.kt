@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,8 +26,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -114,13 +120,19 @@ fun Inline(label: String, modifier: Modifier = Modifier, accented: Boolean = fal
     )
 }
 
-/** A word in a ring: a kind to scan where it can be chosen, how a scan ended where it cannot. */
+/** A word in a ring: a kind to scan where it can be chosen, how a scan ended where it cannot; `warning` for an end to look at. */
 @Composable
-fun Pill(label: String, modifier: Modifier = Modifier, chosen: Boolean = false, onClick: (() -> Unit)? = null) {
+fun Pill(label: String, modifier: Modifier = Modifier, chosen: Boolean = false, warning: Boolean = false, onClick: (() -> Unit)? = null) {
     Ringed(
         label, modifier, 24.dp, 10.dp, CircleShape,
         if (chosen) Colors.accentEdge else Colors.hairline,
-        Lettering.caption, if (chosen) Colors.accent else Colors.muted, onClick,
+        Lettering.caption,
+        when {
+            chosen -> Colors.accent
+            warning -> Colors.warning
+            else -> Colors.muted
+        },
+        onClick,
         ground = if (chosen) Colors.accentWash else Color.Transparent,
     )
 }
@@ -152,33 +164,62 @@ fun Segmented(labels: List<String>, chosen: Int, modifier: Modifier = Modifier, 
     }
 }
 
-/** A short line the player types, in the data face, `hint` showing while it is empty; Done on the keyboard is `onDone`. */
+/**
+ * The code the site shows, typed as it shows it: letters and digits only, upper-cased, the dash after
+ * the fourth drawn rather than typed. `code` is the characters alone; Done on the keyboard is `onDone`.
+ */
 @Composable
-fun Field(value: String, onValueChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, onDone: () -> Unit) {
+fun CodeField(code: String, onCode: (String) -> Unit, hint: String, modifier: Modifier = Modifier, onDone: () -> Unit) {
     BasicTextField(
-        value,
-        onValueChange,
-        modifier,
-        textStyle = Lettering.data.copy(color = Colors.text),
+        code,
+        { typed -> onCode(typed.filter(Char::isLetterOrDigit).uppercase().take(CODE)) },
+        modifier.width(180.dp),
+        textStyle = Lettering.code.copy(color = Colors.text),
         singleLine = true,
         cursorBrush = SolidColor(Colors.accent),
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, autoCorrectEnabled = false, imeAction = ImeAction.Done),
+        visualTransformation = Dashed,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Characters,
+            autoCorrectEnabled = false,
+            keyboardType = KeyboardType.Ascii,
+            imeAction = ImeAction.Done,
+        ),
         keyboardActions = KeyboardActions(onDone = { onDone() }),
         decorationBox = { field ->
-            Row(
+            Box(
                 Modifier
                     .height(40.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(Colors.sunken)
                     .border(1.dp, Colors.edge, RoundedCornerShape(8.dp))
                     .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                contentAlignment = Alignment.CenterStart,
             ) {
-                if (value.isEmpty()) Text(hint, style = Lettering.data, color = Colors.faint) else field()
+                if (code.isEmpty()) Text(hint, style = Lettering.code, color = Colors.faint)
+                field()
             }
         },
     )
 }
+
+/** The characters a code the site shows is made of, dash aside. */
+const val CODE = 8
+
+/** A code as the site prints it, the dash after the fourth character back in. */
+fun dashed(code: String): String = if (code.length > HALF) "${code.take(HALF)}-${code.drop(HALF)}" else code
+
+private object Dashed : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText = TransformedText(
+        AnnotatedString(dashed(text.text)),
+        object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int = if (offset > HALF) offset + 1 else offset
+
+            override fun transformedToOriginal(offset: Int): Int = if (offset > HALF) offset - 1 else offset
+        },
+    )
+}
+
+private const val HALF = CODE / 2
 
 /** An action with no edge at all, which is how a screen says "and also". */
 @Composable

@@ -42,19 +42,8 @@ import com.gloryapps.worscanner.capture.SharedFolder
 @Composable
 fun ExportSheet(export: ExportDelegate) {
     val state by export.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
 
-    LaunchedEffect(export) {
-        export.effects.collect { effect ->
-            when (effect) {
-                is ExportEffect.Share -> context.startActivity(effect.intent)
-                is ExportEffect.Landed -> Toast.makeText(context, context.said(effect), Toast.LENGTH_LONG).show()
-                is ExportEffect.Sent ->
-                    Toast.makeText(context, context.resources.getQuantityString(R.plurals.export_sent, effect.scans, effect.scans), Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
+    ExportEffects(export)
     ExportSheet(
         outgoing = state.outgoing ?: return,
         failed = state.failed,
@@ -168,7 +157,7 @@ fun ExportSheet(
                     val said = into?.let { stringResource(R.string.export_to, stringResource(it.emulator.label)) }
                     /* The site leads once a scan can go there; saving to the folder steps back beside Share. */
                     if (sends) {
-                        Edged(listOfNotNull(stringResource(R.string.export_save), said).joinToString(" "), Modifier.weight(1f), onClick = { if (into != null) onShared() })
+                        Edged(into?.let { savingInto(it) } ?: stringResource(R.string.export_save), Modifier.weight(1f), onClick = { if (into != null) onShared() })
                     } else {
                         Accented(stringResource(R.string.export_save), Modifier.weight(1f), said = said, enabled = into != null, onClick = onShared)
                     }
@@ -199,6 +188,24 @@ private fun Landing(shared: List<SharedFolder>, into: SharedFolder?, onChoose: (
         }
     }
     into?.let { Text(stringResource(it.emulator.onPc), style = Lettering.data, color = Colors.muted) }
+}
+
+/** What an export did outside the app, the other app's chooser or a toast, for a screen that exports with or without the sheet. */
+@Composable
+fun ExportEffects(export: ExportDelegate) {
+    val context = LocalContext.current
+
+    LaunchedEffect(export) {
+        export.effects.collect { effect ->
+            when (effect) {
+                is ExportEffect.Share -> context.startActivity(effect.intent)
+                is ExportEffect.Landed -> Toast.makeText(context, context.said(effect), Toast.LENGTH_LONG).show()
+                is ExportEffect.Unlanded -> Toast.makeText(context, effect.why, Toast.LENGTH_LONG).show()
+                is ExportEffect.Sent ->
+                    Toast.makeText(context, context.resources.getQuantityString(R.plurals.export_sent, effect.scans, effect.scans), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 }
 
 private fun Context.said(landed: ExportEffect.Landed): String =

@@ -42,5 +42,8 @@ sealed interface ExportEffect {
 
     data class Landed(val folder: String, val files: Int) : ExportEffect
 
+    /** Why a save made without the sheet did not land, which has nowhere else to be said. */
+    data class Unlanded(val why: String) : ExportEffect
+
     data class Sent(val scans: Int) : ExportEffect
 }

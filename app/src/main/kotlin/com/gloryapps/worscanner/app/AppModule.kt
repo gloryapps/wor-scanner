@@ -48,7 +48,7 @@ val appModule = module {
     factory { ExportDelegate(get(), androidContext(), get()) }
     single { Link(HttpAzhorApi(BuildConfig.AZHOR_URL), PreferencesTokenStore(androidContext())) }
     single { Updates(GitHubReleases(File(androidContext().cacheDir, "updates")), Version.of(BuildConfig.VERSION_NAME)) }
-    viewModel { HomeViewModel(get(), get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EarlierViewModel(get(), get(), get(), get()) }
     viewModel { GrantsViewModel(get(), get()) }
     viewModel { (stamp: String) -> ReadingViewModel(stamp, get(), get()) }

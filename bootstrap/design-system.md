@@ -45,6 +45,7 @@ No font file ships with the app.
 | `section` | sans 10 medium, tracked, upper-cased by `Section` | the line above a group |
 | `body` | sans 13 | prose |
 | `caption` | sans 11 | what is said under a line of prose |
+| `footnote` | sans 10 | what is said under an action that fills its card |
 | `action` / `actionSmall` | sans 13 / 12 medium | a button; a grant's, a strip's |
 | `data` / `dataSmall` | mono 12 / 10 | a stamp, a count, an id, a file name |
 | `count` / `code` / `numeral` | mono 44 / 18 tracked / 10, medium | how many a scan read; the link code; a step's number |

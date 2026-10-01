@@ -2,9 +2,7 @@ package com.gloryapps.worscanner.ui.earlier
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.azhor.Link
-import com.gloryapps.worscanner.azhor.Linking
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.capture.Readings
 import com.gloryapps.worscanner.scan.ScanState
@@ -28,7 +26,6 @@ internal class EarlierViewModel(
     val export: ExportDelegate,
 ) : ViewModel() {
     private val kept = MutableStateFlow<List<Kept>?>(null)
-    private val site = MutableStateFlow(SiteLink())
     private val deleting = MutableStateFlow<List<Kept>>(emptyList())
     /** Whether the deletion asked about is every one, which also clears what interrupted scans left. */
     private var all = false
@@ -40,11 +37,7 @@ internal class EarlierViewModel(
         viewModelScope.launch { scanning.state.filterIsInstance<ScanState.Ended>().collect { relist() } }
     }
 
-    val state: StateFlow<EarlierUiState> = combine(
-        kept,
-        deleting,
-        combine(site, link.linked) { row, linked -> row.copy(linked = linked) },
-    ) { readings, deleting, site -> EarlierUiState(readings, deleting, site) }
+    val state: StateFlow<EarlierUiState> = combine(kept, deleting, link.linked, ::EarlierUiState)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EarlierUiState())
 
     fun on(event: EarlierEvent) {
@@ -66,16 +59,6 @@ internal class EarlierViewModel(
                 }
             }
             EarlierEvent.CancelDelete -> ask(emptyList(), all = false)
-            is EarlierEvent.Link -> viewModelScope.launch {
-                site.value = SiteLink(asking = true)
-                site.value = SiteLink(
-                    refused = when (link.link(event.code)) {
-                        is Linking.Linked -> null
-                        Linking.Refused -> R.string.earlier_smithy_refused
-                        Linking.Unanswered -> R.string.earlier_smithy_unanswered
-                    },
-                )
-            }
             EarlierEvent.Unlink -> viewModelScope.launch { link.forget() }
         }
     }
