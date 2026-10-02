@@ -1,22 +1,28 @@
 package com.gloryapps.worscanner.ui.firstrun
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
@@ -30,11 +36,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -62,7 +70,10 @@ internal fun Intro(onNext: () -> Unit) {
             Text(stringResource(R.string.firstrun_title), style = Lettering.display, color = Colors.text)
             Text(stringResource(R.string.firstrun_lead), style = Lettering.body, color = Colors.muted)
         }
-        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            Modifier.weight(1f).fillMaxWidth().wrapContentHeight(Alignment.Top).height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             MOVES.forEachIndexed { at, move ->
                 Move(at + 1, move, leading = at == MOVES.lastIndex, Modifier.weight(1f).fillMaxHeight())
             }
@@ -74,16 +85,15 @@ internal fun Intro(onNext: () -> Unit) {
     }
 }
 
-/* Its screenshot is a slot until the pictures are taken: what it will show, written where it will be. */
 @Composable
 private fun Move(number: Int, move: ScanMove, leading: Boolean, modifier: Modifier) {
     Card(modifier, leading = leading, padding = PaddingValues(10.dp)) {
-        Box(
-            Modifier.weight(1f).fillMaxWidth().background(Colors.sunken, RoundedCornerShape(6.dp)).padding(6.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(stringResource(move.shot), style = Lettering.dataSmall, color = Colors.faint, textAlign = TextAlign.Center)
-        }
+        Image(
+            painterResource(move.shot),
+            contentDescription = null,
+            Modifier.fillMaxWidth().aspectRatio(SHOT).clip(RoundedCornerShape(6.dp)),
+            contentScale = ContentScale.Crop,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("$number", style = Lettering.data, color = Colors.accent)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -224,15 +234,18 @@ private fun Pages(at: Int) {
     }
 }
 
-/** A move of every scan, with the screenshot that will show it. */
-private class ScanMove(@StringRes val name: Int, @StringRes val said: Int, @StringRes val shot: Int)
+/** A move of every scan, with the screenshot that shows it. */
+private class ScanMove(@StringRes val name: Int, @StringRes val said: Int, @DrawableRes val shot: Int)
 
 private val MOVES = listOf(
-    ScanMove(R.string.firstrun_move_pick, R.string.firstrun_move_pick_said, R.string.firstrun_move_pick_shot),
-    ScanMove(R.string.firstrun_move_open, R.string.firstrun_move_open_said, R.string.firstrun_move_open_shot),
-    ScanMove(R.string.firstrun_move_scan, R.string.firstrun_move_scan_said, R.string.firstrun_move_scan_shot),
-    ScanMove(R.string.firstrun_move_send, R.string.firstrun_move_send_said, R.string.firstrun_move_send_shot),
+    ScanMove(R.string.firstrun_move_open, R.string.firstrun_move_open_said, R.drawable.firstrun_open),
+    ScanMove(R.string.firstrun_move_scan, R.string.firstrun_move_scan_said, R.drawable.firstrun_scan),
+    ScanMove(R.string.firstrun_move_send, R.string.firstrun_move_send_said, R.drawable.firstrun_send),
+    ScanMove(R.string.firstrun_move_import, R.string.firstrun_move_import_said, R.drawable.firstrun_import),
 )
+
+/** A move's screenshot's width over its height, the shape the four are cut to. */
+private const val SHOT = 1.65f
 
 private const val PAGES = 2
 

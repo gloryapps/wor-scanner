@@ -93,18 +93,14 @@
 
     <string name="firstrun_title">Read your gear, heroes and artifacts straight off the game, into Azhor’s Master Smithy.</string>
     <string name="firstrun_lead">The scanner taps through the game for you. Here’s how it works:</string>
-    <string name="firstrun_move_pick">Pick what to scan</string>
-    <string name="firstrun_move_pick_said">Gear, Heroes or Artifacts, on the capsule over the game.</string>
-    <string name="firstrun_move_pick_shot">capsule menu, kind chosen</string>
-    <string name="firstrun_move_open">Open it in the game</string>
-    <string name="firstrun_move_open_said">Sort it, then select the first tile. The app shows how.</string>
-    <string name="firstrun_move_open_shot">game: Storage → Gear, first piece selected</string>
-    <string name="firstrun_move_scan">Press Scan</string>
-    <string name="firstrun_move_scan_said">It taps and scrolls by itself. Touch the screen to stop.</string>
-    <string name="firstrun_move_scan_shot">capsule counting 412/2,500</string>
+    <string name="firstrun_move_open">Open what to scan</string>
+    <string name="firstrun_move_open_said">Gear, Heroes or Artifacts, sorted, the first tile selected.</string>
+    <string name="firstrun_move_scan">Pick it, press Scan</string>
+    <string name="firstrun_move_scan_said">On the capsule’s menu. A touch on the screen stops it.</string>
     <string name="firstrun_move_send">Send it to the site</string>
-    <string name="firstrun_move_send_said">One press puts it in Import a scan on the site.</string>
-    <string name="firstrun_move_send_shot">site: Import a scan</string>
+    <string name="firstrun_move_send_said">One press as it ends. The first time, with the site’s code.</string>
+    <string name="firstrun_move_import">Import it on the site</string>
+    <string name="firstrun_move_import_said">It waits in Import a scan there. Press Import.</string>
     <string name="firstrun_next">Next: permissions</string>
     <string name="firstrun_grants_title">Three permissions, then you’re ready</string>
     <string name="firstrun_grants_lead">Android asks for each one on its own screen. Turn it on there, then come back here.</string>
