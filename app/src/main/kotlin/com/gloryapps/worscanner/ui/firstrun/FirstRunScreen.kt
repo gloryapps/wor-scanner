@@ -59,6 +59,8 @@ import com.gloryapps.worscanner.ui.Panel
 import com.gloryapps.worscanner.ui.Permission
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
+import com.gloryapps.worscanner.ui.Standing
+import com.gloryapps.worscanner.ui.action
 import com.gloryapps.worscanner.ui.rememberGrant
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -157,7 +159,7 @@ internal fun Grants(state: GrantsUiState, onEvent: (GrantsEvent) -> Unit) {
             Panel(Modifier.fillMaxWidth()) {
                 Permission.entries.forEachIndexed { at, permission ->
                     if (at > 0) Rule()
-                    Asked(permission, on = permission in state.granted) { onEvent(GrantsEvent.Grant(permission)) }
+                    Asked(permission, state.grants[permission]) { onEvent(GrantsEvent.Grant(permission)) }
                 }
             }
             Spacer(Modifier.weight(1f))
@@ -183,7 +185,7 @@ internal fun Grants(state: GrantsUiState, onEvent: (GrantsEvent) -> Unit) {
 }
 
 @Composable
-private fun Asked(permission: Permission, on: Boolean, onGrant: () -> Unit) {
+private fun Asked(permission: Permission, standing: Standing, onGrant: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -194,15 +196,20 @@ private fun Asked(permission: Permission, on: Boolean, onGrant: () -> Unit) {
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(stringResource(permission.label), style = Lettering.stepName, color = Colors.text)
-            Text(stringResource(permission.why), style = Lettering.caption, color = Colors.muted)
+            if (standing == Standing.STALLED) {
+                Text(stringResource(R.string.permission_stalled), style = Lettering.caption, color = Colors.warning)
+            } else {
+                Text(stringResource(permission.why), style = Lettering.caption, color = Colors.muted)
+            }
         }
-        if (on) {
+        val action = standing.action
+        if (action == null) {
             Row(Modifier.width(84.dp), horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.CheckCircle, contentDescription = null, Modifier.size(16.dp), tint = Colors.accent)
                 Text(stringResource(R.string.permission_on), style = Lettering.body, color = Colors.accent)
             }
         } else {
-            Grant(stringResource(R.string.permission_turn_on), onClick = onGrant)
+            Grant(stringResource(action), onClick = onGrant)
         }
     }
 }

@@ -56,6 +56,10 @@ import com.gloryapps.worscanner.scan.Scanning
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Lettering
+import com.gloryapps.worscanner.ui.Permission
+import com.gloryapps.worscanner.ui.Permissions
+import com.gloryapps.worscanner.ui.Standing
+import com.gloryapps.worscanner.ui.accessibilitySettings
 import com.gloryapps.worscanner.ui.label
 import com.gloryapps.worscanner.ui.reminder
 import kotlinx.coroutines.delay
@@ -117,14 +121,17 @@ fun SheetContent(
     onDone: () -> Unit,
     scanning: Scanning = koinInject(),
     chosen: Chosen = koinInject(),
+    permissions: Permissions = koinInject(),
 ) {
     val context = LocalContext.current
     val state by scanning.state.collectAsStateWithLifecycle()
     val kind by chosen.kind.collectAsStateWithLifecycle()
+    val grants by permissions.grants.collectAsStateWithLifecycle()
 
     Sheet(
         kind = kind,
         running = state is ScanState.Running,
+        touch = grants[Permission.ACCESSIBILITY],
         onChoose = chosen::choose,
         onScan = {
             onDone()
@@ -133,6 +140,10 @@ fun SheetContent(
         onRead = {
             onDone()
             CaptureService.read(context, kind)
+        },
+        onTouch = {
+            context.startActivity(accessibilitySettings())
+            onDone()
         },
         onApp = {
             context.openApp()
@@ -241,9 +252,12 @@ private fun Stop(onStop: () -> Unit) {
 internal fun Sheet(
     kind: Kind,
     running: Boolean,
+    /** Where the accessibility service stands: a scan cannot tap without it, and Scan then leads to its settings. */
+    touch: Standing,
     onChoose: (Kind) -> Unit,
     onScan: () -> Unit,
     onRead: () -> Unit,
+    onTouch: () -> Unit,
     onApp: () -> Unit,
     onClose: () -> Unit,
 ) {
@@ -268,10 +282,16 @@ internal fun Sheet(
             style = Lettering.caption,
             color = Colors.muted,
         )
-        if (running) {
-            Action(label = stringResource(R.string.overlay_scan), said = stringResource(R.string.overlay_running), onClick = onScan)
-        } else {
-            Lead(stringResource(R.string.overlay_scan), stringResource(kind.label).lowercase(), onScan)
+        when {
+            running -> Action(label = stringResource(R.string.overlay_scan), said = stringResource(R.string.overlay_running), onClick = onScan)
+            touch != Standing.ON -> Action(
+                label = stringResource(R.string.overlay_scan),
+                said = stringResource(if (touch == Standing.STALLED) R.string.overlay_touch_stalled else R.string.overlay_touch_off),
+                colour = Colors.muted,
+                saidColour = Colors.warning,
+                onClick = onTouch,
+            )
+            else -> Lead(stringResource(R.string.overlay_scan), stringResource(kind.label).lowercase(), onScan)
         }
         Action(label = stringResource(R.string.overlay_read), onClick = onRead)
         Action(label = stringResource(R.string.overlay_app), onClick = onApp)
@@ -320,9 +340,9 @@ private fun Lead(label: String, kind: String, onClick: () -> Unit) {
     }
 }
 
-/** A line of the sheet; the one that is under way says so on its right and is the way to stop it. */
+/** A line of the sheet; one that is under way, or cannot be, says so on its right, and is the way to stop it or to what it needs. */
 @Composable
-private fun Action(label: String, said: String? = null, colour: Color = Colors.text, onClick: () -> Unit) {
+private fun Action(label: String, said: String? = null, colour: Color = Colors.text, saidColour: Color = Colors.accent, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -333,7 +353,7 @@ private fun Action(label: String, said: String? = null, colour: Color = Colors.t
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = Lettering.label, color = colour)
-        if (said != null) Text(said, style = Lettering.mark, color = Colors.accent)
+        if (said != null) Text(said, style = Lettering.mark, color = saidColour)
     }
 }
 

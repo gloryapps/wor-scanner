@@ -1,11 +1,12 @@
 package com.gloryapps.worscanner.ui.firstrun
 
+import com.gloryapps.worscanner.ui.Grants
 import com.gloryapps.worscanner.ui.Permission
 
 /** The first run's checklist: what the system lets the app do now. */
-internal data class GrantsUiState(val granted: Set<Permission> = emptySet()) {
-    /** The grants still off; none once the scanner is ready to use. */
-    val left: Int get() = Permission.entries.count { it !in granted }
+internal data class GrantsUiState(val grants: Grants = Grants()) {
+    /** The grants not on yet; none once the scanner is ready to use. */
+    val left: Int get() = grants.missing.size
 }
 
 internal sealed interface GrantsEvent {

@@ -6,15 +6,15 @@ import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
+import com.gloryapps.worscanner.ui.Grants
 import com.gloryapps.worscanner.ui.Permission
-import com.gloryapps.worscanner.ui.canScan
 import com.gloryapps.worscanner.update.Update
 import kotlinx.serialization.Serializable
 import java.io.File
 
 internal data class HomeUiState(
     /** What the system lets the app do now. */
-    val granted: Set<Permission> = emptySet(),
+    val grants: Grants = Grants(),
     /** Start was pressed with a grant off: what is missing is asked over the screen until the scan starts or the ask is dismissed. */
     val asking: Boolean = false,
     val capturing: Boolean = false,
@@ -23,12 +23,7 @@ internal data class HomeUiState(
     val update: Update = Update.None,
     /** The scan that just ended, which the screen shows in place of how to scan until it is put away. */
     val justScanned: JustScanned? = null,
-) {
-    val ready: Boolean get() = granted.canScan
-
-    /** The grants still off, in the order they are asked for. */
-    val missing: List<Permission> get() = Permission.entries.filterNot { it in granted }
-}
+)
 
 /** A state Home opens in rather than reaches by playing: a debug build's way to see it as it runs. */
 @Serializable

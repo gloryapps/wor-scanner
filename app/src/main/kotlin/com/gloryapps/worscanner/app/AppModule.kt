@@ -43,7 +43,7 @@ val appModule = module {
     single { Scanning(androidContext(), get(), get(), get(), get()) }
     /* Read from the store at start, so the overlay's menu opens on the kind already chosen. */
     single(createdAtStart = true) { Chosen(androidContext()) }
-    single { Permissions(androidContext()) }
+    single { Permissions(androidContext(), get()) }
     single { FirstRun(androidContext(), get()) }
     factory { ExportDelegate(get(), androidContext(), get()) }
     single { Link(HttpAzhorApi(BuildConfig.AZHOR_URL), PreferencesTokenStore(androidContext())) }

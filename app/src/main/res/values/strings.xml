@@ -88,6 +88,8 @@
     <string name="permission_notifications">Notifications</string>
     <string name="permission_notifications_why">Shows a scan’s progress, and a Stop you can reach from anywhere.</string>
     <string name="permission_turn_on">Turn on</string>
+    <string name="permission_restart">Restart</string>
+    <string name="permission_stalled">On in Android’s settings, but not running. Turn it off and on there; if it still won’t run, restart the emulator or phone.</string>
     <string name="permission_on">On</string>
     <string name="permission_why">Why it is asked</string>
 
@@ -175,7 +177,7 @@
     <string name="scan_stopped">%1$s scan stopped: %2$s. %3$d kept.</string>
     <string name="scan_failed">%1$s scan failed: %2$s</string>
     <string name="scan_stop">Stop</string>
-    <string name="scan_needs_touch">The accessibility service is off, so the scan cannot tap. Turn it on in the app, then scan.</string>
+    <string name="scan_needs_touch">The accessibility service is not running, so the scan cannot tap. Turn it on in Android’s Accessibility settings, or off and on if it is on already. If that isn’t enough, restart the emulator or phone.</string>
 
     <string name="overlay_scan_kind">Scan %1$s</string>
     <string name="overlay_what">What to scan</string>
@@ -185,6 +187,8 @@
     <string name="overlay_stop">Stop</string>
     <string name="overlay_close">Close overlay</string>
     <string name="overlay_running">running</string>
+    <string name="overlay_touch_off">accessibility off</string>
+    <string name="overlay_touch_stalled">accessibility stopped</string>
     <string name="overlay_held">/%1$d</string>
     <string name="overlay_kept">%1$d read</string>
     <string name="overlay_view">view →</string>

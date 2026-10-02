@@ -2,6 +2,7 @@ package com.gloryapps.worscanner.ui.firstrun
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.gloryapps.worscanner.ui.Grants
 import com.gloryapps.worscanner.ui.Permission
 import com.gloryapps.worscanner.ui.ScannerTheme
 import com.gloryapps.worscanner.ui.TALL_H
@@ -24,13 +25,13 @@ private fun GrantsNonePreview() {
 @Preview(name = "First run · one on", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun GrantsOnePreview() {
-    ScannerTheme { Grants(GrantsUiState(setOf(Permission.OVERLAY))) { } }
+    ScannerTheme { Grants(GrantsUiState(Grants.on(Permission.OVERLAY))) { } }
 }
 
 @Preview(name = "First run · all on", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun GrantsAllPreview() {
-    ScannerTheme { Grants(GrantsUiState(Permission.entries.toSet())) { } }
+    ScannerTheme { Grants(GrantsUiState(Grants.ALL_ON)) { } }
 }
 
 @Preview(name = "First run · portrait", widthDp = TALL_W, heightDp = TALL_H)

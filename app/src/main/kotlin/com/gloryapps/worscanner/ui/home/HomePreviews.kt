@@ -10,10 +10,12 @@ import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.scan.Progress
+import com.gloryapps.worscanner.ui.Grants
 import com.gloryapps.worscanner.ui.Permission
 import com.gloryapps.worscanner.ui.SCANNED
 import com.gloryapps.worscanner.ui.STOPPED
 import com.gloryapps.worscanner.ui.ScannerTheme
+import com.gloryapps.worscanner.ui.Standing
 import com.gloryapps.worscanner.ui.TALL_H
 import com.gloryapps.worscanner.ui.TALL_W
 import com.gloryapps.worscanner.ui.WIDE_H
@@ -22,7 +24,7 @@ import com.gloryapps.worscanner.update.Release
 import com.gloryapps.worscanner.update.Update
 import com.gloryapps.worscanner.update.Version
 
-private val READY = HomeUiState(granted = Permission.entries.toSet())
+private val READY = HomeUiState(grants = Grants.ALL_ON)
 
 private val RELEASE = Release(Version(listOf(1, 5, 0)), apk = "", page = "")
 
@@ -66,10 +68,20 @@ private fun HomePortraitPreview() {
 @Preview(name = "Home · asking, accessibility and notifications off", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun HomeAskingPreview() {
-    val state = HomeUiState(granted = setOf(Permission.OVERLAY))
+    val state = HomeUiState(grants = Grants.on(Permission.OVERLAY))
     ScannerTheme {
         Home(state) { }
-        Ask(state.missing, state.ready, { }, opened = setOf(Permission.ACCESSIBILITY))
+        Ask(state.grants, { }, opened = setOf(Permission.ACCESSIBILITY))
+    }
+}
+
+@Preview(name = "Home · the accessibility service on but stopped", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun HomeStalledPreview() {
+    val state = HomeUiState(grants = Grants(mapOf(Permission.ACCESSIBILITY to Standing.STALLED, Permission.OVERLAY to Standing.ON, Permission.NOTIFICATIONS to Standing.ON)))
+    ScannerTheme {
+        Home(state) { }
+        Ask(state.grants, { })
     }
 }
 
@@ -78,7 +90,7 @@ private fun HomeAskingPreview() {
 private fun HomeAskedPreview() {
     ScannerTheme {
         Home(READY) { }
-        Ask(READY.missing, READY.ready, { })
+        Ask(READY.grants, { })
     }
 }
 

@@ -22,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the home screen's header.
 - A permission that is off is asked for when Start is pressed, with why the scanner needs it.
 - A newer version is offered in a banner on the home screen.
+- The home screen always shows whether each permission is on.
+
+### Fixed
+
+- An accessibility service Android shows as on but is not running is no longer taken for on: the
+  home screen, the first run and the capsule's menu say to turn it off and on, or to restart the
+  emulator when that is not enough, where Scan used to fail.
 
 ## [0.2.1] - 2026-09-29
 

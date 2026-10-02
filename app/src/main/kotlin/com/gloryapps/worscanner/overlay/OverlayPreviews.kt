@@ -19,6 +19,7 @@ import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.scanner.scan.Progress
 import com.gloryapps.worscanner.scanner.scan.ScanEntry
 import com.gloryapps.worscanner.ui.ScannerTheme
+import com.gloryapps.worscanner.ui.Standing
 
 /* The strip is drawn over the game, so the previews put it on a dark ground rather than on the app's. */
 private val GAME = Color(0xFF0A0C12)
@@ -63,7 +64,7 @@ private fun SheetPreview() {
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Capsule(RUNNING, Kind.GEAR, { }, { }, { }, Modifier)
-            Sheet(kind = Kind.GEAR, running = true, onChoose = { }, onScan = { }, onRead = { }, onApp = { }, onClose = { })
+            Sheet(kind = Kind.GEAR, running = true, touch = Standing.ON, onChoose = { }, onScan = { }, onRead = { }, onTouch = { }, onApp = { }, onClose = { })
         }
     }
 }
@@ -76,8 +77,20 @@ private fun SheetIdlePreview() {
             Kind.entries.forEach { kind ->
                 Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Capsule(ScanState.Idle, kind, { }, { }, { }, Modifier)
-                    Sheet(kind = kind, running = false, onChoose = { }, onScan = { }, onRead = { }, onApp = { }, onClose = { })
+                    Sheet(kind = kind, running = false, touch = Standing.ON, onChoose = { }, onScan = { }, onRead = { }, onTouch = { }, onApp = { }, onClose = { })
                 }
+            }
+        }
+    }
+}
+
+@Preview(name = "Sheet · the accessibility service stopped, and off", widthDp = 520, heightDp = 340)
+@Composable
+private fun SheetUntouchedPreview() {
+    ScannerTheme {
+        Row(Modifier.fillMaxSize().background(GAME).padding(20.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            listOf(Standing.STALLED, Standing.OFF).forEach { touch ->
+                Sheet(kind = Kind.GEAR, running = false, touch = touch, onChoose = { }, onScan = { }, onRead = { }, onTouch = { }, onApp = { }, onClose = { })
             }
         }
     }

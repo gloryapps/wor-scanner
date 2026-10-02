@@ -16,9 +16,9 @@ internal class GrantsViewModel(private val permissions: Permissions, private val
     private val _effects = Channel<GrantsEffect>(Channel.BUFFERED)
     val effects: Flow<GrantsEffect> = _effects.receiveAsFlow()
 
-    val state: StateFlow<GrantsUiState> = permissions.granted
+    val state: StateFlow<GrantsUiState> = permissions.grants
         .map { GrantsUiState(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GrantsUiState(permissions.granted.value))
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GrantsUiState(permissions.grants.value))
 
     fun on(event: GrantsEvent) {
         when (event) {

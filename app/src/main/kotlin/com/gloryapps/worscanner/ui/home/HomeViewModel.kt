@@ -65,14 +65,14 @@ internal class HomeViewModel(
     }
 
     val state: StateFlow<HomeUiState> = combine(
-        combine(permissions.granted, asking, ::Pair),
+        combine(permissions.grants, asking, ::Pair),
         session.screen,
         scanning.state,
         updates.state,
         just,
-    ) { (granted, asking), screen, scan, update, just ->
+    ) { (grants, asking), screen, scan, update, just ->
         HomeUiState(
-            granted = granted,
+            grants = grants,
             asking = asking,
             capturing = screen != null,
             running = scan as? ScanState.Running,
@@ -85,7 +85,7 @@ internal class HomeViewModel(
             SharingStarted.WhileSubscribed(5_000),
             /* What is known at once, so a start does not flash nothing granted. */
             HomeUiState(
-                granted = permissions.granted.value,
+                grants = permissions.grants.value,
                 capturing = session.screen.value != null,
                 running = scanning.state.value as? ScanState.Running,
                 update = updates.state.value,
@@ -95,7 +95,7 @@ internal class HomeViewModel(
     fun on(event: HomeEvent) {
         when (event) {
             is HomeEvent.Grant -> send(HomeEffect.Grant(event.permission))
-            HomeEvent.Start -> if (state.value.missing.isEmpty()) send(HomeEffect.LaunchProjection) else asking.value = true
+            HomeEvent.Start -> if (state.value.grants.missing.isEmpty()) send(HomeEffect.LaunchProjection) else asking.value = true
             HomeEvent.Begin -> {
                 asking.value = false
                 send(HomeEffect.LaunchProjection)

@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,6 +67,7 @@ import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Edged
 import com.gloryapps.worscanner.ui.ExportEffects
+import com.gloryapps.worscanner.ui.Grants
 import com.gloryapps.worscanner.ui.Inline
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Permission
@@ -72,7 +75,9 @@ import com.gloryapps.worscanner.ui.Question
 import com.gloryapps.worscanner.ui.Reach
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
+import com.gloryapps.worscanner.ui.Standing
 import com.gloryapps.worscanner.ui.StepNumber
+import com.gloryapps.worscanner.ui.action
 import com.gloryapps.worscanner.ui.debug.DebugLink
 import com.gloryapps.worscanner.ui.label
 import com.gloryapps.worscanner.ui.note
@@ -161,17 +166,18 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
         }
     }
 
-    if (state.asking) Ask(state.missing, state.ready, onEvent)
+    if (state.asking) Ask(state.grants, onEvent)
 }
 
 /**
- * What is still off when Start is pressed, each with its way to be turned on and, under the info
+ * What is not on when Start is pressed, each with its way to be turned on and, under the info
  * mark, why the scanner asks. The list follows the grants as they come back from the settings, and
  * Start waits only for the ones a scan needs. `opened` is which reasons show to begin with.
  */
 @Composable
-internal fun Ask(missing: List<Permission>, ready: Boolean, onEvent: (HomeEvent) -> Unit, opened: Set<Permission> = emptySet()) {
+internal fun Ask(grants: Grants, onEvent: (HomeEvent) -> Unit, opened: Set<Permission> = emptySet()) {
     var open by rememberSaveable { mutableStateOf(opened) }
+    val missing = grants.missing
 
     Question(400.dp, onDismiss = { onEvent(HomeEvent.Dismiss) }) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -189,6 +195,7 @@ internal fun Ask(missing: List<Permission>, ready: Boolean, onEvent: (HomeEvent)
                 if (at > 0) Rule()
                 Missing(
                     permission,
+                    grants[permission],
                     open = permission in open,
                     onWhy = { open = if (permission in open) open - permission else open + permission },
                     onGrant = { onEvent(HomeEvent.Grant(permission)) },
@@ -197,13 +204,13 @@ internal fun Ask(missing: List<Permission>, ready: Boolean, onEvent: (HomeEvent)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
             Edged(stringResource(R.string.cancel), onClick = { onEvent(HomeEvent.Dismiss) })
-            Accented(stringResource(R.string.home_start), enabled = ready, onClick = { onEvent(HomeEvent.Begin) })
+            Accented(stringResource(R.string.home_start), enabled = grants.canScan, onClick = { onEvent(HomeEvent.Begin) })
         }
     }
 }
 
 @Composable
-private fun Missing(permission: Permission, open: Boolean, onWhy: () -> Unit, onGrant: () -> Unit) {
+private fun Missing(permission: Permission, standing: Standing, open: Boolean, onWhy: () -> Unit, onGrant: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -217,7 +224,15 @@ private fun Missing(permission: Permission, open: Boolean, onWhy: () -> Unit, on
             Modifier.clip(CircleShape).clickable(onClick = onWhy).padding(6.dp).size(18.dp),
             tint = if (open) Colors.accent else Colors.muted,
         )
-        Inline(stringResource(R.string.permission_turn_on), accented = true, onClick = onGrant)
+        standing.action?.let { Inline(stringResource(it), accented = true, onClick = onGrant) }
+    }
+    if (standing == Standing.STALLED) {
+        Text(
+            stringResource(R.string.permission_stalled),
+            Modifier.padding(start = 40.dp, end = 12.dp, bottom = if (open) 4.dp else 10.dp),
+            style = Lettering.caption,
+            color = Colors.warning,
+        )
     }
     if (open) {
         Text(
@@ -328,6 +343,25 @@ private fun Steps(state: HomeUiState, wide: Boolean, onEvent: (HomeEvent) -> Uni
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { steps(Modifier.fillMaxWidth()) }
             start(Modifier.fillMaxWidth())
+        }
+        Rule()
+        Granted(state.grants, onEvent)
+    }
+}
+
+/** Every grant, always in sight under the steps: on, or its way to be turned on, or off and on. */
+@Composable
+private fun Granted(grants: Grants, onEvent: (HomeEvent) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.firstrun_permissions), Modifier.height(28.dp).wrapContentHeight(), style = Lettering.caption, color = Colors.muted)
+        Permission.entries.forEach { permission ->
+            val standing = grants[permission]
+            Row(Modifier.height(28.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(permission.icon, contentDescription = null, Modifier.size(16.dp), tint = if (standing == Standing.ON) Colors.accent else Colors.warning)
+                Text(stringResource(permission.label), style = Lettering.caption, color = Colors.text)
+                standing.action?.let { Inline(stringResource(it), accented = true, onClick = { onEvent(HomeEvent.Grant(permission)) }) }
+                    ?: Text(stringResource(R.string.permission_on), style = Lettering.caption, color = Colors.accent)
+            }
         }
     }
 }
