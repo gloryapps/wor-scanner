@@ -1,40 +1,55 @@
 package com.gloryapps.worscanner.ui.home
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.gloryapps.worscanner.azhor.Linking
+import com.gloryapps.worscanner.azhor.Sending
+import com.gloryapps.worscanner.capture.Emulator
+import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.scan.Progress
-import com.gloryapps.worscanner.ui.Colors
-import com.gloryapps.worscanner.ui.READ
+import com.gloryapps.worscanner.ui.Grants
+import com.gloryapps.worscanner.ui.Permission
 import com.gloryapps.worscanner.ui.SCANNED
 import com.gloryapps.worscanner.ui.STOPPED
 import com.gloryapps.worscanner.ui.ScannerTheme
-import androidx.compose.ui.unit.dp
+import com.gloryapps.worscanner.ui.Standing
+import com.gloryapps.worscanner.ui.TALL_H
+import com.gloryapps.worscanner.ui.TALL_W
+import com.gloryapps.worscanner.ui.WIDE_H
+import com.gloryapps.worscanner.ui.WIDE_W
+import com.gloryapps.worscanner.update.Release
+import com.gloryapps.worscanner.update.Update
+import com.gloryapps.worscanner.update.Version
 
-/** The board's own frames: the game's 1280x720 inside an emulator, and a phone held upright. */
-private const val WIDE_W = 1280
-private const val WIDE_H = 720
-private const val TALL_W = 412
-private const val TALL_H = 915
+private val READY = HomeUiState(grants = Grants.ALL_ON)
 
-private val READY = HomeUiState(
-    accessibilityOn = true,
-    overlayAllowed = true,
-    kind = Kind.GEAR,
-    readings = listOf(SCANNED, STOPPED, READ),
-)
+private val RELEASE = Release(Version(listOf(1, 5, 0)), apk = "", page = "")
 
-@Preview(name = "Home · before a scan", widthDp = WIDE_W, heightDp = WIDE_H)
+@Preview(name = "Home · ready", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun HomePreview() {
     ScannerTheme { Home(READY) { } }
+}
+
+@Preview(name = "Home · update available", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun HomeUpdatePreview() {
+    ScannerTheme { Home(READY.copy(update = Update.Available(RELEASE))) { } }
+}
+
+@Preview(name = "Home · update downloading", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun HomeUpdateDownloadingPreview() {
+    ScannerTheme { Home(READY.copy(update = Update.Downloading(RELEASE))) { } }
+}
+
+@Preview(name = "Home · update failed", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun HomeUpdateFailedPreview() {
+    ScannerTheme { Home(READY.copy(update = Update.Failed(RELEASE))) { } }
 }
 
 @Preview(name = "Home · scanning", widthDp = WIDE_W, heightDp = WIDE_H)
@@ -44,49 +59,108 @@ private fun HomeScanningPreview() {
     ScannerTheme { Home(state) { } }
 }
 
-@Preview(name = "Home · nothing granted, nothing kept", widthDp = WIDE_W, heightDp = WIDE_H)
-@Composable
-private fun HomeEmptyPreview() {
-    ScannerTheme { Home(HomeUiState(readings = emptyList())) { } }
-}
-
 @Preview(name = "Home · portrait", widthDp = TALL_W, heightDp = TALL_H)
 @Composable
 private fun HomePortraitPreview() {
     ScannerTheme { Home(READY) { } }
 }
 
-@Preview(name = "Home · confirming a delete", widthDp = WIDE_W, heightDp = WIDE_H)
+@Preview(name = "Home · asking, accessibility and notifications off", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
-private fun HomeDeletingPreview() {
-    ScannerTheme { Home(READY.copy(deleting = listOf(STOPPED))) { } }
-}
-
-@Preview(name = "Home · confirming every delete", widthDp = WIDE_W, heightDp = WIDE_H)
-@Composable
-private fun HomeDeletingAllPreview() {
-    ScannerTheme { Home(READY.copy(deleting = READY.readings.orEmpty())) { } }
-}
-
-@Preview(name = "Start · ready, capturing, half granted", widthDp = 560, heightDp = 900)
-@Composable
-private fun StartPreview() {
+private fun HomeAskingPreview() {
+    val state = HomeUiState(grants = Grants.on(Permission.OVERLAY))
     ScannerTheme {
-        Column(Modifier.fillMaxSize().background(Colors.screen).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Start(READY) { }
-            Start(READY.copy(capturing = true)) { }
-            Start(HomeUiState(accessibilityOn = true)) { }
-        }
+        Home(state) { }
+        Ask(state.grants, { }, opened = setOf(Permission.ACCESSIBILITY))
     }
 }
 
-@Preview(name = "Readings · three kept, none kept", widthDp = 560, heightDp = 520)
+@Preview(name = "Home · the accessibility service on but stopped", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
-private fun ReadingsPreview() {
+private fun HomeStalledPreview() {
+    val state = HomeUiState(grants = Grants(mapOf(Permission.ACCESSIBILITY to Standing.STALLED, Permission.OVERLAY to Standing.ON, Permission.NOTIFICATIONS to Standing.ON)))
     ScannerTheme {
-        Column(Modifier.fillMaxSize().background(Colors.screen).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Readings(listOf(SCANNED, STOPPED, READ)) { }
-            Readings(emptyList()) { }
-        }
+        Home(state) { }
+        Ask(state.grants, { })
     }
+}
+
+@Preview(name = "Home · asking, all on since", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun HomeAskedPreview() {
+    ScannerTheme {
+        Home(READY) { }
+        Ask(READY.grants, { })
+    }
+}
+
+private val LD_PLAYER = SharedFolder(Emulator.LD_PLAYER, "/mnt/shared/Pictures")
+
+private fun scanned(send: Send, scan: Kept.Scan = SCANNED) =
+    READY.copy(justScanned = JustScanned(scan, Kind.GEAR, touched = true, shared = LD_PLAYER, send = send))
+
+@Preview(name = "Just scanned · linked", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedPreview() {
+    ScannerTheme { Home(scanned(Send.Idle)) { } }
+}
+
+@Preview(name = "Just scanned · stopped", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedStoppedPreview() {
+    ScannerTheme { Home(scanned(Send.Idle, STOPPED.copy(entries = 412, detail = "stopped by the user"))) { } }
+}
+
+@Preview(name = "Just scanned · stopped, not linked", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedStoppedLinkingPreview() {
+    ScannerTheme { Home(scanned(Send.Code(failed = Linking.Refused), STOPPED.copy(entries = 412, detail = "stopped by the user"))) { } }
+}
+
+@Preview(name = "Just scanned · not linked", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedLinkingPreview() {
+    ScannerTheme { Home(scanned(Send.Code())) { } }
+}
+
+@Preview(name = "Just scanned · code refused", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedRefusedCodePreview() {
+    ScannerTheme { Home(scanned(Send.Code(failed = Linking.Refused))) { } }
+}
+
+@Preview(name = "Just scanned · sending", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedSendingPreview() {
+    ScannerTheme { Home(scanned(Send.Underway)) { } }
+}
+
+@Preview(name = "Just scanned · unlinked", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedUnlinkedPreview() {
+    ScannerTheme { Home(scanned(Send.Unsent(Sending.Unlinked))) { } }
+}
+
+@Preview(name = "Just scanned · too large", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedTooLargePreview() {
+    ScannerTheme { Home(scanned(Send.Unsent(Sending.TooLarge))) { } }
+}
+
+@Preview(name = "Just scanned · unreachable", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedUnreachablePreview() {
+    ScannerTheme { Home(scanned(Send.Unsent(Sending.Unanswered))) { } }
+}
+
+@Preview(name = "Just scanned · sent", widthDp = WIDE_W, heightDp = WIDE_H)
+@Composable
+private fun ScannedSentPreview() {
+    ScannerTheme { Home(scanned(Send.Sent)) { } }
+}
+
+@Preview(name = "Just scanned · portrait, no emulator folder", widthDp = TALL_W, heightDp = TALL_H)
+@Composable
+private fun ScannedPortraitPreview() {
+    ScannerTheme { Home(READY.copy(justScanned = JustScanned(SCANNED, Kind.GEAR, touched = false, shared = null, send = Send.Code()))) { } }
 }

@@ -57,6 +57,16 @@ class JournalTest {
     }
 
     @Test
+    fun `a journal whose first line the death cut short goes, leaving no file`() {
+        File(folder, "journal.jsonl").writeText("""{"version":2,"kind":"ge""")
+
+        Journal.closeIn(folder)
+
+        assertFalse(Journal.heldBy(folder))
+        assertFalse(File(folder, "scan.json").exists())
+    }
+
+    @Test
     fun `a scan that wrote its file before dying keeps it, and only the journal goes`() {
         journal.open(unended)
         journal.append(entry(0))

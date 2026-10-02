@@ -24,6 +24,8 @@ internal data class ReadingUiState(
     val kept: Kept? = null,
     val pieces: List<Piece> = emptyList(),
     val file: String = "",
+    /** `file` split into its lines, as the screen numbers them. */
+    val lines: List<String> = emptyList(),
     val chosen: Int = 0,
     val showing: Showing = Showing.PIECE,
     /** Where the screen is too narrow for both, whether the piece has taken the list's place. */

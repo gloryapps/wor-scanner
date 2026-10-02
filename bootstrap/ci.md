@@ -27,22 +27,25 @@ On the pull request:
 1. Fails one from any branch but `dev`.
 2. Reads the version and fails if the tag `v<version>` already exists, or if `CHANGELOG.md` has
    nothing under `## [Unreleased]`.
-3. Runs the tests and builds the release APK, R8-optimized and signed.
+3. Runs the tests and builds the release APK, R8-optimized and signed, and keeps it as the run's
+   `release` artifact with its gzipped mapping, the notes and the version.
 
 On the merge, which is a merge commit so that `dev`'s commits reach `main` as they are:
 
-1. Reads the version, runs the tests and builds the signed APK again, from the merge commit.
+1. Builds nothing: takes that artifact from the pull request's run that built the merge commit's
+   second parent.
 2. Creates the tag on the merge commit and a GitHub release holding `wor-scanner.apk` and
-   `mapping-<version>.txt.gz`, with `CHANGELOG.md`'s unreleased notes. The APK's name carries no
-   version, so `releases/latest/download/wor-scanner.apk` always downloads the newest one. The
-   app's update link reads the latest release through GitHub's API and installs its
-   `wor-scanner.apk`, so the asset keeps that name.
+   `mapping-<version>.txt.gz`, with the notes. The APK's name carries no version, so
+   `releases/latest/download/wor-scanner.apk` always downloads the newest one. The app's update link
+   reads the latest release through GitHub's API and installs its `wor-scanner.apk`, so the asset
+   keeps that name.
 3. Commits `Start <next minor>` to `dev`, which also heads those notes `## [<version>] - <date>` under
    an empty `## [Unreleased]` and adds the version's compare link: pull `dev` before working on. A
    patch or a major is set in `versionName` on `dev` by hand, before its pull request.
 
 A merge whose run GitHub never started is released by running the workflow on `main` by hand,
-which does what the merge does: `gh workflow run release.yml --ref main`.
+which does what the merge does while the pull request's artifact is kept, 90 days:
+`gh workflow run release.yml --ref main`.
 
 ## Repository rules
 

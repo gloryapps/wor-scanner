@@ -10,7 +10,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,10 +25,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.ui.Accented
+import com.gloryapps.worscanner.ui.Back
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.ended
 import com.gloryapps.worscanner.ui.ExportSheet
@@ -55,6 +53,7 @@ import com.gloryapps.worscanner.ui.Link
 import com.gloryapps.worscanner.ui.Pill
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Segmented
+import com.gloryapps.worscanner.ui.Wide
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.shown
 import org.koin.compose.viewmodel.koinViewModel
@@ -90,8 +89,7 @@ internal fun ReadingScreen(stamp: String, onBack: () -> Unit, viewModel: Reading
  */
 @Composable
 internal fun Reading(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit) {
-    BoxWithConstraints(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) {
-        val wide = maxWidth >= WIDE
+    Wide(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) { wide ->
         /* Narrow, the arrow first returns the piece to its list; the file is always one tap deep. */
         val within = !wide && state.opened && state.showing == Showing.PIECE
         BackHandler(enabled = within) { onEvent(ReadingEvent.Close) }
@@ -130,9 +128,7 @@ private fun Header(state: ReadingUiState, back: ReadingEvent, onEvent: (ReadingE
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { onEvent(back) }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Colors.muted)
-            }
+            Back { onEvent(back) }
             Text(state.kept?.shown().orEmpty(), style = Lettering.subtitle, color = Colors.text, maxLines = 1)
             (state.kept as? Kept.Scan)?.let { Pill(it.ended(context)) }
         }
@@ -224,23 +220,21 @@ internal fun Detail(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modi
             said = stringResource(R.string.reading_at, piece.index, piece.row, piece.column),
             onCopy = { onEvent(ReadingEvent.Copy(piece.name, piece.card)) },
         )
-        Code(piece.card)
+        Code(remember(piece.card) { piece.card.lines() })
     }
 }
 
 /** The file as it was written, which is what the lab reads, and what `copy` hands over whole where a clip can carry it. */
 @Composable
 internal fun Written(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
-    val lines = remember(state.file) { state.file.lines().size }
-
     Column(modifier) {
         Above(
             name = { Text(state.name, style = Lettering.data, color = Colors.text, maxLines = 1) },
             mark = { },
-            said = pluralStringResource(R.plurals.reading_lines, lines, lines),
+            said = pluralStringResource(R.plurals.reading_lines, state.lines.size, state.lines.size),
             onCopy = { onEvent(ReadingEvent.Copy(state.name, state.file)) }.takeIf { state.file.length <= COPYABLE },
         )
-        Code(state.file)
+        Code(state.lines)
     }
 }
 
@@ -270,8 +264,7 @@ private fun Above(name: @Composable () -> Unit, mark: @Composable () -> Unit, sa
  * sideways under them.
  */
 @Composable
-private fun Code(text: String) {
-    val lines = remember(text) { text.lines() }
+private fun Code(lines: List<String>) {
     val across = rememberScrollState()
     val numbers = remember(lines.size) { (lines.size.toString().length * 9 + 4).dp }
 
@@ -303,8 +296,6 @@ private fun Code(text: String) {
 
 private fun Context.copy(label: String, text: String) =
     getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(label, text))
-
-private val WIDE = 720.dp
 
 /** Characters a clip carries safely: the clipboard hands its text to the system in one transaction of at most 1 MB. */
 private const val COPYABLE = 200_000

@@ -76,6 +76,8 @@ class CaptureService : LifecycleService() {
     }
 
     private fun open(consent: Consent) {
+        /* One projection at a time: a second would stop this one, whose stop ends the service. */
+        if (screen != null) return
         goForeground(notification(getString(R.string.capture_notification_title)))
         val projection = getSystemService(MediaProjectionManager::class.java)
             .getMediaProjection(consent.resultCode, consent.data)
@@ -102,7 +104,8 @@ class CaptureService : LifecycleService() {
 
     /* The overlay stays, showing the scan and its stop; it is captured with the game, so the capsule is to be kept off the grid and the panel. */
     private fun startScan(kind: Kind) {
-        if (scan?.isActive == true) {
+        /* Until a stopped scan has written what it read, a tap still stops it rather than starting another. */
+        if (scan?.isCompleted == false) {
             scan?.cancel()
             return
         }

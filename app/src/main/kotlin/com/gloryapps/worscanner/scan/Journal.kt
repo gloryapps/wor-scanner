@@ -33,15 +33,18 @@ class Journal<T>(folder: File, private val card: KSerializer<T>) {
         /**
          * Closes the journal a scan left in its folder, its process dead before the scan ended. Where the
          * scan's file was not written, or not to its end, it becomes the one the journal opened with,
-         * holding every entry after it but a line the death cut short.
+         * holding every entry after it but a line the death cut short. A first line cut short is a scan
+         * that read nothing yet, since nothing is appended before it is whole: the journal just goes.
          */
         fun closeIn(folder: File) {
             val journal = File(folder, NAME)
             if (resultOf { readScan(folder, JsonElement.serializer()) }.isFailure) {
                 val lines = journal.readLines()
-                val opened = LINE.decodeFromString(ScanFile.serializer(JsonElement.serializer()), lines.first())
-                val entries = lines.drop(1).mapNotNull { resultOf { LINE.decodeFromString(ScanEntry.serializer(JsonElement.serializer()), it) }.getOrNull() }
-                writeScan(folder, opened.copy(entries = entries), JsonElement.serializer())
+                val opened = lines.firstOrNull()?.let { resultOf { LINE.decodeFromString(ScanFile.serializer(JsonElement.serializer()), it) }.getOrNull() }
+                if (opened != null) {
+                    val entries = lines.drop(1).mapNotNull { resultOf { LINE.decodeFromString(ScanEntry.serializer(JsonElement.serializer()), it) }.getOrNull() }
+                    writeScan(folder, opened.copy(entries = entries), JsonElement.serializer())
+                }
             }
             journal.delete()
         }

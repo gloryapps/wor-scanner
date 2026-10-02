@@ -23,7 +23,8 @@ sealed interface ScanState {
 
     data class Running(val kind: Kind, val progress: Progress) : ScanState
 
-    data class Ended(val kind: Kind, val outcome: Outcome<*>) : ScanState
+    /** `stamp` names the folder the scan was written to, which is what finds it again among those kept. */
+    data class Ended(val kind: Kind, val outcome: Outcome<*>, val stamp: String) : ScanState
 }
 
 /** Runs one scan of a kind with the hand and eyes of the moment and writes what it found. */
@@ -64,7 +65,7 @@ class Scanning(
             val ended = outcome ?: Outcome.Stopped(Outcome.Reason.CANCELLED, entries, "stopped by the user")
             reports.ended(kind, ended)
             resultOf { writer.write(first, ended) }.onFailure { reports.failed("writing the ${kind.id} scan", it) }
-            _state.value = ScanState.Ended(kind, ended)
+            _state.value = ScanState.Ended(kind, ended, writer.stamp)
         }
     }
 }

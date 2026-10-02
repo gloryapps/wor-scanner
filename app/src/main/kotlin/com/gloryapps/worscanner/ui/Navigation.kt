@@ -1,27 +1,60 @@
 package com.gloryapps.worscanner.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.gloryapps.worscanner.ui.debug.DebugScreen
+import com.gloryapps.worscanner.ui.earlier.EarlierScreen
+import com.gloryapps.worscanner.ui.firstrun.FirstRun
+import com.gloryapps.worscanner.ui.firstrun.GrantsScreen
+import com.gloryapps.worscanner.ui.firstrun.Intro
 import com.gloryapps.worscanner.ui.home.HomeScreen
+import com.gloryapps.worscanner.ui.howto.HowToScanScreen
+import com.gloryapps.worscanner.ui.home.Stage
 import com.gloryapps.worscanner.ui.reading.ReadingScreen
 import kotlinx.serialization.Serializable
+import org.koin.compose.koinInject
 
-/** Where a scan is started and what it left is found. */
+/** What the scanner does, the first time the app opens. */
 @Serializable
-data object Home : NavKey
+data object Welcome : NavKey
+
+/** The first run's grants, after `Welcome`. */
+@Serializable
+data object Setup : NavKey
+
+/** Where a scan is started; `stage` opens it in a state it is otherwise only reached by playing. */
+@Serializable
+data class Home(val stage: Stage? = null) : NavKey
+
+/** Every reading kept on the device, newest first. */
+@Serializable
+data object Earlier : NavKey
+
+/** The video of a whole scan, from Home's header and the first run. */
+@Serializable
+data object HowToScan : NavKey
+
+/** A debug build's screens a player meets once or by chance; a release has none. */
+@Serializable
+data object Debug : NavKey
 
 /** One reading, piece by piece. */
 @Serializable
 data class Reading(val stamp: String) : NavKey
 
 @Composable
-fun Navigation() {
-    val backStack = rememberNavBackStack(Home)
+fun Navigation(firstRun: FirstRun = koinInject()) {
+    /* Nothing is drawn for the moment the store takes to answer: the launch window is the same colour. */
+    val seen by produceState<Boolean?>(null) { value = firstRun.seen() }
+    val start = seen?.let { if (it) Home() else Welcome } ?: return
+    val backStack = rememberNavBackStack(start)
 
     NavDisplay(
         backStack = backStack,
@@ -31,7 +64,22 @@ fun Navigation() {
             rememberViewModelStoreNavEntryDecorator(),
         ),
         entryProvider = entryProvider {
-            entry<Home> { HomeScreen(onReading = { backStack.add(Reading(it.stamp)) }) }
+            entry<Welcome> { Intro(onNext = { backStack.add(Setup) }, onWatch = { backStack.add(HowToScan) }) }
+            entry<Setup> {
+                GrantsScreen(
+                    onDone = {
+                        backStack.clear()
+                        backStack.add(Home())
+                    },
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<Home> {
+                HomeScreen(it.stage, onEarlier = { backStack.add(Earlier) }, onHowTo = { backStack.add(HowToScan) }, onDebug = { backStack.add(Debug) })
+            }
+            entry<HowToScan> { HowToScanScreen(onClose = { backStack.removeLastOrNull() }) }
+            entry<Debug> { DebugScreen(onOpen = { backStack.add(it) }, onBack = { backStack.removeLastOrNull() }) }
+            entry<Earlier> { EarlierScreen(onReading = { backStack.add(Reading(it.stamp)) }, onBack = { backStack.removeLastOrNull() }) }
             entry<Reading> { ReadingScreen(it.stamp, onBack = { backStack.removeLastOrNull() }) }
         },
     )

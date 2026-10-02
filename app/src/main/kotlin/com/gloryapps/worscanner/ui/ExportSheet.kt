@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,32 +41,27 @@ import com.gloryapps.worscanner.capture.SharedFolder
 @Composable
 fun ExportSheet(export: ExportDelegate) {
     val state by export.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
 
-    LaunchedEffect(export) {
-        export.effects.collect { effect ->
-            when (effect) {
-                is ExportEffect.Share -> context.startActivity(effect.intent)
-                is ExportEffect.Landed -> Toast.makeText(context, context.said(effect), Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
+    ExportEffects(export)
     ExportSheet(
         outgoing = state.outgoing ?: return,
         failed = state.failed,
         shared = state.shared,
         into = state.into,
+        linked = state.linked,
+        sending = state.sending,
         onChoose = { export.on(ExportEvent.Choose(it)) },
         onShared = { export.on(ExportEvent.Save) },
         onShare = { export.on(ExportEvent.Share) },
+        onSend = { export.on(ExportEvent.Send) },
         onClose = { export.on(ExportEvent.Close) },
     )
 }
 
 /**
  * The one way out of the app, wherever export was pressed: the file that goes, what it holds, and
- * the two doors it can leave by. It closes once the file has landed, and stays open to say why it did not.
+ * the doors it can leave by, the site first once the scanner is linked and a scan is among it. It
+ * closes once the file has landed, and stays open to say why it did not.
  */
 @Composable
 fun ExportSheet(
@@ -75,11 +69,16 @@ fun ExportSheet(
     failed: String?,
     shared: List<SharedFolder>,
     into: SharedFolder?,
+    linked: Boolean,
+    sending: Boolean,
     onChoose: (SharedFolder) -> Unit,
     onShared: () -> Unit,
     onShare: () -> Unit,
+    onSend: () -> Unit,
     onClose: () -> Unit,
 ) {
+    val sends = outgoing.forLab && linked
+
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
             Modifier
@@ -96,9 +95,7 @@ fun ExportSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(stringResource(R.string.export_title), style = Lettering.title, color = Colors.text)
-                IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.export_close), tint = Colors.muted)
-                }
+                Close(onClose)
             }
             Rule()
 
@@ -143,19 +140,28 @@ fun ExportSheet(
             Rule()
 
             Column(Modifier.padding(horizontal = 22.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (sends) {
+                    Accented(
+                        stringResource(if (sending) R.string.export_sending else R.string.export_send),
+                        Modifier.fillMaxWidth(),
+                        enabled = !sending,
+                        onClick = onSend,
+                    )
+                }
                 Landing(shared, into, onChoose)
                 if (failed != null) Landed(failed)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Accented(
-                        stringResource(R.string.export_save),
-                        Modifier.weight(1f),
-                        said = into?.let { stringResource(R.string.export_to, stringResource(it.emulator.label)) },
-                        enabled = into != null,
-                        onClick = onShared,
-                    )
+                    val said = into?.let { stringResource(R.string.export_to, stringResource(it.emulator.label)) }
+                    /* The site leads once a scan can go there; saving to the folder steps back beside Share. */
+                    if (sends) {
+                        Edged(into?.let { savingInto(it) } ?: stringResource(R.string.export_save), Modifier.weight(1f), onClick = { if (into != null) onShared() })
+                    } else {
+                        Accented(stringResource(R.string.export_save), Modifier.weight(1f), said = said, enabled = into != null, onClick = onShared)
+                    }
                     Edged(stringResource(R.string.export_share), onClick = onShare)
                 }
                 if (outgoing.forLab) Text(stringResource(R.string.export_note), style = Lettering.caption, color = Colors.muted)
+                if (outgoing.forLab && !linked) Text(stringResource(R.string.export_send_link), style = Lettering.caption, color = Colors.muted)
             }
         }
     }
@@ -179,6 +185,24 @@ private fun Landing(shared: List<SharedFolder>, into: SharedFolder?, onChoose: (
         }
     }
     into?.let { Text(stringResource(it.emulator.onPc), style = Lettering.data, color = Colors.muted) }
+}
+
+/** What an export did outside the app, the other app's chooser or a toast, for a screen that exports with or without the sheet. */
+@Composable
+fun ExportEffects(export: ExportDelegate) {
+    val context = LocalContext.current
+
+    LaunchedEffect(export) {
+        export.effects.collect { effect ->
+            when (effect) {
+                is ExportEffect.Share -> context.startActivity(effect.intent)
+                is ExportEffect.Landed -> Toast.makeText(context, context.said(effect), Toast.LENGTH_LONG).show()
+                is ExportEffect.Unlanded -> Toast.makeText(context, effect.why, Toast.LENGTH_LONG).show()
+                is ExportEffect.Sent ->
+                    Toast.makeText(context, context.resources.getQuantityString(R.plurals.export_sent, effect.scans, effect.scans), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 }
 
 private fun Context.said(landed: ExportEffect.Landed): String =

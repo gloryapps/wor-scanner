@@ -33,7 +33,7 @@ compose-ui = { module = "androidx.compose.ui:ui" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-uiToolingPreview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-uiTooling = { module = "androidx.compose.ui:ui-tooling" }
-compose-materialIconsCore = { module = "androidx.compose.material:material-icons-core" }
+compose-materialIconsExtended = { module = "androidx.compose.material:material-icons-extended" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }

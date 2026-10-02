@@ -7,12 +7,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -22,6 +28,12 @@ import com.gloryapps.worscanner.scan.Ended
 import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import java.io.File
+
+/** The board's own frames: LDPlayer's 1280x720 window at its 240 dpi, and a phone held upright. */
+internal const val WIDE_W = 853
+internal const val WIDE_H = 480
+internal const val TALL_W = 412
+internal const val TALL_H = 915
 
 /**
  * What the previews are drawn from. A `Kept` names files that need not exist: only its stamp, its
@@ -52,7 +64,7 @@ internal val READ = Kept.Read(
 private val LD_PLAYER = SharedFolder(Emulator.LD_PLAYER, "/mnt/shared/Pictures")
 private val BLUE_STACKS = SharedFolder(Emulator.BLUE_STACKS, "/sdcard/windows/BstSharedFolder")
 
-@Preview(name = "Controls", widthDp = 520, heightDp = 460)
+@Preview(name = "Controls", widthDp = 520, heightDp = 720)
 @Composable
 private fun ControlsPreview() {
     ScannerTheme {
@@ -61,15 +73,28 @@ private fun ControlsPreview() {
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Section("Controls")
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Accented("Start", said = "→ game") { }
+                Accented("Next: permissions", trailing = Icons.AutoMirrored.Outlined.ArrowForward) { }
+                Accented("Update now", reach = Reach.SMALL) { }
+            }
+            Accented("Send to Azhor’s Master Smithy", Modifier.fillMaxWidth(), icon = Icons.AutoMirrored.Outlined.Send) { }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Edged("Save → LDPlayer", Modifier.weight(1f), icon = Icons.Outlined.Folder) { }
+                Edged("Share…", icon = Icons.Outlined.Share) { }
                 Edged("Overlay only") { }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Accented("Start", enabled = false) { }
+                Grant("Turn on") { }
+                Inline("Turn on", accented = true) { }
                 Inline("grant") { }
-                Inline("export", accented = true) { }
                 Link("export all") { }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StepNumber(1)
+                StepNumber(2)
+                StepNumber(3)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Pill("Gear", chosen = true) { }
@@ -87,7 +112,7 @@ private fun ControlsPreview() {
     }
 }
 
-@Preview(name = "Lettering", widthDp = 520, heightDp = 380)
+@Preview(name = "Lettering", widthDp = 720, heightDp = 760)
 @Composable
 private fun LetteringPreview() {
     ScannerTheme {
@@ -95,15 +120,23 @@ private fun LetteringPreview() {
             Modifier.fillMaxSize().background(Colors.screen).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Text("display · Three permissions", style = Lettering.display, color = Colors.text)
             Text("title · Scan your gear", style = Lettering.title, color = Colors.text)
             Text("subtitle · Vierna's Bangle", style = Lettering.subtitle, color = Colors.text)
+            Text("stepName · Press Start", style = Lettering.stepName, color = Colors.text)
             Text("brand · WoR Scanner", style = Lettering.brand, color = Colors.text)
             Section("section · permissions")
             Text("body · what the card says under its name.", style = Lettering.body, color = Colors.muted)
             Text("caption · and what is said under that.", style = Lettering.caption, color = Colors.muted)
             Text("action · Save", style = Lettering.action, color = Colors.text)
+            Text("actionSmall · Turn on", style = Lettering.actionSmall, color = Colors.text)
             Text("data · 20260907-130841", style = Lettering.data, color = Colors.text)
             Text("dataSmall · 1204/2500", style = Lettering.dataSmall, color = Colors.muted)
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("1,204", style = Lettering.count, color = Colors.text)
+                Text("K7Q4-MPX2", style = Lettering.code, color = Colors.text)
+                Text("numeral · 3", style = Lettering.numeral, color = Colors.accent)
+            }
         }
     }
 }
@@ -117,14 +150,17 @@ private fun ExportSheetPreview() {
                 name = "wor-gear-20260907-130841.json",
                 files = SCANNED.outbound(),
                 holds = listOf("Kind" to "Gear", "Read" to "1204", "Scan" to "complete", "Size" to "318 kB"),
-                forLab = true,
+                scans = listOf(java.io.File("scan.json")),
             ),
             failed = null,
             shared = listOf(LD_PLAYER, BLUE_STACKS),
             into = LD_PLAYER,
             onChoose = { },
             onShared = { },
+            linked = true,
+            sending = false,
             onShare = { },
+            onSend = { },
             onClose = { },
         )
     }
@@ -159,7 +195,10 @@ private fun ExportSheetFailedPreview() {
             into = BLUE_STACKS,
             onChoose = { },
             onShared = { },
+            linked = false,
+            sending = false,
             onShare = { },
+            onSend = { },
             onClose = { },
         )
     }
@@ -180,7 +219,10 @@ private fun ExportSheetNoFolderPreview() {
             into = null,
             onChoose = { },
             onShared = { },
+            linked = false,
+            sending = false,
             onShare = { },
+            onSend = { },
             onClose = { },
         )
     }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="debug_title">Debug</string>
+    <string name="debug_open">Open</string>
+    <string name="debug_welcome">First run · what it does</string>
+    <string name="debug_welcome_said">The first page a new install opens on. Next leads on to the permissions.</string>
+    <string name="debug_setup">First run · permissions</string>
+    <string name="debug_setup_said">The checklist, with the grants as they are. Later or Start using the scanner ends at Home.</string>
+    <string name="debug_just_scanned">Just scanned</string>
+    <string name="debug_just_scanned_said">Home with the newest scan kept on the device, as if it had just ended: Send, link, Save and Share for real.</string>
+    <string name="debug_asking">Permission ask</string>
+    <string name="debug_asking_said">Home with the ask open, as if Start had been pressed: it lists what is off, or says all is on.</string>
+</resources>

@@ -49,7 +49,7 @@ fun endedOf(wire: String): Ended? = Ended.entries.firstOrNull { wire.substringBe
 
 /** One folder per scan: `scan.json` and the panel of every tile the reader did not close, and its journal until the file is written. */
 class ScanWriter<T>(private val context: Context, private val kind: Kind, private val scan: Scan<T>) : Keeper<T> {
-    private val stamp: String = LocalDateTime.now().format(STAMP)
+    val stamp: String = LocalDateTime.now().format(STAMP)
     /** Made when the first file goes in, so a scan that wrote nothing leaves no folder. */
     private val folder by lazy { File(File(context.getExternalFilesDir(null), "scans"), stamp).apply { mkdirs() } }
     private val journal by lazy { Journal(folder, scan.serializer) }

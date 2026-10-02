@@ -17,7 +17,7 @@ and artifacts. Shipped as an APK on GitHub.
   serializer, what it reads off a tile, and its own model of the panel, written with `text/`'s
   instruments. The walk over the grid names no kind: `Kind.scan()` in `scanner` and `Kind.named` in the
   app's `ui/Kinds.kt` are the only two places that do. Adding one is the checklist in `bootstrap/architecture.md`.
-- A kind's words are transcribed from the wiki, spelled as the page spells them. No code or data is shared with the azhor lab: the JSON the app writes is the whole contract.
+- A kind's words are transcribed from the wiki, spelled as the page spells them. No code or data is shared with the azhor lab: the JSON the app writes and the lab's two addresses it is sent to, `/scanner/link` and `/scanner/scans`, are the whole contract.
 - Use `resultOf { }`, never `runCatching`: it swallows `CancellationException`.
 - A piece's identity is its grid position, never its content.
 - Positions are fractions of the display, never pixels.

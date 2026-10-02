@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- A debug build may be pointed at the lab running on the PC, which answers over plain HTTP. -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>

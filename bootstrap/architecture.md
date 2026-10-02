@@ -14,7 +14,7 @@ and artifacts. Distributed as an APK on GitHub, not on the Play Store.
 - `app` — Android. Implements those interfaces with MediaProjection (frames), an
   `AccessibilityService` using `dispatchGesture` (taps and swipes, blind: the game is Unity and
   exposes no view tree), ML Kit (text) and the file writer; holds the foreground service that runs
-  the scan, the hairline and capsule drawn over the game, the two screens, and the update to the
+  the scan, the hairline and capsule drawn over the game, the screens, and the update to the
   latest GitHub release, handed to the system's installer.
 - The words (sets, slots, attribute names) are `scanner`'s own, transcribed
   from the wiki's Gear page. The app depends on no other repository: what it shares with the azhor
@@ -46,7 +46,7 @@ that the walk over a grid is written once and a kind says only what its tiles ho
 
 - Arrows point down only. `scan/` knows no kind; each kind's package extends its `Scan<T>`;
   `Kind.scan()` in `kinds/` is the one place every kind is named, and `Kind.named` in the app's
-  `ui/Kinds.kt` is the other, for its label and the home screen's instructions.
+  `ui/Kinds.kt` is the other, for its label, the home screen's steps and the menu's reminder.
 - `Kind` is an enum: identity only. Its id is the JSON's `kind` and the scan folder's, `entries`
   is what the overlay lists, and a `when` over it is exhaustive.
 - `Scan<T>` is an abstract class: a kind's `GridLayout`, its serializer, `readTile` (what it reads
@@ -122,8 +122,8 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
 
 - No database. A scan is a JSON file in the app's external files directory, `version` 2 with the
   `kind` it scanned; a new scan is a new file, never a merge. The user takes it out through the share
-  sheet or saves it into the folder the emulator shares with the PC. Sending straight to the lab is a
-  later option.
+  sheet, saves it into the folder the emulator shares with the PC, or sends it to the lab once the
+  scanner is linked.
 - What leaves the app is named `wor-<kind>-<stamp>`: `wor-gear-20260907-130812.json`, with a scan's
   kept panels beside it as `wor-gear-20260907-130812-<tile>.png`. On disk the names stay `scan.json`
   and `<tile>.png`; `Exports` copies each file under the name its caller gives, which is what keeps
@@ -148,15 +148,31 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   be chosen over the first.
 - Neither mount needs a grant, both sitting outside the sdcard, so the app asks for no storage
   permission at all; a device with no mount is told to use the share sheet instead.
-- The clipboard does not cross that border, and the two apps are not linked over the network.
-- Preferences in DataStore. `Chosen` is the only one so far: which kind the next scan reads, picked
-  on the home screen or in the overlay's menu, held at once and written behind.
+- The clipboard does not cross that border.
+- The network does, once the scanner is linked. The lab's Import a scan shows a code; the home
+  screen, the first time a scan that just ended is sent, trades it at the lab's `POST /scanner/link`
+  for a token, and `azhor/Link` keeps that token in a DataStore of its own, `link`. Send, there or
+  in the export sheet, posts each scan's `scan.json`, gzipped, to
+  `POST /scanner/scans` with the token as a bearer; the pictures stay behind. A 401 means the lab
+  no longer knows the token, and the scanner forgets it. `azhor/Site.kt` is given by each build: a
+  release reaches the lab at `BuildConfig.AZHOR_URL`, from the Gradle property `azhor.url`; a debug
+  build's site is a demo that links any code and takes every scan without leaving the device, for
+  filming the flow, so a debug build never reaches the lab.
+- Preferences in DataStore. `Chosen` holds which kind the next scan reads, picked in the overlay's
+  menu, held at once and written behind; `link` holds the lab's token; `first_run` whether the
+  first run was seen, set at once on an install that already held the grants a scan needs.
 - Room enters only if scan history inside the app is ever wanted, and brings the no-destructive-
   migration rule with it.
 
 ## Navigation
 
 - One Activity, Compose, Navigation 3 from the start: the back stack is a state list the app owns.
+  It starts on the first run until that is seen, on Home after; leaving the first run clears it.
+- `HowToScan` plays `res/raw/how_to_scan.mp4`, a whole scan filmed on LDPlayer, in the platform's
+  `VideoView`; Home's header and the first run's first page lead to it.
+- `Home(stage)` opens Home in a state it is otherwise only reached by playing. Only a debug build's
+  Debug screen, behind a link in Home's header, opens one: `ui/debug/Debug.kt` is given by `src/debug`
+  and by `src/release`, whose screen and link draw nothing.
 - The overlay belongs to the service, not the Activity, and is drawn in Compose too. It is four
   windows: the hairline pinned to the top, the capsule a finger drags, the menu its tap opens beside
   it, and the close target that appears under it while it is held.

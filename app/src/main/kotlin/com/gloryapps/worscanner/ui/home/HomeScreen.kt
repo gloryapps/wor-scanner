@@ -1,44 +1,54 @@
 package com.gloryapps.worscanner.ui.home
 
-import android.Manifest
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
 import android.os.Build
-import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -49,65 +59,73 @@ import com.gloryapps.worscanner.BuildConfig
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.provided
 import com.gloryapps.worscanner.capture.CaptureService
-import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Accented
+import com.gloryapps.worscanner.ui.Back
+import com.gloryapps.worscanner.ui.Brand
 import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
-import com.gloryapps.worscanner.ui.Confirm
 import com.gloryapps.worscanner.ui.Edged
-import com.gloryapps.worscanner.ui.ExportSheet
+import com.gloryapps.worscanner.ui.ExportEffects
+import com.gloryapps.worscanner.ui.Grants
 import com.gloryapps.worscanner.ui.Inline
-import com.gloryapps.worscanner.ui.Link
-import com.gloryapps.worscanner.ui.Panel
-import com.gloryapps.worscanner.ui.Pill
+import com.gloryapps.worscanner.ui.Lettering
+import com.gloryapps.worscanner.ui.Permission
+import com.gloryapps.worscanner.ui.Question
+import com.gloryapps.worscanner.ui.Reach
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
-import com.gloryapps.worscanner.ui.said
-import com.gloryapps.worscanner.ui.shown
-import com.gloryapps.worscanner.ui.Lettering
+import com.gloryapps.worscanner.ui.Standing
+import com.gloryapps.worscanner.ui.StepNumber
+import com.gloryapps.worscanner.ui.Wide
+import com.gloryapps.worscanner.ui.action
+import com.gloryapps.worscanner.ui.debug.DebugLink
 import com.gloryapps.worscanner.ui.label
+import com.gloryapps.worscanner.ui.note
+import com.gloryapps.worscanner.ui.rememberGrant
+import com.gloryapps.worscanner.ui.steps
 import com.gloryapps.worscanner.update.Update
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 /**
- * Where a scan is started and what it left is found, wired to the service, the system and the store.
- * What it draws is `Home`, which knows none of them.
+ * Where a scan is started, wired to the service, the system and the store. What it draws is `Home`,
+ * which knows none of them.
  */
 @Composable
-internal fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = koinViewModel()) {
+internal fun HomeScreen(
+    stage: Stage?,
+    onEarlier: () -> Unit,
+    onHowTo: () -> Unit,
+    onDebug: () -> Unit,
+    viewModel: HomeViewModel = koinViewModel { parametersOf(stage) },
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val open by rememberUpdatedState(onReading)
+    val earlier by rememberUpdatedState(onEarlier)
+    val howTo by rememberUpdatedState(onHowTo)
+    val debug by rememberUpdatedState(onDebug)
 
     LifecycleResumeEffect(Unit) {
         viewModel.returned()
-        onPauseOrDispose { }
+        onPauseOrDispose { viewModel.left() }
     }
 
     val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         val data = it.data
         if (it.resultCode == Activity.RESULT_OK && data != null) CaptureService.start(context, it.resultCode, data)
     }
-    /* Android 13 hides a notification the app was not let post, the scan's Stop with it: asked at Start, and the scan goes on either way. */
-    val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
-    }
+    val grant = rememberGrant(viewModel::returned)
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                HomeEffect.OpenAccessibilitySettings -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                HomeEffect.OpenOverlaySettings -> context.startActivity(
-                    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
-                )
-                HomeEffect.LaunchProjection -> if (context.mayNotNotify()) {
-                    notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
-                }
+                is HomeEffect.Grant -> grant(effect.permission)
+                HomeEffect.LaunchProjection -> projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
                 HomeEffect.StopCapture -> CaptureService.stop(context)
-                is HomeEffect.OpenReading -> open(effect.kept)
+                HomeEffect.OpenEarlier -> earlier()
+                HomeEffect.OpenHowTo -> howTo()
+                HomeEffect.OpenDebug -> debug()
                 /* The system's installer asks the player to confirm, and the first time to let this app install others. */
                 is HomeEffect.Install -> context.startActivity(
                     Intent(Intent.ACTION_VIEW).setDataAndType(context.provided(effect.apk), APK_TYPE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
@@ -117,201 +135,305 @@ internal fun HomeScreen(onReading: (Kept) -> Unit, viewModel: HomeViewModel = ko
         }
     }
 
+    BackHandler(enabled = state.justScanned != null) { viewModel.on(HomeEvent.Next) }
     Home(state, viewModel::on)
-    ExportSheet(viewModel.export)
+    ExportEffects(viewModel.export)
 }
 
 /**
- * The grants and the scan on one side, every reading kept on the other. Two columns where the
- * screen is wide enough for them, one where it is not.
+ * How a scan is made, step by step and kind by kind, beside the one action that begins it; once a scan
+ * ends, that scan and the ways it leaves, until it is put away. The kinds fill the screen where it is
+ * wide enough for them side by side, and stack where it is not.
  */
 @Composable
 internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     Column(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) {
-        Header(state.running, state.update, onEvent)
-        BoxWithConstraints(Modifier.weight(1f)) {
-            val start: @Composable () -> Unit = { Start(state, onEvent) }
-            val kept: @Composable () -> Unit = { state.readings?.let { Readings(it, onEvent) } }
-
-            if (maxWidth >= WIDE) {
-                Row(Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 22.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    Column(Modifier.weight(1.15f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) { start() }
-                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) { kept() }
-                }
-            } else {
-                Column(
-                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    start()
-                    kept()
+        Header(state.running, scanned = state.justScanned != null, onEvent)
+        /* Never beside a scan that just ended, so the update does not compete with sending it. */
+        if (state.justScanned == null) (state.update as? Update.Out)?.let { Offered(it, onEvent) }
+        Wide(Modifier.weight(1f)) { wide ->
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .then(if (wide) Modifier else Modifier.verticalScroll(rememberScrollState()))
+                    .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                val just = state.justScanned
+                if (just != null) {
+                    Scanned(just, wide, onEvent, if (wide) Modifier.weight(1f) else Modifier)
+                } else {
+                    Steps(state, wide, onEvent)
+                    Kinds(wide, if (wide) Modifier.weight(1f) else Modifier)
                 }
             }
         }
     }
 
-    if (state.deleting.isNotEmpty()) {
-        val one = state.deleting.size == 1
-        Confirm(
-            title = if (one) stringResource(R.string.home_delete_title) else stringResource(R.string.home_delete_all_title, state.deleting.size),
-            said = stringResource(if (one) R.string.home_delete_said else R.string.home_delete_all_said),
-            confirm = stringResource(if (one) R.string.home_delete_yes else R.string.home_delete_all_yes),
-            onConfirm = { onEvent(HomeEvent.ConfirmDelete) },
-            onCancel = { onEvent(HomeEvent.CancelDelete) },
-        )
+    if (state.asking) Ask(state.grants, onEvent)
+}
+
+/**
+ * What is not on when Start is pressed, each with its way to be turned on and, under the info
+ * mark, why the scanner asks. The list follows the grants as they come back from the settings, and
+ * Start waits only for the ones a scan needs. `opened` is which reasons show to begin with.
+ */
+@Composable
+internal fun Ask(grants: Grants, onEvent: (HomeEvent) -> Unit, opened: Set<Permission> = emptySet()) {
+    var open by rememberSaveable { mutableStateOf(opened) }
+    val missing = grants.missing
+
+    Question(400.dp, onDismiss = { onEvent(HomeEvent.Dismiss) }) {
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(stringResource(R.string.home_ask_title), style = Lettering.subtitle, color = Colors.text)
+            Text(stringResource(R.string.home_ask_said), style = Lettering.caption, color = Colors.muted)
+        }
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Colors.sunken)) {
+            if (missing.isEmpty()) {
+                Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, Modifier.size(18.dp), tint = Colors.accent)
+                    Text(stringResource(R.string.home_ask_all_on), style = Lettering.body, color = Colors.accent)
+                }
+            }
+            missing.forEachIndexed { at, permission ->
+                if (at > 0) Rule()
+                Missing(
+                    permission,
+                    grants[permission],
+                    open = permission in open,
+                    onWhy = { open = if (permission in open) open - permission else open + permission },
+                    onGrant = { onEvent(HomeEvent.Grant(permission)) },
+                )
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
+            Edged(stringResource(R.string.cancel), onClick = { onEvent(HomeEvent.Dismiss) })
+            Accented(stringResource(R.string.home_start), enabled = grants.canScan, onClick = { onEvent(HomeEvent.Begin) })
+        }
     }
 }
 
 @Composable
-private fun Header(running: ScanState.Running?, update: Update, onEvent: (HomeEvent) -> Unit) {
+private fun Missing(permission: Permission, standing: Standing, open: Boolean, onWhy: () -> Unit, onGrant: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(permission.icon, contentDescription = null, Modifier.size(18.dp), tint = Colors.warning)
+        Text(stringResource(permission.label), Modifier.weight(1f), style = Lettering.body, color = Colors.text)
+        Icon(
+            Icons.Outlined.Info,
+            contentDescription = stringResource(R.string.permission_why),
+            Modifier.clip(CircleShape).clickable(onClick = onWhy).padding(6.dp).size(18.dp),
+            tint = if (open) Colors.accent else Colors.muted,
+        )
+        standing.action?.let { Inline(stringResource(it), accented = true, onClick = onGrant) }
+    }
+    if (standing == Standing.STALLED) {
+        Text(
+            stringResource(R.string.permission_stalled),
+            Modifier.padding(start = 40.dp, end = 12.dp, bottom = if (open) 4.dp else 10.dp),
+            style = Lettering.caption,
+            color = Colors.warning,
+        )
+    }
+    if (open) {
+        Text(
+            stringResource(permission.why),
+            Modifier.padding(start = 40.dp, end = 12.dp, bottom = 10.dp),
+            style = Lettering.caption,
+            color = Colors.muted,
+        )
+    }
+}
+
+/* Over a scan that just ended, its arrow puts the scan away, as back does. */
+@Composable
+private fun Header(running: ScanState.Running?, scanned: Boolean, onEvent: (HomeEvent) -> Unit) {
     Column {
         Row(
-            Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 24.dp),
+            Modifier.fillMaxWidth().height(48.dp).padding(start = if (scanned) 0.dp else 16.dp, end = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(11.dp), verticalAlignment = Alignment.CenterVertically) {
-                Spacer(Modifier.size(9.dp).background(Colors.accent, CircleShape))
-                Text(stringResource(R.string.app_name), style = Lettering.brand, color = Colors.text)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (scanned) Back { onEvent(HomeEvent.Next) }
+                Brand()
                 Text(BuildConfig.VERSION_NAME, style = Lettering.dataSmall, color = Colors.muted)
-                when (update) {
-                    is Update.Available -> Link(stringResource(R.string.home_update, update.release.version.toString())) { onEvent(HomeEvent.Update) }
-                    is Update.Downloading -> Text(stringResource(R.string.home_update_downloading, update.release.version.toString()), style = Lettering.caption, color = Colors.muted)
-                    is Update.Failed -> Link(stringResource(R.string.home_update_page, update.release.version.toString())) { onEvent(HomeEvent.Update) }
-                    Update.None -> Unit
-                }
             }
-            running?.let {
-                Text(
-                    "${stringResource(it.kind.label)} ${it.progress.done}/${it.progress.held}",
-                    style = Lettering.dataSmall,
-                    color = Colors.muted,
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                running?.let {
+                    Text(
+                        "${stringResource(it.kind.label)} ${it.progress.done}/${it.progress.held}",
+                        style = Lettering.dataSmall,
+                        color = Colors.muted,
+                    )
+                }
+                HeaderLink(Icons.Outlined.PlayCircle, stringResource(R.string.howto_title)) { onEvent(HomeEvent.HowTo) }
+                HeaderLink(Icons.Outlined.History, stringResource(R.string.earlier_title)) { onEvent(HomeEvent.Earlier) }
+                DebugLink { onEvent(HomeEvent.Debug) }
             }
         }
         Rule()
     }
 }
 
-/** The grants, the scan and the kind it will read: everything that happens before a scan runs. */
+/** A way out of Home in its header, to a screen of its own. */
 @Composable
-internal fun Start(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Section(stringResource(R.string.home_permissions))
-        Card(Modifier.fillMaxWidth()) {
-            Given(stringResource(R.string.home_accessibility), state.accessibilityOn) { onEvent(HomeEvent.GrantAccessibility) }
-            Rule()
-            Given(stringResource(R.string.home_overlay), state.overlayAllowed) { onEvent(HomeEvent.GrantOverlay) }
+private fun HeaderLink(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Row(
+        Modifier.height(44.dp).clickable(onClick = onClick),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, Modifier.size(18.dp), tint = Colors.muted)
+        Text(label, style = Lettering.body, color = Colors.muted)
+    }
+}
+
+/** A newer release across the screen under the header: what it is, and the way to it as fetching it stands. */
+@Composable
+private fun Offered(update: Update.Out, onEvent: (HomeEvent) -> Unit) {
+    val version = update.release.version.toString()
+
+    Column {
+        Row(
+            Modifier.fillMaxWidth().height(40.dp).background(Colors.accentWash).padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Outlined.SystemUpdate, contentDescription = null, Modifier.size(18.dp), tint = Colors.accent)
+            Text(stringResource(R.string.home_update_out, version), style = Lettering.stepName, color = Colors.text)
+            Text(stringResource(R.string.home_update_keeps), Modifier.weight(1f), style = Lettering.caption, color = Colors.muted, maxLines = 1)
+            when (update) {
+                is Update.Available -> Accented(stringResource(R.string.home_update_now), reach = Reach.SMALL, onClick = { onEvent(HomeEvent.Update) })
+                is Update.Downloading -> Text(stringResource(R.string.home_update_downloading, version), style = Lettering.caption, color = Colors.muted)
+                is Update.Failed -> Accented(stringResource(R.string.home_update_page, version), reach = Reach.SMALL, onClick = { onEvent(HomeEvent.Update) })
+            }
+        }
+        Spacer(Modifier.fillMaxWidth().height(1.dp).background(Colors.accentEdge))
+    }
+}
+
+/** The three steps of a scan, beside the action that takes the first: in a row where the screen is wide, one under another where it is not. */
+@Composable
+private fun Steps(state: HomeUiState, wide: Boolean, onEvent: (HomeEvent) -> Unit) {
+    val steps: @Composable (Modifier) -> Unit = { each ->
+        STEPS.forEachIndexed { at, step ->
+            /* While the screen is captured, the first step has been taken and says where to go next. */
+            val taken = state.capturing && at == 0
+            Step(
+                at + 1,
+                stringResource(step.name),
+                stringResource(if (taken) R.string.home_capturing else step.said),
+                if (taken) Colors.accent else Colors.muted,
+                each,
+            )
         }
     }
-
-    Card(Modifier.fillMaxWidth(), leading = true) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(stringResource(R.string.home_scan_title, stringResource(state.kind.label)), style = Lettering.title, color = Colors.text)
-            Text(stringResource(state.kind.said), style = Lettering.body, color = Colors.muted)
-        }
+    val start: @Composable (Modifier) -> Unit = {
         if (state.capturing) {
-            Text(stringResource(R.string.home_capturing), style = Lettering.body, color = Colors.accent)
-            Edged(stringResource(R.string.home_stop), onClick = { onEvent(HomeEvent.Stop) })
+            Edged(stringResource(R.string.home_stop), it, onClick = { onEvent(HomeEvent.Stop) })
         } else {
             Accented(
                 stringResource(R.string.home_start),
+                it,
                 said = stringResource(R.string.home_to_game),
-                enabled = state.ready,
                 onClick = { onEvent(HomeEvent.Start) },
             )
         }
     }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.home_kinds), style = Lettering.caption, color = Colors.muted)
-        Kind.entries.forEach { each ->
-            Pill(stringResource(each.label), chosen = each == state.kind, onClick = { onEvent(HomeEvent.Choose(each)) })
-        }
-    }
-}
-
-@Composable
-private fun Given(label: String, given: Boolean, onGrant: () -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                if (given) Icons.Default.Check else Icons.Default.Warning,
-                contentDescription = null,
-                Modifier.size(14.dp),
-                tint = if (given) Colors.accent else Colors.warning,
-            )
-            Text(label, style = Lettering.body, color = if (given) Colors.text else Colors.muted)
-        }
-        if (given) {
-            Text(stringResource(R.string.home_on), style = Lettering.caption, color = Colors.muted)
+    Card(Modifier.fillMaxWidth(), leading = true) {
+        if (wide) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) { steps(Modifier.weight(1f)) }
+                start(Modifier)
+            }
         } else {
-            Inline(stringResource(R.string.home_grant), onClick = onGrant)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { steps(Modifier.fillMaxWidth()) }
+            start(Modifier.fillMaxWidth())
+        }
+        Rule()
+        Granted(state.grants, onEvent)
+    }
+}
+
+/** Every grant, always in sight under the steps: on, or its way to be turned on, or off and on. */
+@Composable
+private fun Granted(grants: Grants, onEvent: (HomeEvent) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.firstrun_permissions), Modifier.height(28.dp).wrapContentHeight(), style = Lettering.caption, color = Colors.muted)
+        Permission.entries.forEach { permission ->
+            val standing = grants[permission]
+            Row(Modifier.height(28.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(permission.icon, contentDescription = null, Modifier.size(16.dp), tint = if (standing == Standing.ON) Colors.accent else Colors.warning)
+                Text(stringResource(permission.label), style = Lettering.caption, color = Colors.text)
+                standing.action?.let { Inline(stringResource(it), accented = true, onClick = { onEvent(HomeEvent.Grant(permission)) }) }
+                    ?: Text(stringResource(R.string.permission_on), style = Lettering.caption, color = Colors.accent)
+            }
         }
     }
 }
 
-/** Everything kept on the device, newest first, each with the way out beside it. */
 @Composable
-internal fun Readings(readings: List<Kept>, onEvent: (HomeEvent) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Section(stringResource(R.string.home_readings))
-            if (readings.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Link(stringResource(R.string.home_delete_all), onClick = { onEvent(HomeEvent.DeleteAll) })
-                    Link(stringResource(R.string.home_export_all), onClick = { onEvent(HomeEvent.ExportAll) })
+private fun Step(number: Int, name: String, said: String, saidColour: Color, modifier: Modifier) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+        StepNumber(number)
+        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(name, style = Lettering.stepName, color = Colors.text)
+            Text(said, style = Lettering.caption, color = saidColour)
+        }
+    }
+}
+
+/** What to have open in the game before pressing Scan, one card per kind. */
+@Composable
+private fun Kinds(wide: Boolean, modifier: Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Section(stringResource(R.string.home_before))
+        if (wide) {
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Kind.entries.forEach { KindCard(it, Modifier.weight(1f).fillMaxHeight(), filling = true) }
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Kind.entries.forEach { KindCard(it, Modifier.fillMaxWidth(), filling = false) }
+            }
+        }
+    }
+}
+
+/** A kind's steps, numbered, and what its scan does pinned under them; `filling` sends that note to the card's foot. */
+@Composable
+private fun KindCard(kind: Kind, modifier: Modifier, filling: Boolean) {
+    Card(modifier, spacing = 8.dp) {
+        Text(stringResource(kind.label), style = Lettering.subtitle, color = Colors.text)
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            kind.steps.forEachIndexed { at, step ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("${at + 1}", Modifier.width(8.dp).alignByBaseline(), style = Lettering.numeral, color = Colors.accent)
+                    Text(stringResource(step), Modifier.alignByBaseline(), style = Lettering.body, color = Colors.text)
                 }
             }
         }
-
-        Panel(Modifier.fillMaxWidth()) {
-            if (readings.isEmpty()) {
-                Text(stringResource(R.string.home_empty), Modifier.padding(16.dp), style = Lettering.body, color = Colors.muted)
-            }
-            readings.forEachIndexed { at, kept ->
-                if (at > 0) Rule()
-                Reading(kept, newest = at == 0, onEvent)
-            }
-            if (readings.isNotEmpty()) {
-                Rule()
-                Text(stringResource(R.string.home_note), Modifier.padding(horizontal = 16.dp, vertical = 12.dp), style = Lettering.caption, color = Colors.muted)
-            }
+        if (filling) Spacer(Modifier.weight(1f))
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Rule()
+            Text(stringResource(kind.note), style = Lettering.caption, color = Colors.muted)
         }
     }
 }
 
-@Composable
-private fun Reading(kept: Kept, newest: Boolean, onEvent: (HomeEvent) -> Unit) {
-    val context = LocalContext.current
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .background(if (newest) Colors.accentWash else Colors.raised)
-            .clickable { onEvent(HomeEvent.Open(kept)) }
-            .padding(horizontal = 16.dp, vertical = 13.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(kept.shown(), style = Lettering.subtitle, color = Colors.text)
-            Text(kept.said(context), style = Lettering.caption, color = Colors.muted)
-            (kept as? Kept.Scan)?.detail?.let { Text(it, style = Lettering.caption, color = Colors.warning, maxLines = 2) }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Link(stringResource(R.string.home_delete), onClick = { onEvent(HomeEvent.Delete(kept)) })
-            if (newest) {
-                Inline(stringResource(R.string.home_export), accented = true, onClick = { onEvent(HomeEvent.Export(kept)) })
-            } else {
-                Link(stringResource(R.string.home_export), onClick = { onEvent(HomeEvent.Export(kept)) })
-            }
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, Modifier.size(15.dp), tint = Colors.muted)
-        }
-    }
-}
+/** A step of every scan: what the player does, and what follows it. */
+private class ScanStep(@StringRes val name: Int, @StringRes val said: Int)
 
-private fun Context.mayNotNotify(): Boolean =
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+private val STEPS = listOf(
+    ScanStep(R.string.home_step_start, R.string.home_step_start_said),
+    ScanStep(R.string.home_step_capsule, R.string.home_step_capsule_said),
+    ScanStep(R.string.home_step_scan, R.string.home_step_scan_said),
+)
 
 /* Android 14 offers "one app" by default and Unity games are one app, but the scan reads the display. */
 private fun MediaProjectionManager.wholeDisplayIntent(): Intent =
@@ -321,5 +443,4 @@ private fun MediaProjectionManager.wholeDisplayIntent(): Intent =
         createScreenCaptureIntent()
     }
 
-private val WIDE = 720.dp
 private const val APK_TYPE = "application/vnd.android.package-archive"

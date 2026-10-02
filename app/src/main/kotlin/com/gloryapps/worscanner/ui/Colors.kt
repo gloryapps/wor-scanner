@@ -32,6 +32,9 @@ object Colors {
     val warning = Color(0xFFE8B34A)
     val failure = Color(0xFFE08585)
 
+    /** The border of what failed, as `accentEdge` is the accent's. */
+    val failureEdge = Color(0x66E08585)
+
     val hairline = Color(0x17FFFFFF)
     val edge = Color(0x24FFFFFF)
 

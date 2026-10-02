@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A first run that explains the scanner and its permissions.
+- Send a scan straight to your account on Azhor’s Master Smithy from the home screen as it ends, or
+  later from its export sheet; the first send links the scanner with the code the site's Import a
+  scan shows.
+- How to scan, in the home screen's header and on the first run, plays a video of a whole scan.
+
+### Changed
+
+- The home screen shows how to scan each kind; the kind is chosen on the capsule.
+- The capsule says which kind it will scan, and its menu says in a line how to open it in the game.
+- The scans kept on the device and the link to Azhor’s Master Smithy moved behind All scans, in
+  the home screen's header.
+- A permission that is off is asked for when Start is pressed, with why the scanner needs it.
+- A newer version is offered in a banner on the home screen.
+- The home screen always shows whether each permission is on.
+- All scans, and a large scan's pieces, open faster once many scans are kept.
+
+### Fixed
+
+- An accessibility service Android shows as on but is not running is no longer taken for on: the
+  home screen, the first run and the capsule's menu say to turn it off and on, or to restart the
+  emulator when that is not enough, where Scan used to fail.
+
+## [0.2.1] - 2026-09-29
+
 ### Changed
 
 - The text model ships inside the app, which grows to about 20 MB.
@@ -53,7 +80,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scans gear, legendary heroes and mythic artifacts off the game's screen and writes a JSON for Azhor’s Master Smithy.
 - Exports a scan into the folder LDPlayer or BlueStacks shares with the PC, or through Android's share sheet.
 
-[unreleased]: https://github.com/gloryapps/wor-scanner/compare/v0.2.0...HEAD
+[unreleased]: https://github.com/gloryapps/wor-scanner/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/gloryapps/wor-scanner/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/gloryapps/wor-scanner/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/gloryapps/wor-scanner/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/gloryapps/wor-scanner/compare/v0.1.0...v0.1.1

@@ -23,6 +23,7 @@ roles. A screen names a role, never a value and never a size.
 | `text` / `muted` / `faint` | `#E9EDF5` at 100 / 62 / 45% | read, said beside it, found when looked for |
 | `warning` | `#E8B34A` | a grant not given, a piece read badly |
 | `failure` | `#E08585` | a scan that failed |
+| `failureEdge` | `#E08585` 40% | the border of a send that failed |
 | `hairline` / `edge` | white 9% / 14% | a rule between rows, a border on a control |
 | `glass` / `glassSolid` / `glassThin` | `#0C0E14` at 86 / 92 / 72% | the capsule over the game; its menu; the close target |
 | `glassEdge` / `glassEdgeStrong` | white 13% / 22% | the capsule's edge; the stop's and the close target's |
@@ -38,15 +39,27 @@ No font file ships with the app.
 | --- | --- | --- |
 | `title` | sans 19 semibold | what a card or a screen is called |
 | `subtitle` | sans 16 medium | a reading's tile, a sheet's heading |
+| `display` | sans 22 semibold | a first-run screen's heading |
+| `stepName` | sans 13 medium, in lines | a step's name, a grant's, what the site answered |
 | `brand` | sans 15 medium | the app's name in the header |
 | `section` | sans 10 medium, tracked, upper-cased by `Section` | the line above a group |
 | `body` | sans 13 | prose |
 | `caption` | sans 11 | what is said under a line of prose |
-| `action` | sans 13 medium | a button |
+| `footnote` | sans 10 | what is said under an action that fills its card |
+| `action` / `actionSmall` | sans 13 / 12 medium | a button; a grant's, a strip's |
 | `data` / `dataSmall` | mono 12 / 10 | a stamp, a count, an id, a file name |
-| `label` / `mark` | mono 11 / mono 9 tracked | a row of the menu over the game; the one word on the idle capsule |
+| `count` / `code` / `numeral` | mono 44 / 18 tracked / 10, medium | how many a scan read; the link code; a step's number |
+| `label` / `mark` | mono 11 / mono 9 tracked | a row of the menu over the game; a small word in it |
+| `word` | mono 10 tracked | what a tap on the idle capsule does: `SCAN GEAR` |
 
 ## Shapes
 
 6, 8, 10, 12, 14 dp, in Material's five slots from `extraSmall`; a pill is fully rounded. The capsule
 over the game and its close target are pills; a card is 10, a screen-sized panel 12, a sheet 12.
+A filled action has a `Reach`: `SMALL` 30 dp tall in a strip over the screen, `REGULAR` 44 on it.
+
+## Frame
+
+The screens are drawn for LDPlayer's window: 1280x720 px at 240 dpi, 853x480 dp, the previews' wide
+frame. A larger window only adds room; below 720 dp wide the columns stack and scroll. `Wide`, in
+`ui/Surfaces.kt`, tells a screen which of the two it is.
