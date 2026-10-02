@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -48,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -95,12 +97,14 @@ import org.koin.core.parameter.parametersOf
 internal fun HomeScreen(
     stage: Stage?,
     onEarlier: () -> Unit,
+    onHowTo: () -> Unit,
     onDebug: () -> Unit,
     viewModel: HomeViewModel = koinViewModel { parametersOf(stage) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val earlier by rememberUpdatedState(onEarlier)
+    val howTo by rememberUpdatedState(onHowTo)
     val debug by rememberUpdatedState(onDebug)
 
     LifecycleResumeEffect(Unit) {
@@ -120,6 +124,7 @@ internal fun HomeScreen(
                 HomeEffect.LaunchProjection -> projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
                 HomeEffect.StopCapture -> CaptureService.stop(context)
                 HomeEffect.OpenEarlier -> earlier()
+                HomeEffect.OpenHowTo -> howTo()
                 HomeEffect.OpenDebug -> debug()
                 /* The system's installer asks the player to confirm, and the first time to let this app install others. */
                 is HomeEffect.Install -> context.startActivity(
@@ -266,18 +271,25 @@ private fun Header(running: ScanState.Running?, scanned: Boolean, onEvent: (Home
                         color = Colors.muted,
                     )
                 }
-                Row(
-                    Modifier.height(44.dp).clickable { onEvent(HomeEvent.Earlier) },
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Outlined.History, contentDescription = null, Modifier.size(18.dp), tint = Colors.muted)
-                    Text(stringResource(R.string.earlier_title), style = Lettering.body, color = Colors.muted)
-                }
+                HeaderLink(Icons.Outlined.PlayCircle, stringResource(R.string.howto_title)) { onEvent(HomeEvent.HowTo) }
+                HeaderLink(Icons.Outlined.History, stringResource(R.string.earlier_title)) { onEvent(HomeEvent.Earlier) }
                 DebugLink { onEvent(HomeEvent.Debug) }
             }
         }
         Rule()
+    }
+}
+
+/** A way out of Home in its header, to a screen of its own. */
+@Composable
+private fun HeaderLink(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Row(
+        Modifier.height(44.dp).clickable(onClick = onClick),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, Modifier.size(18.dp), tint = Colors.muted)
+        Text(label, style = Lettering.body, color = Colors.muted)
     }
 }
 

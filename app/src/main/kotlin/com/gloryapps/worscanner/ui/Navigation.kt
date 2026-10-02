@@ -15,6 +15,7 @@ import com.gloryapps.worscanner.ui.firstrun.FirstRun
 import com.gloryapps.worscanner.ui.firstrun.GrantsScreen
 import com.gloryapps.worscanner.ui.firstrun.Intro
 import com.gloryapps.worscanner.ui.home.HomeScreen
+import com.gloryapps.worscanner.ui.howto.HowToScanScreen
 import com.gloryapps.worscanner.ui.home.Stage
 import com.gloryapps.worscanner.ui.reading.ReadingScreen
 import kotlinx.serialization.Serializable
@@ -35,6 +36,10 @@ data class Home(val stage: Stage? = null) : NavKey
 /** Every reading kept on the device, newest first. */
 @Serializable
 data object Earlier : NavKey
+
+/** The video of a whole scan, from Home's header and the first run. */
+@Serializable
+data object HowToScan : NavKey
 
 /** A debug build's screens a player meets once or by chance; a release has none. */
 @Serializable
@@ -59,7 +64,7 @@ fun Navigation(firstRun: FirstRun = koinInject()) {
             rememberViewModelStoreNavEntryDecorator(),
         ),
         entryProvider = entryProvider {
-            entry<Welcome> { Intro(onNext = { backStack.add(Setup) }) }
+            entry<Welcome> { Intro(onNext = { backStack.add(Setup) }, onWatch = { backStack.add(HowToScan) }) }
             entry<Setup> {
                 GrantsScreen(
                     onDone = {
@@ -69,7 +74,10 @@ fun Navigation(firstRun: FirstRun = koinInject()) {
                     onBack = { backStack.removeLastOrNull() },
                 )
             }
-            entry<Home> { HomeScreen(it.stage, onEarlier = { backStack.add(Earlier) }, onDebug = { backStack.add(Debug) }) }
+            entry<Home> {
+                HomeScreen(it.stage, onEarlier = { backStack.add(Earlier) }, onHowTo = { backStack.add(HowToScan) }, onDebug = { backStack.add(Debug) })
+            }
+            entry<HowToScan> { HowToScanScreen(onClose = { backStack.removeLastOrNull() }) }
             entry<Debug> { DebugScreen(onOpen = { backStack.add(it) }, onBack = { backStack.removeLastOrNull() }) }
             entry<Earlier> { EarlierScreen(onReading = { backStack.add(Reading(it.stamp)) }, onBack = { backStack.removeLastOrNull() }) }
             entry<Reading> { ReadingScreen(it.stamp, onBack = { backStack.removeLastOrNull() }) }

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Send a scan straight to your account on Azhor’s Master Smithy from the home screen as it ends, or
   later from its export sheet; the first send links the scanner with the code the site's Import a
   scan shows.
+- How to scan, in the home screen's header and on the first run, plays a video of a whole scan.
 
 ### Changed
 

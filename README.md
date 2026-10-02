@@ -44,6 +44,9 @@ Press **Start** on the home screen, go to the game, tap the capsule to pick what
 The scan taps and scrolls the grid itself; touching the screen stops it, and what it read so far is
 kept.
 
+**How to scan**, in the home screen's header and on the first run's first page, plays a video of a
+whole scan, from Start to Sent.
+
 ## Export
 
 When a scan ends, the home screen shows it. **Send to Azhor’s Master Smithy** puts it in **Import a

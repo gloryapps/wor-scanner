@@ -114,6 +114,7 @@ internal class HomeViewModel(
             HomeEvent.Share -> just.value?.let { export.share(it.scan) }
             HomeEvent.Next -> just.value = null
             HomeEvent.Earlier -> send(HomeEffect.OpenEarlier)
+            HomeEvent.HowTo -> send(HomeEffect.OpenHowTo)
             HomeEvent.Debug -> send(HomeEffect.OpenDebug)
             HomeEvent.Update -> when (val update = updates.state.value) {
                 is Update.Available -> viewModelScope.launch { updates.download()?.let { _effects.send(HomeEffect.Install(it)) } }

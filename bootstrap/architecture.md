@@ -167,6 +167,8 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
 
 - One Activity, Compose, Navigation 3 from the start: the back stack is a state list the app owns.
   It starts on the first run until that is seen, on Home after; leaving the first run clears it.
+- `HowToScan` plays `res/raw/how_to_scan.mp4`, a whole scan filmed on LDPlayer, in the platform's
+  `VideoView`; Home's header and the first run's first page lead to it.
 - `Home(stage)` opens Home in a state it is otherwise only reached by playing. Only a debug build's
   Debug screen, behind a link in Home's header, opens one: `ui/debug/Debug.kt` is given by `src/debug`
   and by `src/release`, whose screen and link draw nothing.

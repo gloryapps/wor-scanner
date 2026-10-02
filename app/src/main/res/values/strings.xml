@@ -135,8 +135,13 @@
     <string name="home_stopped">stopped</string>
     <string name="home_failed">failed</string>
 
+    <string name="howto_title">How to scan</string>
+    <string name="howto_watch">Watch a whole scan</string>
+    <string name="howto_video">A whole scan, from Start to Sent</string>
+    <string name="howto_play">Play</string>
+    <string name="howto_pause">Pause</string>
+
     <string name="export_title">Export reading</string>
-    <string name="export_close">Close</string>
     <string name="export_file">File name</string>
     <string name="export_beside">+%1$d beside it</string>
     <string name="export_holds">What goes out</string>
@@ -163,6 +168,7 @@
     <string name="export_note">This is the file you open in Import a scan in Azhor’s Master Smithy.</string>
 
     <string name="back">Back</string>
+    <string name="close">Close</string>
     <string name="reading_data">Data</string>
     <string name="reading_json">JSON</string>
     <string name="reading_export">Export reading</string>

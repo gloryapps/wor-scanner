@@ -97,6 +97,9 @@ internal sealed interface HomeEvent {
     /** The header's way to every scan kept on the device. */
     data object Earlier : HomeEvent
 
+    /** The header's way to the video of a whole scan. */
+    data object HowTo : HomeEvent
+
     /** The header's way to a debug build's screens. */
     data object Debug : HomeEvent
 
@@ -115,6 +118,8 @@ internal sealed interface HomeEffect {
     data object StopCapture : HomeEffect
 
     data object OpenEarlier : HomeEffect
+
+    data object OpenHowTo : HomeEffect
 
     data object OpenDebug : HomeEffect
 

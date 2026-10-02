@@ -13,7 +13,7 @@ import com.gloryapps.worscanner.ui.WIDE_W
 @Preview(name = "First run · what it does", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
 private fun IntroPreview() {
-    ScannerTheme { Intro { } }
+    ScannerTheme { Intro(onNext = { }, onWatch = { }) }
 }
 
 @Preview(name = "First run · none on", widthDp = WIDE_W, heightDp = WIDE_H)
@@ -37,5 +37,5 @@ private fun GrantsAllPreview() {
 @Preview(name = "First run · portrait", widthDp = TALL_W, heightDp = TALL_H)
 @Composable
 private fun IntroPortraitPreview() {
-    ScannerTheme { Intro { } }
+    ScannerTheme { Intro(onNext = { }, onWatch = { }) }
 }

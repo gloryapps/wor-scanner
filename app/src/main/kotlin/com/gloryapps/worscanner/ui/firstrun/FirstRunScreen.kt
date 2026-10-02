@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.ScreenshotMonitor
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -53,6 +54,7 @@ import com.gloryapps.worscanner.ui.Back
 import com.gloryapps.worscanner.ui.Brand
 import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
+import com.gloryapps.worscanner.ui.Edged
 import com.gloryapps.worscanner.ui.Grant
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Panel
@@ -66,7 +68,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 /** What the scanner does, in the four moves of a scan, before anything is asked of the player. */
 @Composable
-internal fun Intro(onNext: () -> Unit) {
+internal fun Intro(onNext: () -> Unit, onWatch: () -> Unit) {
     Column(PAGE, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Brand()
         Column(Modifier.widthIn(max = 620.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -83,7 +85,10 @@ internal fun Intro(onNext: () -> Unit) {
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Pages(at = 0)
-            Accented(stringResource(R.string.firstrun_next), trailing = Icons.AutoMirrored.Outlined.ArrowForward, onClick = onNext)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Edged(stringResource(R.string.howto_watch), icon = Icons.Outlined.PlayCircle, onClick = onWatch)
+                Accented(stringResource(R.string.firstrun_next), trailing = Icons.AutoMirrored.Outlined.ArrowForward, onClick = onNext)
+            }
         }
     }
 }

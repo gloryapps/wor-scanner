@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -96,9 +95,7 @@ fun ExportSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(stringResource(R.string.export_title), style = Lettering.title, color = Colors.text)
-                IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.export_close), tint = Colors.muted)
-                }
+                Close(onClose)
             }
             Rule()
 
