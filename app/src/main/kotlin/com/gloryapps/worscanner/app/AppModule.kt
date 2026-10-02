@@ -2,9 +2,9 @@ package com.gloryapps.worscanner.app
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.gloryapps.worscanner.BuildConfig
-import com.gloryapps.worscanner.azhor.HttpAzhorApi
 import com.gloryapps.worscanner.azhor.Link
 import com.gloryapps.worscanner.azhor.PreferencesTokenStore
+import com.gloryapps.worscanner.azhor.site
 import com.gloryapps.worscanner.capture.CaptureSession
 import com.gloryapps.worscanner.capture.Exports
 import com.gloryapps.worscanner.capture.MlKitTextReader
@@ -46,7 +46,7 @@ val appModule = module {
     single { Permissions(androidContext(), get()) }
     single { FirstRun(androidContext(), get()) }
     factory { ExportDelegate(get(), androidContext(), get()) }
-    single { Link(HttpAzhorApi(BuildConfig.AZHOR_URL), PreferencesTokenStore(androidContext())) }
+    single { Link(site(), PreferencesTokenStore(androidContext())) }
     single { Updates(GitHubReleases(File(androidContext().cacheDir, "updates")), Version.of(BuildConfig.VERSION_NAME)) }
     viewModel { params -> HomeViewModel(params.getOrNull(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EarlierViewModel(get(), get(), get(), get()) }

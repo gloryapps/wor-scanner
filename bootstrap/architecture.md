@@ -154,9 +154,10 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   for a token, and `azhor/Link` keeps that token in a DataStore of its own, `link`. Send, there or
   in the export sheet, posts each scan's `scan.json`, gzipped, to
   `POST /scanner/scans` with the token as a bearer; the pictures stay behind. A 401 means the lab
-  no longer knows the token, and the scanner forgets it. The lab's address is `BuildConfig.AZHOR_URL`,
-  from the Gradle property `azhor.url`, and a debug build allows cleartext so it can point at the lab
-  running on the PC.
+  no longer knows the token, and the scanner forgets it. `azhor/Site.kt` is given by each build: a
+  release reaches the lab at `BuildConfig.AZHOR_URL`, from the Gradle property `azhor.url`; a debug
+  build's site is a demo that links any code and takes every scan without leaving the device, for
+  filming the flow, so a debug build never reaches the lab.
 - Preferences in DataStore. `Chosen` holds which kind the next scan reads, picked in the overlay's
   menu, held at once and written behind; `link` holds the lab's token; `first_run` whether the
   first run was seen, set at once on an install that already held the grants a scan needs.
