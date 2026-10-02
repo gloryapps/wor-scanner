@@ -96,7 +96,7 @@ internal sealed interface HomeEvent {
 
     data object Share : HomeEvent
 
-    /** Scan something else: the scan is put away and the screen teaches again. */
+    /** Scan something else, or back over the scan: it is put away and the screen teaches again. */
     data object Next : HomeEvent
 
     /** The header's way to every scan kept on the device. */

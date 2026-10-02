@@ -14,10 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.BuildConfig
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.ui.Back
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Confirm
 import com.gloryapps.worscanner.ui.ExportSheet
@@ -110,9 +109,7 @@ private fun Header(any: Boolean, onEvent: (EarlierEvent) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { onEvent(EarlierEvent.Back) }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Colors.muted)
-            }
+            Back { onEvent(EarlierEvent.Back) }
             Text(stringResource(R.string.earlier_title), style = Lettering.title, color = Colors.text)
         }
         if (any) {

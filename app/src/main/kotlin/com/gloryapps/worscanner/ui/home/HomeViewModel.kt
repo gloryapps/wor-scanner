@@ -140,11 +140,15 @@ internal class HomeViewModel(
         return newest(ended.kind, touched = (outcome as? Outcome.Stopped)?.reason == Outcome.Reason.CANCELLED)
     }
 
-    /** The newest scan kept, as Home shows one that just ended, of `kind` or the kind its file names; null while none is kept. */
+    /**
+     * The newest scan kept, as Home shows one that just ended, of `kind` or the kind its file names, on
+     * the link step while the scanner is not linked; null while none is kept.
+     */
     private suspend fun newest(kind: Kind?, touched: Boolean): JustScanned? {
         val scan = readings.list().firstOrNull { it is Kept.Scan } as? Kept.Scan ?: return null
+        val send = if (link.linked.first()) Send.Idle else Send.Code()
 
-        return JustScanned(scan, kind ?: scan.kind ?: return null, touched, sharedFolders().firstOrNull())
+        return JustScanned(scan, kind ?: scan.kind ?: return null, touched, sharedFolders().firstOrNull(), send)
     }
 
     private suspend fun deliver() {

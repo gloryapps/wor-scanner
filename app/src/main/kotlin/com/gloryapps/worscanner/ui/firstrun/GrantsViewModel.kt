@@ -23,6 +23,7 @@ internal class GrantsViewModel(private val permissions: Permissions, private val
     fun on(event: GrantsEvent) {
         when (event) {
             is GrantsEvent.Grant -> send(GrantsEffect.Grant(event.permission))
+            GrantsEvent.Back -> send(GrantsEffect.NavigateBack)
             GrantsEvent.Finish -> viewModelScope.launch {
                 firstRun.saw()
                 _effects.send(GrantsEffect.Done)

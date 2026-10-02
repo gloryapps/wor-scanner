@@ -61,10 +61,13 @@ fun Navigation(firstRun: FirstRun = koinInject()) {
         entryProvider = entryProvider {
             entry<Welcome> { Intro(onNext = { backStack.add(Setup) }) }
             entry<Setup> {
-                GrantsScreen(onDone = {
-                    backStack.clear()
-                    backStack.add(Home())
-                })
+                GrantsScreen(
+                    onDone = {
+                        backStack.clear()
+                        backStack.add(Home())
+                    },
+                    onBack = { backStack.removeLastOrNull() },
+                )
             }
             entry<Home> { HomeScreen(it.stage, onEarlier = { backStack.add(Earlier) }, onDebug = { backStack.add(Debug) }) }
             entry<Debug> { DebugScreen(onOpen = { backStack.add(it) }, onBack = { backStack.removeLastOrNull() }) }

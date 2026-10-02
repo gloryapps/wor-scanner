@@ -26,10 +26,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.capture.Kept
 import com.gloryapps.worscanner.ui.Accented
+import com.gloryapps.worscanner.ui.Back
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.ended
 import com.gloryapps.worscanner.ui.ExportSheet
@@ -130,9 +129,7 @@ private fun Header(state: ReadingUiState, back: ReadingEvent, onEvent: (ReadingE
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { onEvent(back) }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Colors.muted)
-            }
+            Back { onEvent(back) }
             Text(state.kept?.shown().orEmpty(), style = Lettering.subtitle, color = Colors.text, maxLines = 1)
             (state.kept as? Kept.Scan)?.let { Pill(it.ended(context)) }
         }

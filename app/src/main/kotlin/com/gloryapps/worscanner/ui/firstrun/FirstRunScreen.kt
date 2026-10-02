@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.ui.Accented
+import com.gloryapps.worscanner.ui.Back
 import com.gloryapps.worscanner.ui.Brand
 import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
@@ -106,9 +107,10 @@ private fun Move(number: Int, move: ScanMove, leading: Boolean, modifier: Modifi
 
 /** The first run's checklist, wired to the system's grants and to the store that ends it. What it draws is `Grants`. */
 @Composable
-internal fun GrantsScreen(onDone: () -> Unit, viewModel: GrantsViewModel = koinViewModel()) {
+internal fun GrantsScreen(onDone: () -> Unit, onBack: () -> Unit, viewModel: GrantsViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val done by rememberUpdatedState(onDone)
+    val back by rememberUpdatedState(onBack)
     val grant = rememberGrant(viewModel::returned)
 
     LifecycleResumeEffect(Unit) {
@@ -120,6 +122,7 @@ internal fun GrantsScreen(onDone: () -> Unit, viewModel: GrantsViewModel = koinV
         viewModel.effects.collect { effect ->
             when (effect) {
                 is GrantsEffect.Grant -> grant(effect.permission)
+                GrantsEffect.NavigateBack -> back()
                 GrantsEffect.Done -> done()
             }
         }
@@ -159,7 +162,10 @@ internal fun Grants(state: GrantsUiState, onEvent: (GrantsEvent) -> Unit) {
             }
             Spacer(Modifier.weight(1f))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Pages(at = 1)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Back { onEvent(GrantsEvent.Back) }
+                    Pages(at = 1)
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (state.left > 0) {
                         Text(

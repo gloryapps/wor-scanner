@@ -55,7 +55,7 @@ shared JSON is imported by dropping it on that same dialog.
 The first send links the scanner to your account: open **Import a scan** on the site, press **Link**,
 and type the code it shows within ten minutes. From then on, Send is one press.
 
-Every scan is also listed under **Earlier scans**, in the home screen's header, where **export**
+Every scan is also listed under **All scans**, in the home screen's header, where **export**
 saves or shares any of them, and sends it once the scanner is linked; unlink is there too.
 
 A tile the scanner could not read in full keeps a picture of its panel beside the JSON, so it can be

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -58,6 +59,7 @@ import com.gloryapps.worscanner.capture.CaptureService
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Accented
+import com.gloryapps.worscanner.ui.Back
 import com.gloryapps.worscanner.ui.Brand
 import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
@@ -123,6 +125,7 @@ internal fun HomeScreen(
         }
     }
 
+    BackHandler(enabled = state.justScanned != null) { viewModel.on(HomeEvent.Next) }
     Home(state, viewModel::on)
     ExportEffects(viewModel.export)
 }
@@ -135,7 +138,7 @@ internal fun HomeScreen(
 @Composable
 internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
     Column(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) {
-        Header(state.running, onEvent)
+        Header(state.running, scanned = state.justScanned != null, onEvent)
         /* Never beside a scan that just ended, so the update does not compete with sending it. */
         if (state.justScanned == null) (state.update as? Update.Out)?.let { Offered(it, onEvent) }
         BoxWithConstraints(Modifier.weight(1f)) {
@@ -226,15 +229,17 @@ private fun Missing(permission: Permission, open: Boolean, onWhy: () -> Unit, on
     }
 }
 
+/* Over a scan that just ended, its arrow puts the scan away, as back does. */
 @Composable
-private fun Header(running: ScanState.Running?, onEvent: (HomeEvent) -> Unit) {
+private fun Header(running: ScanState.Running?, scanned: Boolean, onEvent: (HomeEvent) -> Unit) {
     Column {
         Row(
-            Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 16.dp),
+            Modifier.fillMaxWidth().height(48.dp).padding(start = if (scanned) 0.dp else 16.dp, end = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (scanned) Back { onEvent(HomeEvent.Next) }
                 Brand()
                 Text(BuildConfig.VERSION_NAME, style = Lettering.dataSmall, color = Colors.muted)
             }

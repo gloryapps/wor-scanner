@@ -111,7 +111,7 @@
     <string name="firstrun_later">Later</string>
     <string name="firstrun_done">Start using the scanner</string>
 
-    <string name="earlier_title">Earlier scans</string>
+    <string name="earlier_title">All scans</string>
     <string name="earlier_linked">Linked to Azhor’s Master Smithy.</string>
     <string name="earlier_unlink">unlink</string>
     <string name="earlier_unlinked">Not linked. You’ll link the first time you send.</string>

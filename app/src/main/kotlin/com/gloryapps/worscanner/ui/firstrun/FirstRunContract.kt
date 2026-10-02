@@ -12,6 +12,9 @@ internal sealed interface GrantsEvent {
 
     data class Grant(val permission: Permission) : GrantsEvent
 
+    /** Back to what the scanner does. */
+    data object Back : GrantsEvent
+
     /** Start using the scanner, or Later: either way the first run is over, and what is still off is asked for at Start. */
     data object Finish : GrantsEvent
 }
@@ -20,6 +23,8 @@ internal sealed interface GrantsEvent {
 internal sealed interface GrantsEffect {
 
     data class Grant(val permission: Permission) : GrantsEffect
+
+    data object NavigateBack : GrantsEffect
 
     data object Done : GrantsEffect
 }
