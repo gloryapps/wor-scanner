@@ -16,7 +16,7 @@ android {
         applicationId = "com.gloryapps.worscanner"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionName = "0.3.0"
+        versionName = "0.4.0"
         versionCode = versionName!!.split('.').fold(0) { code, part -> code * 100 + part.toInt() }
         // `-Pazhor.url=http://<the PC's address>:5173` points a build at the lab running on the PC.
         buildConfigField("String", "AZHOR_URL", "\"${providers.gradleProperty("azhor.url").getOrElse("https://azhor-wor.netlify.app")}\"")
