@@ -12,7 +12,6 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -79,6 +78,7 @@ import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
 import com.gloryapps.worscanner.ui.Standing
 import com.gloryapps.worscanner.ui.StepNumber
+import com.gloryapps.worscanner.ui.Wide
 import com.gloryapps.worscanner.ui.action
 import com.gloryapps.worscanner.ui.debug.DebugLink
 import com.gloryapps.worscanner.ui.label
@@ -151,8 +151,7 @@ internal fun Home(state: HomeUiState, onEvent: (HomeEvent) -> Unit) {
         Header(state.running, scanned = state.justScanned != null, onEvent)
         /* Never beside a scan that just ended, so the update does not compete with sending it. */
         if (state.justScanned == null) (state.update as? Update.Out)?.let { Offered(it, onEvent) }
-        BoxWithConstraints(Modifier.weight(1f)) {
-            val wide = maxWidth >= WIDE
+        Wide(Modifier.weight(1f)) { wide ->
             Column(
                 Modifier
                     .fillMaxSize()
@@ -444,5 +443,4 @@ private fun MediaProjectionManager.wholeDisplayIntent(): Intent =
         createScreenCaptureIntent()
     }
 
-private val WIDE = 720.dp
 private const val APK_TYPE = "application/vnd.android.package-archive"

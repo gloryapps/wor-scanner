@@ -23,7 +23,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -62,6 +65,7 @@ import com.gloryapps.worscanner.ui.Permission
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
 import com.gloryapps.worscanner.ui.Standing
+import com.gloryapps.worscanner.ui.Wide
 import com.gloryapps.worscanner.ui.action
 import com.gloryapps.worscanner.ui.rememberGrant
 import org.koin.compose.viewmodel.koinViewModel
@@ -69,25 +73,35 @@ import org.koin.compose.viewmodel.koinViewModel
 /** What the scanner does, in the four moves of a scan, before anything is asked of the player. */
 @Composable
 internal fun Intro(onNext: () -> Unit, onWatch: () -> Unit) {
-    Column(PAGE, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Brand()
-        Column(Modifier.widthIn(max = 620.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(stringResource(R.string.firstrun_title), style = Lettering.display, color = Colors.text)
-            Text(stringResource(R.string.firstrun_lead), style = Lettering.body, color = Colors.muted)
-        }
-        Row(
-            Modifier.weight(1f).fillMaxWidth().wrapContentHeight(Alignment.Top).height(IntrinsicSize.Min),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            MOVES.forEachIndexed { at, move ->
-                Move(at + 1, move, leading = at == MOVES.lastIndex, Modifier.weight(1f).fillMaxHeight())
+    val scroll = rememberScrollState()
+
+    Wide(SCREEN) { wide ->
+        Column(Modifier.page(scroll.takeUnless { wide }), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Brand()
+            Column(Modifier.widthIn(max = 620.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(stringResource(R.string.firstrun_title), style = Lettering.display, color = Colors.text)
+                Text(stringResource(R.string.firstrun_lead), style = Lettering.body, color = Colors.muted)
             }
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Pages(at = 0)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Edged(stringResource(R.string.howto_watch), icon = Icons.Outlined.PlayCircle, onClick = onWatch)
-                Accented(stringResource(R.string.firstrun_next), trailing = Icons.AutoMirrored.Outlined.ArrowForward, onClick = onNext)
+            val moves: @Composable (Modifier) -> Unit = { each ->
+                MOVES.forEachIndexed { at, move -> Move(at + 1, move, leading = at == MOVES.lastIndex, each) }
+            }
+            val watch: @Composable (Modifier) -> Unit = { Edged(stringResource(R.string.howto_watch), it, icon = Icons.Outlined.PlayCircle, onClick = onWatch) }
+            if (wide) {
+                Row(
+                    Modifier.weight(1f).fillMaxWidth().wrapContentHeight(Alignment.Top).height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) { moves(Modifier.weight(1f).fillMaxHeight()) }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { moves(Modifier.fillMaxWidth()) }
+                /* A phone's width holds Next alone, so the video's way sits above it. */
+                watch(Modifier.fillMaxWidth())
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Pages(at = 0)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (wide) watch(Modifier)
+                    Accented(stringResource(R.string.firstrun_next), trailing = Icons.AutoMirrored.Outlined.ArrowForward, onClick = onNext)
+                }
             }
         }
     }
@@ -144,47 +158,83 @@ internal fun GrantsScreen(onDone: () -> Unit, onBack: () -> Unit, viewModel: Gra
  */
 @Composable
 internal fun Grants(state: GrantsUiState, onEvent: (GrantsEvent) -> Unit) {
-    Row(PAGE, horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Brand(Modifier.padding(bottom = 8.dp))
-            Text(stringResource(R.string.firstrun_grants_title), style = Lettering.display, color = Colors.text)
-            Text(stringResource(R.string.firstrun_grants_lead), style = Lettering.body, color = Colors.muted)
-            Spacer(Modifier.weight(1f))
-            Capture()
+    val scroll = rememberScrollState()
+
+    Wide(SCREEN) { wide ->
+        if (wide) {
+            Row(Modifier.page(scroll = null), horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Asking()
+                    Spacer(Modifier.weight(1f))
+                    Capture()
+                }
+                Column(Modifier.weight(1.35f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Checklist(state, onEvent)
+                    Spacer(Modifier.weight(1f))
+                    Ends(state, onEvent)
+                }
+            }
+        } else {
+            Column(Modifier.page(scroll), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Asking()
+                Checklist(state, onEvent)
+                Capture()
+                Spacer(Modifier.weight(1f))
+                Ends(state, onEvent)
+            }
         }
-        Column(Modifier.weight(1.35f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Section(stringResource(R.string.firstrun_permissions))
+    }
+}
+
+/** Whose screen this is and what it asks of the player. */
+@Composable
+private fun Asking() {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Brand(Modifier.padding(bottom = 8.dp))
+        Text(stringResource(R.string.firstrun_grants_title), style = Lettering.display, color = Colors.text)
+        Text(stringResource(R.string.firstrun_grants_lead), style = Lettering.body, color = Colors.muted)
+    }
+}
+
+/** The grants and how many are still off. */
+@Composable
+private fun Checklist(state: GrantsUiState, onEvent: (GrantsEvent) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Section(stringResource(R.string.firstrun_permissions))
+            Text(
+                if (state.left == 0) stringResource(R.string.firstrun_all_set) else pluralStringResource(R.plurals.firstrun_left, state.left, state.left),
+                style = Lettering.dataSmall,
+                color = Colors.muted,
+            )
+        }
+        Panel(Modifier.fillMaxWidth()) {
+            Permission.entries.forEachIndexed { at, permission ->
+                if (at > 0) Rule()
+                Asked(permission, state.grants[permission]) { onEvent(GrantsEvent.Grant(permission)) }
+            }
+        }
+    }
+}
+
+/** Which page this is, and the ways out: back, Later while a grant is off, Done once none is. */
+@Composable
+private fun Ends(state: GrantsUiState, onEvent: (GrantsEvent) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Back { onEvent(GrantsEvent.Back) }
+            Pages(at = 1)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (state.left > 0) {
                 Text(
-                    if (state.left == 0) stringResource(R.string.firstrun_all_set) else pluralStringResource(R.plurals.firstrun_left, state.left, state.left),
-                    style = Lettering.dataSmall,
+                    stringResource(R.string.firstrun_later),
+                    Modifier.clickable { onEvent(GrantsEvent.Finish) }.padding(vertical = 12.dp),
+                    style = Lettering.body,
                     color = Colors.muted,
                 )
             }
-            Panel(Modifier.fillMaxWidth()) {
-                Permission.entries.forEachIndexed { at, permission ->
-                    if (at > 0) Rule()
-                    Asked(permission, state.grants[permission]) { onEvent(GrantsEvent.Grant(permission)) }
-                }
-            }
-            Spacer(Modifier.weight(1f))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Back { onEvent(GrantsEvent.Back) }
-                    Pages(at = 1)
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (state.left > 0) {
-                        Text(
-                            stringResource(R.string.firstrun_later),
-                            Modifier.clickable { onEvent(GrantsEvent.Finish) }.padding(vertical = 12.dp),
-                            style = Lettering.body,
-                            color = Colors.muted,
-                        )
-                    }
-                    Accented(stringResource(R.string.firstrun_done), enabled = state.left == 0, onClick = { onEvent(GrantsEvent.Finish) })
-                }
-            }
+            Accented(stringResource(R.string.firstrun_done), enabled = state.left == 0, onClick = { onEvent(GrantsEvent.Finish) })
         }
     }
 }
@@ -267,4 +317,10 @@ private const val SHOT = 1.65f
 
 private const val PAGES = 2
 
-private val PAGE = Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding().padding(start = 28.dp, top = 22.dp, end = 28.dp, bottom = 18.dp)
+private val SCREEN = Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()
+
+/** A page's content within its margins on [SCREEN], scrolled by `scroll` where its columns stack. */
+private fun Modifier.page(scroll: ScrollState?): Modifier =
+    fillMaxSize()
+        .then(if (scroll == null) Modifier else Modifier.verticalScroll(scroll))
+        .padding(start = 28.dp, top = 22.dp, end = 28.dp, bottom = 18.dp)

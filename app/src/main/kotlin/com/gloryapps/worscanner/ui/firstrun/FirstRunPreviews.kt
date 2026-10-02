@@ -39,3 +39,9 @@ private fun GrantsAllPreview() {
 private fun IntroPortraitPreview() {
     ScannerTheme { Intro(onNext = { }, onWatch = { }) }
 }
+
+@Preview(name = "First run · one on, portrait", widthDp = TALL_W, heightDp = TALL_H)
+@Composable
+private fun GrantsPortraitPreview() {
+    ScannerTheme { Grants(GrantsUiState(Grants.on(Permission.OVERLAY))) { } }
+}

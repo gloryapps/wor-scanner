@@ -10,7 +10,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -54,6 +53,7 @@ import com.gloryapps.worscanner.ui.Link
 import com.gloryapps.worscanner.ui.Pill
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Segmented
+import com.gloryapps.worscanner.ui.Wide
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.shown
 import org.koin.compose.viewmodel.koinViewModel
@@ -89,8 +89,7 @@ internal fun ReadingScreen(stamp: String, onBack: () -> Unit, viewModel: Reading
  */
 @Composable
 internal fun Reading(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit) {
-    BoxWithConstraints(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) {
-        val wide = maxWidth >= WIDE
+    Wide(Modifier.fillMaxSize().background(Colors.screen).safeDrawingPadding()) { wide ->
         /* Narrow, the arrow first returns the piece to its list; the file is always one tap deep. */
         val within = !wide && state.opened && state.showing == Showing.PIECE
         BackHandler(enabled = within) { onEvent(ReadingEvent.Close) }
@@ -297,8 +296,6 @@ private fun Code(lines: List<String>) {
 
 private fun Context.copy(label: String, text: String) =
     getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(label, text))
-
-private val WIDE = 720.dp
 
 /** Characters a clip carries safely: the clipboard hands its text to the system in one transaction of at most 1 MB. */
 private const val COPYABLE = 200_000

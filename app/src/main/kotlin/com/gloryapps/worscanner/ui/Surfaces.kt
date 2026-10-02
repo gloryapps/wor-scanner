@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -85,3 +86,11 @@ fun StepNumber(number: Int, modifier: Modifier = Modifier) {
 fun Rule(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(1.dp).background(Colors.hairline))
 }
+
+/** Hands [content] whether a screen's columns fit side by side, as on LDPlayer's 853 dp; below 720 they stack. */
+@Composable
+fun Wide(modifier: Modifier = Modifier, content: @Composable (wide: Boolean) -> Unit) {
+    BoxWithConstraints(modifier) { content(maxWidth >= WIDE) }
+}
+
+private val WIDE = 720.dp

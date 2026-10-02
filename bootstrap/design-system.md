@@ -61,4 +61,5 @@ A filled action has a `Reach`: `SMALL` 30 dp tall in a strip over the screen, `R
 ## Frame
 
 The screens are drawn for LDPlayer's window: 1280x720 px at 240 dpi, 853x480 dp, the previews' wide
-frame. A larger window only adds room; below 720 dp wide the columns stack and scroll.
+frame. A larger window only adds room; below 720 dp wide the columns stack and scroll. `Wide`, in
+`ui/Surfaces.kt`, tells a screen which of the two it is.
