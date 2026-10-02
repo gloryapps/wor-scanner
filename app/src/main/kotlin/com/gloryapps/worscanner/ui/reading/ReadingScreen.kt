@@ -221,23 +221,21 @@ internal fun Detail(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modi
             said = stringResource(R.string.reading_at, piece.index, piece.row, piece.column),
             onCopy = { onEvent(ReadingEvent.Copy(piece.name, piece.card)) },
         )
-        Code(piece.card)
+        Code(remember(piece.card) { piece.card.lines() })
     }
 }
 
 /** The file as it was written, which is what the lab reads, and what `copy` hands over whole where a clip can carry it. */
 @Composable
 internal fun Written(state: ReadingUiState, onEvent: (ReadingEvent) -> Unit, modifier: Modifier) {
-    val lines = remember(state.file) { state.file.lines().size }
-
     Column(modifier) {
         Above(
             name = { Text(state.name, style = Lettering.data, color = Colors.text, maxLines = 1) },
             mark = { },
-            said = pluralStringResource(R.plurals.reading_lines, lines, lines),
+            said = pluralStringResource(R.plurals.reading_lines, state.lines.size, state.lines.size),
             onCopy = { onEvent(ReadingEvent.Copy(state.name, state.file)) }.takeIf { state.file.length <= COPYABLE },
         )
-        Code(state.file)
+        Code(state.lines)
     }
 }
 
@@ -267,8 +265,7 @@ private fun Above(name: @Composable () -> Unit, mark: @Composable () -> Unit, sa
  * sideways under them.
  */
 @Composable
-private fun Code(text: String) {
-    val lines = remember(text) { text.lines() }
+private fun Code(lines: List<String>) {
     val across = rememberScrollState()
     val numbers = remember(lines.size) { (lines.size.toString().length * 9 + 4).dp }
 

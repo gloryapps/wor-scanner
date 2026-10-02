@@ -12,10 +12,12 @@ import android.os.HandlerThread
 import android.os.Looper
 import com.gloryapps.worscanner.scanner.senses.Frame
 import com.gloryapps.worscanner.scanner.senses.Screen
+import kotlinx.coroutines.android.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.nio.Buffer
 
 /**
  * A display mirrored into an image reader, which keeps the newest frame it delivered.
@@ -31,16 +33,18 @@ class ProjectionScreen(
     density: Int,
     private val onStop: () -> Unit,
 ) : Screen {
-    private class Held(val frame: BitmapFrame, val at: Long)
-
     private val handler = Handler(Looper.getMainLooper())
-    /** Every frame the display delivers is copied out on a thread of its own, never the one the overlay draws on. */
+    /** Frames are held and copied out on a thread of their own, never the one the overlay draws on. */
     private val frames = HandlerThread("wor-scanner-frames").apply { start() }
-    /** Also closes the readers, so that none is closed under a copy still reading its buffer. */
+    /** The one thread that touches an image or a reader, so that none is closed under a copy still reading it. */
     private val copying = Handler(frames.looper)
+    private val copier = copying.asCoroutineDispatcher()
     @Volatile private var reader: ImageReader = newReader()
+    /** The newest image, left uncopied until a capture asks for it. */
+    private var held: Image? = null
     private val display: VirtualDisplay
-    private val latest = MutableStateFlow<Held?>(null)
+    /** When the held image arrived, by `System.nanoTime()`; null while none is held. */
+    private val latest = MutableStateFlow<Long?>(null)
     @Volatile private var stopped = false
 
     init {
@@ -70,42 +74,62 @@ class ProjectionScreen(
     override suspend fun capture(): Frame {
         check(!stopped) { "the projection was stopped" }
         val since = System.nanoTime()
-        val fresh = withTimeoutOrNull(FRESH_WAIT_MS) { latest.filter { it != null && it.at > since }.first() }
+        withTimeoutOrNull(FRESH_WAIT_MS) { latest.first { it != null && it > since } }
+            ?: withTimeoutOrNull(FIRST_WAIT_MS) { latest.first { it != null } }
 
-        return (fresh ?: withTimeoutOrNull(FIRST_WAIT_MS) { latest.filter { it != null }.first() })?.frame
-            ?: error("the display delivered no frame")
+        return withContext(copier) { held?.let(::frameOf) } ?: error("the display delivered no frame")
     }
 
     /** The display turned or changed size: the mirror takes the new shape and forgets the frames of the old one. */
     fun resize(width: Int, height: Int, density: Int) {
-        if (width == this.width && height == this.height) return
-        val outgrown = reader
-        this.width = width
-        this.height = height
-        reader = newReader()
-        display.resize(width, height, density)
-        display.surface = reader.surface
-        latest.value = null
-        copying.post(outgrown::close)
+        copying.post {
+            if (width == this.width && height == this.height) return@post
+            val outgrown = reader
+            this.width = width
+            this.height = height
+            reader = newReader()
+            display.resize(width, height, density)
+            display.surface = reader.surface
+            letGo()
+            outgrown.close()
+        }
     }
 
-    /* A frame from a reader since replaced is of the old shape, and is dropped. */
-    private fun newReader(): ImageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2).apply {
-        setOnImageAvailableListener({ if (it === reader) it.acquireLatestImage()?.use { image -> latest.value = Held(frameOf(image), System.nanoTime()) } }, copying)
+    /* An image from a reader since replaced is of the old shape, and is dropped. */
+    private fun newReader(): ImageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, IMAGES).apply {
+        setOnImageAvailableListener({ if (it === reader) it.acquireLatestImage()?.let(::hold) }, copying)
+    }
+
+    private fun hold(image: Image) {
+        held?.close()
+        held = image
+        latest.value = System.nanoTime()
+    }
+
+    private fun letGo() {
+        held?.close()
+        held = null
+        latest.value = null
     }
 
     private fun frameOf(image: Image): BitmapFrame {
         val plane = image.planes[0]
         val stride = plane.rowStride / plane.pixelStride
         val wide = Bitmap.createBitmap(stride, image.height, Bitmap.Config.ARGB_8888)
-        wide.copyPixelsFromBuffer(plane.buffer)
+        /* The held image is copied by every capture that finds it newest; a `Buffer`, since `ByteBuffer.rewind()` is missing on older Androids. */
+        val pixels: Buffer = plane.buffer
+        pixels.rewind()
+        wide.copyPixelsFromBuffer(pixels)
 
         return BitmapFrame(if (stride == image.width) wide else Bitmap.createBitmap(wide, 0, 0, image.width, image.height))
     }
 
     fun close() {
-        display.release()
-        copying.post(reader::close)
+        copying.post {
+            display.release()
+            letGo()
+            reader.close()
+        }
         frames.quitSafely()
         projection.stop()
     }
@@ -113,5 +137,7 @@ class ProjectionScreen(
     private companion object {
         const val FRESH_WAIT_MS = 400L
         const val FIRST_WAIT_MS = 3_000L
+        /** One held for the next capture, and two for `acquireLatestImage` to drain the queue to the newest. */
+        const val IMAGES = 3
     }
 }

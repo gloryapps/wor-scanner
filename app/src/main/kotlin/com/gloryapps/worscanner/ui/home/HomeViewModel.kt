@@ -58,7 +58,7 @@ internal class HomeViewModel(
             }
         }
         when (stage) {
-            Stage.JustScanned -> viewModelScope.launch { just.value = newest(kind = null, touched = false) }
+            Stage.JustScanned -> viewModelScope.launch { just.value = newest() }
             Stage.Asking -> asking.value = true
             null -> Unit
         }
@@ -138,15 +138,18 @@ internal class HomeViewModel(
         val outcome = ended.outcome
         if (outcome is Outcome.Failed || outcome.entries.isEmpty()) return null
 
-        return newest(ended.kind, touched = (outcome as? Outcome.Stopped)?.reason == Outcome.Reason.CANCELLED)
+        return shown(readings.kept(ended.stamp), ended.kind, touched = (outcome as? Outcome.Stopped)?.reason == Outcome.Reason.CANCELLED)
     }
 
+    /** The newest scan kept, as if it had just ended; null while none is kept. */
+    private suspend fun newest(): JustScanned? = shown(readings.list().firstOrNull { it is Kept.Scan }, kind = null, touched = false)
+
     /**
-     * The newest scan kept, as Home shows one that just ended, of `kind` or the kind its file names, on
-     * the link step while the scanner is not linked; null while none is kept.
+     * A kept scan as Home shows one that just ended, of `kind` or the kind its file names, on the link
+     * step while the scanner is not linked; null for anything else.
      */
-    private suspend fun newest(kind: Kind?, touched: Boolean): JustScanned? {
-        val scan = readings.list().firstOrNull { it is Kept.Scan } as? Kept.Scan ?: return null
+    private suspend fun shown(kept: Kept?, kind: Kind?, touched: Boolean): JustScanned? {
+        val scan = kept as? Kept.Scan ?: return null
         val send = if (link.linked.first()) Send.Idle else Send.Code()
 
         return JustScanned(scan, kind ?: scan.kind ?: return null, touched, sharedFolders().firstOrNull(), send)

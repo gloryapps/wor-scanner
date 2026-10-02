@@ -14,7 +14,7 @@ and artifacts. Distributed as an APK on GitHub, not on the Play Store.
 - `app` — Android. Implements those interfaces with MediaProjection (frames), an
   `AccessibilityService` using `dispatchGesture` (taps and swipes, blind: the game is Unity and
   exposes no view tree), ML Kit (text) and the file writer; holds the foreground service that runs
-  the scan, the hairline and capsule drawn over the game, the two screens, and the update to the
+  the scan, the hairline and capsule drawn over the game, the screens, and the update to the
   latest GitHub release, handed to the system's installer.
 - The words (sets, slots, attribute names) are `scanner`'s own, transcribed
   from the wiki's Gear page. The app depends on no other repository: what it shares with the azhor

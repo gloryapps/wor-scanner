@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A permission that is off is asked for when Start is pressed, with why the scanner needs it.
 - A newer version is offered in a banner on the home screen.
 - The home screen always shows whether each permission is on.
+- All scans, and a large scan's pieces, open faster once many scans are kept.
 
 ### Fixed
 

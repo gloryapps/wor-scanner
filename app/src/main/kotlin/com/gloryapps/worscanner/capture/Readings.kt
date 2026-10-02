@@ -24,6 +24,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
 
 /** One frame read as a kind, as its file holds it: its size, every line the recogniser gave up, and the record the reader made of them. */
 @Serializable
@@ -63,6 +64,8 @@ class Readings(private val context: Context, reports: CrashReports) {
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     private val readings: File get() = File(context.getExternalFilesDir(null), "readings").apply { mkdirs() }
     private val scans: File get() = File(context.getExternalFilesDir(null), "scans").apply { mkdirs() }
+    /** What the list reads of each scan, by stamp: a scan's file is written once and never changed. */
+    private val summaries = ConcurrentHashMap<String, Kept>()
     /* No scan of this process can hold a journal yet: one begins only after the projection's consent. */
     private val recovered = CoroutineScope(Dispatchers.IO).async {
         scans.listFiles { file -> Journal.heldBy(file) }.orEmpty().forEach { folder ->
@@ -88,7 +91,10 @@ class Readings(private val context: Context, reports: CrashReports) {
 
     suspend fun delete(kept: Kept) = withContext(Dispatchers.IO) {
         kept.files.forEach { it.delete() }
-        if (kept is Kept.Scan) File(scans, kept.stamp).delete()
+        if (kept is Kept.Scan) {
+            File(scans, kept.stamp).delete()
+            summaries.remove(kept.stamp)
+        }
     }
 
     /** Clears the folders scans left without a file their journal could give them: panels no list shows. Only while no scan runs. */
@@ -117,9 +123,13 @@ class Readings(private val context: Context, reports: CrashReports) {
 
     /* The list wants the count and the outcome, not the cards, so each card stays whatever JSON it is. */
     private fun scanKeptIn(folder: File): Kept {
+        summaries[folder.name]?.let { return it }
         val scan = scanIn(folder)
+        val kept = Kept.Scan(folder.name, folder.listFiles().orEmpty().sortedBy { it.name }, kindOf(scan?.kind), scan?.entries?.size, scan?.outcome?.let(::endedOf), scan?.detail)
+        /* Kept only once the scan is closed: a file still being written does not read, and its journal still sits beside it. */
+        if (scan != null && !Journal.heldBy(folder)) summaries[folder.name] = kept
 
-        return Kept.Scan(folder.name, folder.listFiles().orEmpty().sortedBy { it.name }, kindOf(scan?.kind), scan?.entries?.size, scan?.outcome?.let(::endedOf), scan?.detail)
+        return kept
     }
 
     private fun scanIn(folder: File): ScanFile<JsonElement>? = resultOf { readScan(folder, JsonElement.serializer()) }.getOrNull()

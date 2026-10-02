@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.gloryapps.worscanner.capture.Readings
 import com.gloryapps.worscanner.scanner.kinds.scan
 import com.gloryapps.worscanner.ui.ExportDelegate
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
@@ -47,23 +49,28 @@ internal class ReadingViewModel(stamp: String, readings: Readings, val export: E
     private suspend fun read(stamp: String, readings: Readings): ReadingUiState {
         val kept = readings.kept(stamp) ?: return ReadingUiState()
         val scan = readings.opened(kept)
+        val file = readings.text(kept)
 
-        return ReadingUiState(
-            kept = kept,
-            pieces = scan?.entries.orEmpty().map { entry ->
-                Piece(
-                    index = entry.index,
-                    row = entry.row,
-                    column = entry.column,
-                    name = kept.kind?.scan()?.titleOf(entry.rows) ?: entry.rows.firstOrNull().orEmpty(),
-                    said = entry.rows.drop(1).joinToString(" · "),
-                    card = PRETTY.encodeToString(JsonElement.serializer(), entry.card),
-                    closed = entry.png == null,
-                )
-            },
-            file = readings.text(kept),
-            showing = if (scan == null) Showing.FILE else Showing.PIECE,
-        )
+        /* A full scan is thousands of cards to print and megabytes of file to split. */
+        return withContext(Dispatchers.Default) {
+            ReadingUiState(
+                kept = kept,
+                pieces = scan?.entries.orEmpty().map { entry ->
+                    Piece(
+                        index = entry.index,
+                        row = entry.row,
+                        column = entry.column,
+                        name = kept.kind?.scan()?.titleOf(entry.rows) ?: entry.rows.firstOrNull().orEmpty(),
+                        said = entry.rows.drop(1).joinToString(" · "),
+                        card = PRETTY.encodeToString(JsonElement.serializer(), entry.card),
+                        closed = entry.png == null,
+                    )
+                },
+                file = file,
+                lines = file.lines(),
+                showing = if (scan == null) Showing.FILE else Showing.PIECE,
+            )
+        }
     }
 
     private companion object {

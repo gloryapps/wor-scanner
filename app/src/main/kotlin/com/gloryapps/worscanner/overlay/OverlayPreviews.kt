@@ -29,6 +29,7 @@ private val ENDED = ScanState.Ended(
     Kind.GEAR,
     /* The capsule counts the entries and says nothing else of them, so an entry can be an empty one. */
     Outcome.Finished(List(1204) { ScanEntry(it, 0, 0, card = Unit, rows = emptyList()) }),
+    stamp = "20260907-130812",
 )
 
 @Preview(name = "Hairline · under way", widthDp = 320, heightDp = 24)
