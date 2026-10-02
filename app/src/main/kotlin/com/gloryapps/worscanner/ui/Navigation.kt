@@ -9,11 +9,13 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.gloryapps.worscanner.ui.debug.DebugScreen
 import com.gloryapps.worscanner.ui.earlier.EarlierScreen
 import com.gloryapps.worscanner.ui.firstrun.FirstRun
 import com.gloryapps.worscanner.ui.firstrun.GrantsScreen
 import com.gloryapps.worscanner.ui.firstrun.Intro
 import com.gloryapps.worscanner.ui.home.HomeScreen
+import com.gloryapps.worscanner.ui.home.Stage
 import com.gloryapps.worscanner.ui.reading.ReadingScreen
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
@@ -26,13 +28,17 @@ data object Welcome : NavKey
 @Serializable
 data object Setup : NavKey
 
-/** Where a scan is started. */
+/** Where a scan is started; `stage` opens it in a state it is otherwise only reached by playing. */
 @Serializable
-data object Home : NavKey
+data class Home(val stage: Stage? = null) : NavKey
 
 /** Every reading kept on the device, newest first. */
 @Serializable
 data object Earlier : NavKey
+
+/** A debug build's screens a player meets once or by chance; a release has none. */
+@Serializable
+data object Debug : NavKey
 
 /** One reading, piece by piece. */
 @Serializable
@@ -42,7 +48,7 @@ data class Reading(val stamp: String) : NavKey
 fun Navigation(firstRun: FirstRun = koinInject()) {
     /* Nothing is drawn for the moment the store takes to answer: the launch window is the same colour. */
     val seen by produceState<Boolean?>(null) { value = firstRun.seen() }
-    val start = seen?.let { if (it) Home else Welcome } ?: return
+    val start = seen?.let { if (it) Home() else Welcome } ?: return
     val backStack = rememberNavBackStack(start)
 
     NavDisplay(
@@ -57,10 +63,11 @@ fun Navigation(firstRun: FirstRun = koinInject()) {
             entry<Setup> {
                 GrantsScreen(onDone = {
                     backStack.clear()
-                    backStack.add(Home)
+                    backStack.add(Home())
                 })
             }
-            entry<Home> { HomeScreen(onEarlier = { backStack.add(Earlier) }) }
+            entry<Home> { HomeScreen(it.stage, onEarlier = { backStack.add(Earlier) }, onDebug = { backStack.add(Debug) }) }
+            entry<Debug> { DebugScreen(onOpen = { backStack.add(it) }, onBack = { backStack.removeLastOrNull() }) }
             entry<Earlier> { EarlierScreen(onReading = { backStack.add(Reading(it.stamp)) }, onBack = { backStack.removeLastOrNull() }) }
             entry<Reading> { ReadingScreen(it.stamp, onBack = { backStack.removeLastOrNull() }) }
         },

@@ -9,6 +9,7 @@ import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Permission
 import com.gloryapps.worscanner.ui.canScan
 import com.gloryapps.worscanner.update.Update
+import kotlinx.serialization.Serializable
 import java.io.File
 
 internal data class HomeUiState(
@@ -27,6 +28,19 @@ internal data class HomeUiState(
 
     /** The grants still off, in the order they are asked for. */
     val missing: List<Permission> get() = Permission.entries.filterNot { it in granted }
+}
+
+/** A state Home opens in rather than reaches by playing: a debug build's way to see it as it runs. */
+@Serializable
+sealed interface Stage {
+
+    /** The newest scan kept on the device, as if it had just ended. */
+    @Serializable
+    data object JustScanned : Stage
+
+    /** The ask, as if Start had been pressed with a grant off. */
+    @Serializable
+    data object Asking : Stage
 }
 
 /** The newest scan as Home shows it once it ends: the scan, where its file can land, and how sending it went. */
@@ -88,6 +102,9 @@ internal sealed interface HomeEvent {
     /** The header's way to every scan kept on the device. */
     data object Earlier : HomeEvent
 
+    /** The header's way to a debug build's screens. */
+    data object Debug : HomeEvent
+
     /** The banner's update: the newer release installed, or its page opened where its APK could not be had. */
     data object Update : HomeEvent
 }
@@ -103,6 +120,8 @@ internal sealed interface HomeEffect {
     data object StopCapture : HomeEffect
 
     data object OpenEarlier : HomeEffect
+
+    data object OpenDebug : HomeEffect
 
     data class Install(val apk: File) : HomeEffect
 

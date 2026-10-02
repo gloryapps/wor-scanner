@@ -36,6 +36,8 @@ class ProjectionScreen(
     private val handler = Handler(Looper.getMainLooper())
     /** Every frame the display delivers is copied out on a thread of its own, never the one the overlay draws on. */
     private val frames = HandlerThread("wor-scanner-frames").apply { start() }
+    /** Also closes the readers, so that none is closed under a copy still reading its buffer. */
+    private val copying = Handler(frames.looper)
     @Volatile private var reader: ImageReader = newReader()
     private val display: VirtualDisplay
     private val latest = MutableStateFlow<Held?>(null)
@@ -84,12 +86,12 @@ class ProjectionScreen(
         display.resize(width, height, density)
         display.surface = reader.surface
         latest.value = null
-        outgrown.close()
+        copying.post(outgrown::close)
     }
 
     /* A frame from a reader since replaced is of the old shape, and is dropped. */
     private fun newReader(): ImageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2).apply {
-        setOnImageAvailableListener({ if (it === reader) it.acquireLatestImage()?.use { image -> latest.value = Held(frameOf(image), System.nanoTime()) } }, Handler(frames.looper))
+        setOnImageAvailableListener({ if (it === reader) it.acquireLatestImage()?.use { image -> latest.value = Held(frameOf(image), System.nanoTime()) } }, copying)
     }
 
     private fun frameOf(image: Image): BitmapFrame {
@@ -103,7 +105,7 @@ class ProjectionScreen(
 
     fun close() {
         display.release()
-        reader.close()
+        copying.post(reader::close)
         frames.quitSafely()
         projection.stop()
     }

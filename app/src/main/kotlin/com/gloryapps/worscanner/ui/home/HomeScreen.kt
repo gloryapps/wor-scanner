@@ -71,22 +71,30 @@ import com.gloryapps.worscanner.ui.Reach
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
 import com.gloryapps.worscanner.ui.StepNumber
+import com.gloryapps.worscanner.ui.debug.DebugLink
 import com.gloryapps.worscanner.ui.label
 import com.gloryapps.worscanner.ui.note
 import com.gloryapps.worscanner.ui.rememberGrant
 import com.gloryapps.worscanner.ui.steps
 import com.gloryapps.worscanner.update.Update
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 /**
  * Where a scan is started, wired to the service, the system and the store. What it draws is `Home`,
  * which knows none of them.
  */
 @Composable
-internal fun HomeScreen(onEarlier: () -> Unit, viewModel: HomeViewModel = koinViewModel()) {
+internal fun HomeScreen(
+    stage: Stage?,
+    onEarlier: () -> Unit,
+    onDebug: () -> Unit,
+    viewModel: HomeViewModel = koinViewModel { parametersOf(stage) },
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val earlier by rememberUpdatedState(onEarlier)
+    val debug by rememberUpdatedState(onDebug)
 
     LifecycleResumeEffect(Unit) {
         viewModel.returned()
@@ -105,6 +113,7 @@ internal fun HomeScreen(onEarlier: () -> Unit, viewModel: HomeViewModel = koinVi
                 HomeEffect.LaunchProjection -> projection.launch(context.getSystemService(MediaProjectionManager::class.java).wholeDisplayIntent())
                 HomeEffect.StopCapture -> CaptureService.stop(context)
                 HomeEffect.OpenEarlier -> earlier()
+                HomeEffect.OpenDebug -> debug()
                 /* The system's installer asks the player to confirm, and the first time to let this app install others. */
                 is HomeEffect.Install -> context.startActivity(
                     Intent(Intent.ACTION_VIEW).setDataAndType(context.provided(effect.apk), APK_TYPE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
@@ -245,6 +254,7 @@ private fun Header(running: ScanState.Running?, onEvent: (HomeEvent) -> Unit) {
                     Icon(Icons.Outlined.History, contentDescription = null, Modifier.size(18.dp), tint = Colors.muted)
                     Text(stringResource(R.string.earlier_title), style = Lettering.body, color = Colors.muted)
                 }
+                DebugLink { onEvent(HomeEvent.Debug) }
             }
         }
         Rule()

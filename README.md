@@ -78,6 +78,9 @@ display's size and how a scan ended. Nothing else leaves the device.
 How the code is laid out is in [`bootstrap/architecture.md`](bootstrap/architecture.md); how a release
 is built and signed, in [`bootstrap/ci.md`](bootstrap/ci.md).
 
+A debug build has **Debug** in the home screen's header: it opens the first run, and Home with the
+newest scan as if it had just ended or with the permission ask open, each as it runs.
+
 ## Contributing
 
 Issues are welcome, for a tile read wrong or a scan that stops. Pull requests are read, and merged by

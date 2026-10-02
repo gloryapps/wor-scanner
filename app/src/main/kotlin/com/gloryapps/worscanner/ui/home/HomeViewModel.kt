@@ -11,6 +11,7 @@ import com.gloryapps.worscanner.capture.Readings
 import com.gloryapps.worscanner.capture.sharedFolders
 import com.gloryapps.worscanner.scan.ScanState
 import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.ui.ExportDelegate
 import com.gloryapps.worscanner.ui.Permissions
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 internal class HomeViewModel(
+    stage: Stage?,
     session: CaptureSession,
     scanning: Scanning,
     private val permissions: Permissions,
@@ -54,6 +56,11 @@ internal class HomeViewModel(
                     ScanState.Idle -> Unit
                 }
             }
+        }
+        when (stage) {
+            Stage.JustScanned -> viewModelScope.launch { just.value = newest(kind = null, touched = false) }
+            Stage.Asking -> asking.value = true
+            null -> Unit
         }
     }
 
@@ -107,6 +114,7 @@ internal class HomeViewModel(
             HomeEvent.Share -> just.value?.let { export.share(it.scan) }
             HomeEvent.Next -> just.value = null
             HomeEvent.Earlier -> send(HomeEffect.OpenEarlier)
+            HomeEvent.Debug -> send(HomeEffect.OpenDebug)
             HomeEvent.Update -> when (val update = updates.state.value) {
                 is Update.Available -> viewModelScope.launch { updates.download()?.let { _effects.send(HomeEffect.Install(it)) } }
                 is Update.Failed -> send(HomeEffect.OpenPage(update.release.page))
@@ -128,14 +136,15 @@ internal class HomeViewModel(
     private suspend fun justScanned(ended: ScanState.Ended): JustScanned? {
         val outcome = ended.outcome
         if (outcome is Outcome.Failed || outcome.entries.isEmpty()) return null
+
+        return newest(ended.kind, touched = (outcome as? Outcome.Stopped)?.reason == Outcome.Reason.CANCELLED)
+    }
+
+    /** The newest scan kept, as Home shows one that just ended, of `kind` or the kind its file names; null while none is kept. */
+    private suspend fun newest(kind: Kind?, touched: Boolean): JustScanned? {
         val scan = readings.list().firstOrNull { it is Kept.Scan } as? Kept.Scan ?: return null
 
-        return JustScanned(
-            scan,
-            ended.kind,
-            touched = (outcome as? Outcome.Stopped)?.reason == Outcome.Reason.CANCELLED,
-            shared = sharedFolders().firstOrNull(),
-        )
+        return JustScanned(scan, kind ?: scan.kind ?: return null, touched, sharedFolders().firstOrNull())
     }
 
     private suspend fun deliver() {
