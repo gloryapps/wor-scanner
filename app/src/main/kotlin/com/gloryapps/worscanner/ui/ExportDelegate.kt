@@ -2,10 +2,10 @@ package com.gloryapps.worscanner.ui
 
 import android.content.Context
 import com.gloryapps.worscanner.R
-import com.gloryapps.worscanner.azhor.Link
-import com.gloryapps.worscanner.azhor.Sending
+import com.gloryapps.worscanner.scanner.azhor.Link
+import com.gloryapps.worscanner.scanner.azhor.Sending
 import com.gloryapps.worscanner.capture.Exports
-import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.scanner.runs.Kept
 import com.gloryapps.worscanner.capture.Outbound
 import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.capture.sharedFolders
@@ -36,7 +36,10 @@ class ExportDelegate(private val exports: Exports, private val context: Context,
         scope.launch { link.linked.collect { linked -> _state.update { it.copy(linked = linked) } } }
     }
 
-    fun begin(kept: Kept) = open(kept.outgoing(context))
+    /* Launched: the kind's name in the sheet is read from the shared resources, which is a suspension. */
+    fun begin(kept: Kept) {
+        scope.launch { open(kept.outgoing(context)) }
+    }
 
     fun begin(readings: List<Kept>) = open(readings.outgoing(context))
 

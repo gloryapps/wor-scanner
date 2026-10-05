@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cancel">Cancel</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+
+    <string name="kind_gear">Gear</string>
+    <string name="kind_heroes">Heroes</string>
+    <string name="kind_artifacts">Artifacts</string>
+    <string name="kind_gear_step_1">Open Storage → Gear.</string>
+    <string name="kind_gear_step_2">Filter and sort it the way you want it scanned.</string>
+    <string name="kind_gear_step_3">Select the first piece.</string>
+    <string name="kind_gear_reminder">Storage → Gear, sorted, first piece selected.</string>
+    <string name="kind_heroes_reminder">Hero, sorted by Rarity ↓, first hero selected.</string>
+    <string name="kind_artifacts_reminder">Storage → Artifact, sorted, first artifact selected.</string>
+    <string name="kind_gear_note">The scan taps through the grid, scrolls it itself and stops at its end.</string>
+    <string name="kind_heroes_step_1">Open Hero, as cards or as squares.</string>
+    <string name="kind_heroes_step_2">Sort by Rarity ↓.</string>
+    <string name="kind_heroes_step_3">Select the first hero.</string>
+    <string name="kind_heroes_note">Every legendary and epic is read: Attributes, Skills and Awaken. The scan stops at the first hero below epic, so keep those out of your favourites.</string>
+    <string name="kind_artifacts_step_1">Open Storage → Artifact.</string>
+    <string name="kind_artifacts_step_2">Sort it the way you want it scanned.</string>
+    <string name="kind_artifacts_step_3">Select the first artifact.</string>
+    <string name="kind_artifacts_note">Every artifact to the end of the grid is read. Ones never enhanced are skipped.</string>
+
+    <plurals name="kind_gear_pieces">
+        <item quantity="one">piece</item>
+        <item quantity="other">pieces</item>
+    </plurals>
+    <plurals name="kind_heroes_pieces">
+        <item quantity="one">hero</item>
+        <item quantity="other">heroes</item>
+    </plurals>
+    <plurals name="kind_artifacts_pieces">
+        <item quantity="one">artifact</item>
+        <item quantity="other">artifacts</item>
+    </plurals>
+
+    <string name="choose_kind">What to scan</string>
+    <string name="read_tile">Read one tile</string>
+    <string name="read_kept">Kept %1$s, %2$d lines</string>
+    <string name="read_failed">Reading failed: %1$s</string>
+
+    <string name="scan">Scan</string>
+    <string name="stop">Stop</string>
+    <string name="scan_running">Scanning %1$s: %2$d read, %3$d held</string>
+    <string name="scan_finished">%1$s scan finished: %2$d read</string>
+    <string name="scan_stopped">%1$s scan stopped: %2$s. %3$d kept.</string>
+    <string name="scan_failed">%1$s scan failed: %2$s</string>
+
+    <string name="send">Send to Azhor’s Master Smithy</string>
+    <string name="sending">Sending…</string>
+    <string name="send_hint">It waits in Import a scan on the site.</string>
+    <string name="link_send">Link and send</string>
+    <string name="link_send_hint">You only link once. After that, Send is one press.</string>
+    <string name="link_again">Link again</string>
+    <string name="try_again">Try again</string>
+    <string name="link_title">Link this scanner to your account</string>
+    <string name="link_once">· once</string>
+    <string name="link_step_1">On the site, open Import a scan</string>
+    <string name="link_step_2">Press Link</string>
+    <string name="link_step_3">Type the code here</string>
+    <string name="link_hint">K7Q4-MPX2</string>
+    <string name="link_lasts">The code works for 10 minutes.</string>
+    <string name="lab_refused_code">The site knows no such code</string>
+    <string name="lab_refused_code_said">Codes last ten minutes and link once: press Link on the site for a new one.</string>
+    <string name="lab_unreachable">The site could not be reached</string>
+    <string name="lab_unreachable_said">Check the connection, then try again. The scan is still here.</string>
+    <string name="lab_unlinked">The site no longer knows this scanner</string>
+    <string name="lab_unlinked_said">It was unlinked on the site, or another scanner was linked. Link it again, then send.</string>
+    <string name="lab_too_large">This scan is too large to send</string>
+    <string name="lab_too_large_said">Keep the file instead, then drop it on Import a scan on the site.</string>
+    <string name="lab_refused">The site did not read this file as a scan</string>
+    <string name="lab_refused_said">Keep the file instead, then drop it on Import a scan on the site.</string>
+    <string name="lab_sent">Sent to your account</string>
+    <string name="lab_sent_said">Open Import a scan on Azhor’s Master Smithy to bring it in.</string>
+    <string name="scan_else">Scan something else</string>
+</resources>

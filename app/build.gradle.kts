@@ -16,10 +16,9 @@ android {
         applicationId = "com.gloryapps.worscanner"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionName = "0.4.0"
+        versionName = providers.gradleProperty("worscanner.version").get()
         versionCode = versionName!!.split('.').fold(0) { code, part -> code * 100 + part.toInt() }
-        // `-Pazhor.url=http://<the PC's address>:5173` points a build at the lab running on the PC.
-        buildConfigField("String", "AZHOR_URL", "\"${providers.gradleProperty("azhor.url").getOrElse("https://azhor-wor.netlify.app")}\"")
+        resValue("string", "app_name", providers.gradleProperty("worscanner.name").get())
     }
 
     signingConfigs {
@@ -52,6 +51,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
 
     // The bundled OCR libraries are 42 MB stored and 18 MB compressed, and the APK is downloaded, not served by a store.
@@ -67,6 +67,7 @@ android {
 
 dependencies {
     implementation(project(":scanner"))
+    implementation(project(":ui"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

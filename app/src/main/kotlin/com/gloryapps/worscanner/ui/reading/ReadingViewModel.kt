@@ -2,7 +2,7 @@ package com.gloryapps.worscanner.ui.reading
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gloryapps.worscanner.capture.Readings
+import com.gloryapps.worscanner.scanner.runs.Readings
 import com.gloryapps.worscanner.scanner.kinds.scan
 import com.gloryapps.worscanner.ui.ExportDelegate
 import kotlinx.coroutines.Dispatchers

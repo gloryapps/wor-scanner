@@ -1,26 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">WoR Scanner</string>
     <string name="touch_service_description">Taps and scrolls through Watcher of Realms while a scan runs. Nothing is read from other apps.</string>
-
-    <string name="kind_gear">Gear</string>
-    <string name="kind_heroes">Heroes</string>
-    <string name="kind_artifacts">Artifacts</string>
-    <string name="kind_gear_step_1">Open Storage → Gear.</string>
-    <string name="kind_gear_step_2">Filter and sort it the way you want it scanned.</string>
-    <string name="kind_gear_step_3">Select the first piece.</string>
-    <string name="kind_gear_reminder">Storage → Gear, sorted, first piece selected.</string>
-    <string name="kind_heroes_reminder">Hero, sorted by Rarity ↓, first hero selected.</string>
-    <string name="kind_artifacts_reminder">Storage → Artifact, sorted, first artifact selected.</string>
-    <string name="kind_gear_note">The scan taps through the grid, scrolls it itself and stops at its end.</string>
-    <string name="kind_heroes_step_1">Open Hero, as cards or as squares.</string>
-    <string name="kind_heroes_step_2">Sort by Rarity ↓.</string>
-    <string name="kind_heroes_step_3">Select the first hero.</string>
-    <string name="kind_heroes_note">Every legendary and epic is read: Attributes, Skills and Awaken. The scan stops at the first hero below epic, so keep those out of your favourites.</string>
-    <string name="kind_artifacts_step_1">Open Storage → Artifact.</string>
-    <string name="kind_artifacts_step_2">Sort it the way you want it scanned.</string>
-    <string name="kind_artifacts_step_3">Select the first artifact.</string>
-    <string name="kind_artifacts_note">Every artifact to the end of the grid is read. Ones never enhanced are skipped.</string>
 
     <string name="emulator_ldplayer">LDPlayer</string>
     <string name="emulator_ldplayer_pc">On Windows: Documents\\LDPlayer\\Pictures\\WoR Scanner</string>
@@ -45,38 +25,13 @@
     <string name="home_before">Before you press Scan, in the game</string>
     <string name="home_read">%1$s read</string>
     <string name="home_read_stopped">%1$s read before it stopped</string>
-    <string name="home_stopped_touched">The screen was touched, so the scan stopped. All %1$s are kept and can be sent.</string>
+    <string name="home_stopped_by_you">You stopped the scan. All %1$s are kept and can be sent.</string>
     <string name="home_stopped_because">The scan stopped: %1$s. All %2$s are kept and can be sent.</string>
-    <string name="home_link_title">Link this scanner to your account</string>
-    <string name="home_link_once">· once</string>
-    <string name="home_link_step_1">On the site, open Import a scan</string>
-    <string name="home_link_step_2">Press Link</string>
-    <string name="home_link_step_3">Type the code here</string>
-    <string name="home_link_hint">K7Q4-MPX2</string>
-    <string name="home_link_lasts">The code works for 10 minutes.</string>
-    <string name="home_send_hint">It waits in Import a scan on the site.</string>
-    <string name="home_link_send">Link and send</string>
-    <string name="home_link_send_hint">You only link once. After that, Send is one press.</string>
-    <string name="home_link_again">Link again</string>
     <string name="home_save_instead">Save the file instead</string>
     <string name="home_share_instead">Share the file instead</string>
-    <string name="home_try_again">Try again</string>
-    <string name="home_refused_code">The site knows no such code</string>
-    <string name="home_refused_code_said">Codes last ten minutes and link once: press Link on the site for a new one.</string>
-    <string name="home_unreachable">The site could not be reached</string>
-    <string name="home_unreachable_said">Check the connection, then try again. The scan is still here.</string>
-    <string name="home_unlinked">The site no longer knows this scanner</string>
-    <string name="home_unlinked_said">It was unlinked on the site, or another scanner was linked. Link it again, then send.</string>
-    <string name="home_too_large">This scan is too large to send</string>
-    <string name="home_too_large_said">Save the file instead, then drop it on Import a scan on the site.</string>
-    <string name="home_refused">The site did not read this file as a scan</string>
-    <string name="home_refused_said">Save the file instead, then drop it on Import a scan on the site.</string>
-    <string name="home_sent">Sent to your account</string>
-    <string name="home_sent_said">Open Import a scan on Azhor’s Master Smithy to bring it in.</string>
     <string name="home_keep">Or keep the file</string>
     <string name="home_keep_said">For when sending isn’t possible. Drop the file on Import a scan on the site.</string>
     <string name="home_next">Next</string>
-    <string name="home_scan_else">Scan something else</string>
     <string name="home_ask_title">Turn on before scanning</string>
     <string name="home_ask_said">These were switched off since you set up the scanner.</string>
     <string name="home_ask_all_on">All on. You can start.</string>
@@ -129,7 +84,6 @@
     <string name="earlier_delete_all_yes">Delete all</string>
     <string name="earlier_empty">No reading yet. Start a scan, or press Read over the game.</string>
     <string name="earlier_note">Export from any row — no need to open the reading first.</string>
-    <string name="cancel">Cancel</string>
     <string name="home_reading">Reading</string>
     <string name="home_complete">finished</string>
     <string name="home_stopped">stopped</string>
@@ -158,8 +112,6 @@
     <string name="export_save">Save</string>
     <string name="export_to">→ %1$s</string>
     <string name="export_share">Share…</string>
-    <string name="export_send">Send to Azhor’s Master Smithy</string>
-    <string name="export_sending">Sending…</string>
     <string name="export_send_link">The scanner links the first time you send a scan from the home screen, as it ends.</string>
     <string name="export_send_unanswered">The site could not be reached. Check the connection and send again.</string>
     <string name="export_send_unlinked">The site no longer knows this scanner: it was unlinked there, or another was linked. Send a scan from the home screen to link it again.</string>
@@ -167,8 +119,6 @@
     <string name="export_send_too_large">This scan is larger than the site keeps. Save it and import the file instead.</string>
     <string name="export_note">This is the file you open in Import a scan in Azhor’s Master Smithy.</string>
 
-    <string name="back">Back</string>
-    <string name="close">Close</string>
     <string name="reading_data">Data</string>
     <string name="reading_json">JSON</string>
     <string name="reading_export">Export reading</string>
@@ -178,19 +128,10 @@
 
     <string name="capture_channel">Screen capture</string>
     <string name="capture_notification_title">Capturing the screen. Open the game where the scan begins and press Scan.</string>
-    <string name="scan_running">Scanning %1$s: %2$d read, %3$d held</string>
-    <string name="scan_finished">%1$s scan finished: %2$d read</string>
-    <string name="scan_stopped">%1$s scan stopped: %2$s. %3$d kept.</string>
-    <string name="scan_failed">%1$s scan failed: %2$s</string>
-    <string name="scan_stop">Stop</string>
     <string name="scan_needs_touch">The accessibility service is not running, so the scan cannot tap. Turn it on in Android’s Accessibility settings, or off and on if it is on already. If that isn’t enough, restart the emulator or phone.</string>
 
     <string name="overlay_scan_kind">Scan %1$s</string>
-    <string name="overlay_what">What to scan</string>
-    <string name="overlay_scan">Scan</string>
-    <string name="overlay_read">Read one tile</string>
     <string name="overlay_app">Open the app</string>
-    <string name="overlay_stop">Stop</string>
     <string name="overlay_close">Close overlay</string>
     <string name="overlay_running">running</string>
     <string name="overlay_touch_off">accessibility off</string>
@@ -199,8 +140,6 @@
     <string name="overlay_kept">%1$d read</string>
     <string name="overlay_view">view →</string>
     <string name="overlay_drop">drop to close</string>
-    <string name="overlay_read_kept">Kept %1$s, %2$d lines</string>
-    <string name="overlay_read_failed">Reading failed: %1$s</string>
 
     <plurals name="reading_lines">
         <item quantity="one">%1$d line</item>
@@ -225,18 +164,6 @@
     <plurals name="export_saved">
         <item quantity="one">Saved, %1$d file</item>
         <item quantity="other">Saved, %1$d files</item>
-    </plurals>
-    <plurals name="kind_gear_pieces">
-        <item quantity="one">piece</item>
-        <item quantity="other">pieces</item>
-    </plurals>
-    <plurals name="kind_heroes_pieces">
-        <item quantity="one">hero</item>
-        <item quantity="other">heroes</item>
-    </plurals>
-    <plurals name="kind_artifacts_pieces">
-        <item quantity="one">artifact</item>
-        <item quantity="other">artifacts</item>
     </plurals>
     <plurals name="firstrun_left">
         <item quantity="one">%1$d left</item>

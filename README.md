@@ -1,11 +1,12 @@
 # WoR Scanner
 
-An Android app that reads your Watcher of Realms gear, legendary and epic heroes, and artifacts off
-the screen, one tile at a time, and writes a JSON file you import into
+Reads your Watcher of Realms gear, legendary and epic heroes, and artifacts off the screen, one tile
+at a time, and writes a JSON file you import into
 [Azhor’s Master Smithy](https://azhor-wor.netlify.app).
 
-It is made for the game running in an emulator on a PC, LDPlayer or BlueStacks. It may work on a
-phone, but that has not been tried.
+It comes two ways: an Android app for the game running in an emulator on a PC, LDPlayer or
+BlueStacks (it may work on a phone, but that has not been tried), and a Windows app for the game's
+own PC client, beside it on the same PC. The Windows app is [further down](#on-windows).
 
 ## Install
 
@@ -41,8 +42,8 @@ Press **Start** on the home screen, go to the game, tap the capsule to pick what
 - **Artifacts**: open Storage → Artifact, sorted as you want it scanned, and select the first
   artifact. The scan reads every artifact to the end of the grid, skipping those never enhanced.
 
-The scan taps and scrolls the grid itself; touching the screen stops it, and what it read so far is
-kept.
+The scan taps and scrolls the grid itself. Touching the screen only delays it; Stop, on the capsule or
+the notification, stops it, and what it read so far is kept.
 
 **How to scan**, in the home screen's header and on the first run's first page, plays a video of a
 whole scan, from Start to Sent.
@@ -69,13 +70,33 @@ fixed in Azhor’s Master Smithy.
 Scans stay on the device until you export them, and are not backed up. **Send** uploads a scan's JSON
 to Azhor’s Master Smithy, into the account the scanner is linked to; its pictures stay on the device.
 Release builds send crash reports to Firebase Crashlytics: the crash, the kind being scanned, the
-display's size and how a scan ended. Nothing else leaves the device.
+display's size and how a scan ended. Nothing else leaves the device. The Windows app sends nothing
+but a scan you send; its log stays in its folder.
+
+## On Windows
+
+1. Download [`wor-scanner-windows.zip`](../../releases/latest/download/wor-scanner-windows.zip) from the
+   latest [release](../../releases/latest), unzip it anywhere, and open `WoR Scanner.exe` in the
+   `WoR Scanner` folder. It brings its own Java, so nothing else needs installing. The app is not
+   signed, so the first time Windows says it protected your PC: **More info**, then **Run anyway**.
+2. Open Watcher of Realms on the same PC, in a window or borderless; the app says it found it.
+3. In the game, ready the screen as for the Android app (above), pick the kind in the app, and press
+   **Scan**. The game comes to the front and the scan taps and scrolls it with the mouse, a small sign
+   over the game saying how far it is. Its **Stop**, or Esc in the game, stops it, and what it read so
+   far is kept. Another window brought to the front only pauses it: it goes on when the game is back.
+
+The text is read by Windows' own text recognition, in the languages of your Windows profile. Scans,
+their pictures and a log are kept in `%LOCALAPPDATA%\WoR Scanner`; **Open folder** shows them. The
+newest scan waits under the buttons to be sent to Azhor’s Master Smithy, linking the app with the
+site's code the first time, as the Android app does. If the game runs as administrator, the app must
+too, or Windows keeps its clicks from reaching the game.
 
 ## Building
 
 ```bash
 ./gradlew test
 ./gradlew :app:assembleDebug
+./gradlew :windows:run
 ```
 
 How the code is laid out is in [`bootstrap/architecture.md`](bootstrap/architecture.md); how a release

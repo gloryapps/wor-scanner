@@ -23,14 +23,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.BuildConfig
 import com.gloryapps.worscanner.R
-import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.scanner.runs.Kept
 import com.gloryapps.worscanner.ui.Back
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Confirm
@@ -141,7 +140,6 @@ internal fun Readings(readings: List<Kept>, onEvent: (EarlierEvent) -> Unit) {
 
 @Composable
 private fun Reading(kept: Kept, newest: Boolean, onEvent: (EarlierEvent) -> Unit) {
-    val context = LocalContext.current
     Row(
         Modifier
             .fillMaxWidth()
@@ -153,7 +151,7 @@ private fun Reading(kept: Kept, newest: Boolean, onEvent: (EarlierEvent) -> Unit
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(kept.shown(), style = Lettering.subtitle, color = Colors.text)
-            Text(kept.said(context), style = Lettering.caption, color = Colors.muted)
+            Text(kept.said(), style = Lettering.caption, color = Colors.muted)
             (kept as? Kept.Scan)?.detail?.let { Text(it, style = Lettering.caption, color = Colors.warning, maxLines = 2) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {

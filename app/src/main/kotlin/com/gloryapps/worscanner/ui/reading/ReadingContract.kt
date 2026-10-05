@@ -1,6 +1,6 @@
 package com.gloryapps.worscanner.ui.reading
 
-import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.scanner.runs.Kept
 import com.gloryapps.worscanner.ui.outgoingName
 
 /** One tile of a scan as the screen shows it: what the reader saw, and what it made of it. */

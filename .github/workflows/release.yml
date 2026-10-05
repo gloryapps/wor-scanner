@@ -40,7 +40,7 @@ jobs:
 
       - name: Read the version being released
         id: version
-        run: echo "name=$(sed -n 's/.*versionName = "\(.*\)"/\1/p' app/build.gradle.kts)" >> "$GITHUB_OUTPUT"
+        run: echo "name=$(sed -n 's/^worscanner.version=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
 
       - name: Refuse a version already released
         run: |
@@ -83,6 +83,33 @@ jobs:
           name: release
           path: ${{ runner.temp }}/release
 
+  # The Windows app is built on Windows, beside the APK, and kept for the merge to publish with it.
+  windows:
+    if: github.event_name == 'pull_request' && github.head_ref == 'dev'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            25
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test and build the Windows app
+        run: ./gradlew :windows:test :windows:createDistributable
+
+      - name: Zip the app's folder
+        run: 7z a "$RUNNER_TEMP/wor-scanner-windows.zip" "./windows/build/compose/binaries/main/app/WoR Scanner"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: ${{ runner.temp }}/wor-scanner-windows.zip
+
   publish:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -110,6 +137,12 @@ jobs:
           run-id: ${{ steps.build.outputs.run }}
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/release
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-windows
+          run-id: ${{ steps.build.outputs.run }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/release
 
       - name: Read the version being released
         id: version
@@ -121,7 +154,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.name }}
         working-directory: ${{ runner.temp }}/release
         run: |
-          gh release create "v$VERSION" "wor-scanner.apk" "mapping-$VERSION.txt.gz" --repo "$GITHUB_REPOSITORY" \
+          gh release create "v$VERSION" "wor-scanner.apk" "wor-scanner-windows.zip" "mapping-$VERSION.txt.gz" --repo "$GITHUB_REPOSITORY" \
             --title "v$VERSION" --notes-file notes.md --target "$GITHUB_SHA"
 
       # dev moves to the next minor and dates what was unreleased; a patch or a major is set on dev by hand before its pull request.
@@ -132,7 +165,7 @@ jobs:
           git switch dev
           IFS=. read -r major minor patch <<< "$VERSION"
           next="$major.$((minor + 1)).0"
-          sed -i "s/versionName = \"$VERSION\"/versionName = \"$next\"/" app/build.gradle.kts
+          sed -i "s/^worscanner.version=$VERSION$/worscanner.version=$next/" gradle.properties
           sed -i \
             -e "s/^## \[Unreleased\]$/## [Unreleased]\n\n## [$VERSION] - $(date -u +%F)/" \
             -e "s|^\[unreleased\]: \(.*\)/compare/\(v[0-9.]*\)\.\.\.HEAD$|[unreleased]: \1/compare/v$VERSION...HEAD\n[$VERSION]: \1/compare/\2...v$VERSION|" \

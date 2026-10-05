@@ -1,11 +1,8 @@
 package com.gloryapps.worscanner.ui.home
 
-import androidx.annotation.StringRes
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,15 +17,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.Send
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Error
 import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.LinkOff
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,38 +30,34 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
+import org.jetbrains.compose.resources.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
+import com.gloryapps.worscanner.ui.resources.Res
+import com.gloryapps.worscanner.ui.resources.scan_else
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import com.gloryapps.worscanner.R
-import com.gloryapps.worscanner.azhor.Linking
-import com.gloryapps.worscanner.azhor.Sending
-import com.gloryapps.worscanner.scan.Ended
-import com.gloryapps.worscanner.ui.Accented
-import com.gloryapps.worscanner.ui.CODE
+import com.gloryapps.worscanner.scanner.azhor.Send
+import com.gloryapps.worscanner.scanner.runs.Ended
 import com.gloryapps.worscanner.ui.Card
-import com.gloryapps.worscanner.ui.CodeField
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Edged
-import com.gloryapps.worscanner.ui.Fonts
+import com.gloryapps.worscanner.ui.Lead
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Pill
 import com.gloryapps.worscanner.ui.Rule
 import com.gloryapps.worscanner.ui.Section
-import com.gloryapps.worscanner.ui.dashed
+import com.gloryapps.worscanner.ui.Standing
+import com.gloryapps.worscanner.ui.Way
 import com.gloryapps.worscanner.ui.ended
 import com.gloryapps.worscanner.ui.label
 import com.gloryapps.worscanner.ui.onPc
 import com.gloryapps.worscanner.ui.pieces
 import com.gloryapps.worscanner.ui.savingInto
 import com.gloryapps.worscanner.ui.shown
+import com.gloryapps.worscanner.ui.wayOf
 import java.text.NumberFormat
 
 /**
@@ -100,7 +87,14 @@ internal fun Scanned(just: JustScanned, wide: Boolean, onEvent: (HomeEvent) -> U
 @Composable
 private fun Outcome(just: JustScanned, wide: Boolean, onEvent: (HomeEvent) -> Unit, modifier: Modifier) {
     var code by rememberSaveable { mutableStateOf("") }
-    val way = wayOf(just, code)
+    val way = wayOf(
+        just.send,
+        code,
+        onSend = { onEvent(HomeEvent.Send) },
+        onLink = { onEvent(HomeEvent.LinkAndSend(it)) },
+        next = Way(stringResource(Res.string.scan_else), Icons.Outlined.RestartAlt, null, { onEvent(HomeEvent.Next) }),
+        instead = instead(just, onEvent),
+    )
 
     Card(modifier, leading = true, padding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)) {
         /* Wide, the action keeps to the card's foot, whole, and what is above it scrolls on a screen too short for it. */
@@ -110,18 +104,9 @@ private fun Outcome(just: JustScanned, wide: Boolean, onEvent: (HomeEvent) -> Un
         ) {
             Came(just)
             Rule()
-            Standing(just.send, code, { code = it }, onDone = { way.event?.takeIf { way.enabled }?.let(onEvent) })
+            Standing(just.send, code, { code = it }, onDone = { way.onClick?.takeIf { way.enabled }?.invoke() })
         }
-        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Accented(
-                stringResource(way.label),
-                Modifier.fillMaxWidth(),
-                icon = way.icon,
-                enabled = way.enabled,
-                onClick = { way.event?.let(onEvent) },
-            )
-            way.hint?.let { Text(it, Modifier.fillMaxWidth(), style = Lettering.footnote, color = Colors.faint, textAlign = TextAlign.Center) }
-        }
+        Lead(way)
     }
 }
 
@@ -152,69 +137,10 @@ private fun Came(just: JustScanned) {
         }
         if (stopped) {
             Text(
-                if (just.touched) stringResource(R.string.home_stopped_touched, count) else stringResource(R.string.home_stopped_because, just.scan.detail.orEmpty(), count),
+                if (just.byPlayer) stringResource(R.string.home_stopped_by_you, count) else stringResource(R.string.home_stopped_because, just.scan.detail.orEmpty(), count),
                 style = Lettering.caption,
                 color = Colors.muted,
             )
-        }
-    }
-}
-
-/** How sending stands, said above the action: the link step, or what the site answered. */
-@Composable
-private fun Standing(send: Send, code: String, onCode: (String) -> Unit, onDone: () -> Unit) {
-    if (send is Send.Code) LinkStep(code, onCode, onDone)
-    noticeOf(send)?.let { Told(it) }
-}
-
-/** The scanner linked once, by the code the site's Import a scan shows. */
-@Composable
-private fun LinkStep(code: String, onCode: (String) -> Unit, onDone: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            buildAnnotatedString {
-                append(stringResource(R.string.home_link_title))
-                append(" ")
-                withStyle(SpanStyle(color = Colors.muted, fontWeight = FontWeight.Normal)) { append(stringResource(R.string.home_link_once)) }
-            },
-            style = Lettering.stepName,
-            color = Colors.text,
-        )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            LINK_STEPS.forEachIndexed { at, step ->
-                Text(
-                    buildAnnotatedString {
-                        withStyle(SpanStyle(fontFamily = Fonts.mono, color = Colors.accent)) { append("${at + 1}") }
-                        append("  ")
-                        append(stringResource(step))
-                    },
-                    style = Lettering.caption,
-                    color = Colors.muted,
-                )
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            CodeField(code, onCode, stringResource(R.string.home_link_hint), onDone = onDone)
-            Text(stringResource(R.string.home_link_lasts), style = Lettering.caption, color = Colors.faint)
-        }
-    }
-}
-
-/** What the site answered, in a card edged by whether it went: the failure's colour, or the accent once it is sent. */
-@Composable
-private fun Told(notice: Notice) {
-    val colour = if (notice.failed) Colors.failure else Colors.accent
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .border(1.dp, if (notice.failed) Colors.failureEdge else Colors.accentEdge, RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(notice.icon, contentDescription = null, Modifier.size(18.dp), tint = colour)
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(stringResource(notice.title), style = Lettering.stepName, color = Colors.text)
-            Text(stringResource(notice.said), style = Lettering.caption, color = Colors.muted)
         }
     }
 }
@@ -246,56 +172,15 @@ private fun Next(onEvent: (HomeEvent) -> Unit) {
         ) {
             Row(Modifier.fillMaxHeight(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.RestartAlt, contentDescription = null, Modifier.size(18.dp), tint = Colors.accent)
-                Text(stringResource(R.string.home_scan_else), Modifier.weight(1f), style = Lettering.body, color = Colors.text)
+                Text(stringResource(Res.string.scan_else), Modifier.weight(1f), style = Lettering.body, color = Colors.text)
                 Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, Modifier.size(15.dp), tint = Colors.muted)
             }
         }
     }
 }
 
-/** The action that takes the scan further as sending stands, what is said under it, and whether it can be pressed yet. */
-private class Way(@StringRes val label: Int, val icon: ImageVector?, val hint: String?, val event: HomeEvent?, val enabled: Boolean = true)
-
+/* Without an emulator's folder to save into, the file goes by Share. */
 @Composable
-private fun wayOf(just: JustScanned, code: String): Way = when (val send = just.send) {
-    Send.Idle -> Way(R.string.export_send, Icons.AutoMirrored.Outlined.Send, stringResource(R.string.home_send_hint), HomeEvent.Send)
-    is Send.Code -> Way(
-        R.string.home_link_send,
-        Icons.Outlined.Link,
-        stringResource(R.string.home_link_send_hint),
-        HomeEvent.LinkAndSend(dashed(code)),
-        enabled = code.length == CODE,
-    )
-    Send.Underway -> Way(R.string.export_sending, null, null, null, enabled = false)
-    Send.Sent -> Way(R.string.home_scan_else, Icons.Outlined.RestartAlt, null, HomeEvent.Next)
-    is Send.Unsent -> when (send.why) {
-        Sending.Unlinked -> Way(R.string.home_link_again, Icons.Outlined.Link, null, HomeEvent.Send)
-        Sending.Unanswered, Sending.Sent -> Way(R.string.home_try_again, Icons.Outlined.Refresh, null, HomeEvent.Send)
-        /* Without an emulator's folder to save into, the file goes by Share. */
-        Sending.TooLarge, Sending.Refused -> just.shared?.let { Way(R.string.home_save_instead, Icons.Outlined.Folder, stringResource(it.emulator.onPc), HomeEvent.Save) }
-            ?: Way(R.string.home_share_instead, Icons.Outlined.Share, null, HomeEvent.Share)
-    }
-}
-
-/** What the site answered, as a card says it. */
-private class Notice(val icon: ImageVector, @StringRes val title: Int, @StringRes val said: Int, val failed: Boolean = true)
-
-private fun noticeOf(send: Send): Notice? = when (send) {
-    is Send.Code -> when (send.failed) {
-        Linking.Refused -> Notice(Icons.Outlined.Error, R.string.home_refused_code, R.string.home_refused_code_said)
-        Linking.Unanswered -> UNREACHABLE
-        is Linking.Linked, null -> null
-    }
-    is Send.Unsent -> when (send.why) {
-        Sending.Unlinked -> Notice(Icons.Outlined.LinkOff, R.string.home_unlinked, R.string.home_unlinked_said)
-        Sending.TooLarge -> Notice(Icons.Outlined.Error, R.string.home_too_large, R.string.home_too_large_said)
-        Sending.Refused -> Notice(Icons.Outlined.Error, R.string.home_refused, R.string.home_refused_said)
-        Sending.Unanswered, Sending.Sent -> UNREACHABLE
-    }
-    Send.Sent -> Notice(Icons.Outlined.CheckCircle, R.string.home_sent, R.string.home_sent_said, failed = false)
-    Send.Idle, Send.Underway -> null
-}
-
-private val UNREACHABLE = Notice(Icons.Outlined.WifiOff, R.string.home_unreachable, R.string.home_unreachable_said)
-
-private val LINK_STEPS = listOf(R.string.home_link_step_1, R.string.home_link_step_2, R.string.home_link_step_3)
+private fun instead(just: JustScanned, onEvent: (HomeEvent) -> Unit): Way =
+    just.shared?.let { Way(stringResource(R.string.home_save_instead), Icons.Outlined.Folder, stringResource(it.emulator.onPc), { onEvent(HomeEvent.Save) }) }
+        ?: Way(stringResource(R.string.home_share_instead), Icons.Outlined.Share, null, { onEvent(HomeEvent.Share) })

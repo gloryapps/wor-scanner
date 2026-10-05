@@ -2,20 +2,19 @@ package com.gloryapps.worscanner.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gloryapps.worscanner.azhor.Link
-import com.gloryapps.worscanner.azhor.Linking
-import com.gloryapps.worscanner.azhor.Sending
+import com.gloryapps.worscanner.scanner.azhor.Send
+import com.gloryapps.worscanner.scanner.azhor.Sender
+import com.gloryapps.worscanner.scanner.runs.scans
 import com.gloryapps.worscanner.capture.CaptureSession
-import com.gloryapps.worscanner.capture.Kept
-import com.gloryapps.worscanner.capture.Readings
+import com.gloryapps.worscanner.scanner.runs.Kept
+import com.gloryapps.worscanner.scanner.runs.Readings
 import com.gloryapps.worscanner.capture.sharedFolders
-import com.gloryapps.worscanner.scan.ScanState
-import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.scanner.runs.ScanState
+import com.gloryapps.worscanner.scanner.runs.Scanning
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.ui.ExportDelegate
 import com.gloryapps.worscanner.ui.Permissions
-import com.gloryapps.worscanner.ui.scans
 import com.gloryapps.worscanner.update.Update
 import com.gloryapps.worscanner.update.Updates
 import kotlinx.coroutines.channels.Channel
@@ -24,7 +23,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -37,7 +35,7 @@ internal class HomeViewModel(
     private val permissions: Permissions,
     private val updates: Updates,
     private val readings: Readings,
-    private val link: Link,
+    private val sender: Sender,
     val export: ExportDelegate,
 ) : ViewModel() {
     private val asking = MutableStateFlow(false)
@@ -102,14 +100,8 @@ internal class HomeViewModel(
             }
             HomeEvent.Dismiss -> asking.value = false
             HomeEvent.Stop -> send(HomeEffect.StopCapture)
-            HomeEvent.Send -> viewModelScope.launch { if (link.linked.first()) deliver() else sending(Send.Code()) }
-            is HomeEvent.LinkAndSend -> viewModelScope.launch {
-                sending(Send.Underway)
-                when (val linking = link.link(event.code)) {
-                    is Linking.Linked -> deliver()
-                    Linking.Refused, Linking.Unanswered -> sending(Send.Code(failed = linking))
-                }
-            }
+            HomeEvent.Send -> just.value?.let { scanned -> viewModelScope.launch { sender.send(scanned.scan.scans(), ::sending) } }
+            is HomeEvent.LinkAndSend -> just.value?.let { scanned -> viewModelScope.launch { sender.linkAndSend(event.code, scanned.scan.scans(), ::sending) } }
             HomeEvent.Save -> just.value?.let { scanned -> scanned.shared?.let { export.save(scanned.scan, it) } }
             HomeEvent.Share -> just.value?.let { export.share(it.scan) }
             HomeEvent.Next -> just.value = null
@@ -138,28 +130,21 @@ internal class HomeViewModel(
         val outcome = ended.outcome
         if (outcome is Outcome.Failed || outcome.entries.isEmpty()) return null
 
-        return shown(readings.kept(ended.stamp), ended.kind, touched = (outcome as? Outcome.Stopped)?.reason == Outcome.Reason.CANCELLED)
+        return shown(readings.kept(ended.stamp), ended.kind, byPlayer = (outcome as? Outcome.Stopped)?.reason == Outcome.Reason.CANCELLED)
     }
 
     /** The newest scan kept, as if it had just ended; null while none is kept. */
-    private suspend fun newest(): JustScanned? = shown(readings.list().firstOrNull { it is Kept.Scan }, kind = null, touched = false)
+    private suspend fun newest(): JustScanned? = shown(readings.list().firstOrNull { it is Kept.Scan }, kind = null, byPlayer = false)
 
     /**
      * A kept scan as Home shows one that just ended, of `kind` or the kind its file names, on the link
      * step while the scanner is not linked; null for anything else.
      */
-    private suspend fun shown(kept: Kept?, kind: Kind?, touched: Boolean): JustScanned? {
+    private suspend fun shown(kept: Kept?, kind: Kind?, byPlayer: Boolean): JustScanned? {
         val scan = kept as? Kept.Scan ?: return null
-        val send = if (link.linked.first()) Send.Idle else Send.Code()
+        val send = sender.start()
 
-        return JustScanned(scan, kind ?: scan.kind ?: return null, touched, sharedFolders().firstOrNull(), send)
-    }
-
-    private suspend fun deliver() {
-        val scan = just.value?.scan ?: return
-        sending(Send.Underway)
-        val sent = link.send(scan.scans())
-        sending(if (sent == Sending.Sent) Send.Sent else Send.Unsent(sent))
+        return JustScanned(scan, kind ?: scan.kind ?: return null, byPlayer, sharedFolders().firstOrNull(), send)
     }
 
     private fun sending(send: Send) {

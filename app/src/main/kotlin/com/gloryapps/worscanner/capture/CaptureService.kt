@@ -20,10 +20,10 @@ import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.overlay.OverlayWindow
 import com.gloryapps.worscanner.scanner.kinds.Kind
-import com.gloryapps.worscanner.scanner.scan.Outcome
-import com.gloryapps.worscanner.ui.label
-import com.gloryapps.worscanner.scan.ScanState
-import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.scanner.runs.ReadScreen
+import com.gloryapps.worscanner.ui.said
+import com.gloryapps.worscanner.scanner.runs.ScanState
+import com.gloryapps.worscanner.scanner.runs.Scanning
 import com.gloryapps.worscanner.scan.TouchState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,6 +32,9 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.gloryapps.worscanner.ui.resources.Res
+import com.gloryapps.worscanner.ui.resources.stop
+import org.jetbrains.compose.resources.getString
 import org.koin.android.ext.android.inject
 
 /**
@@ -129,10 +132,7 @@ class CaptureService : LifecycleService() {
     private fun read(kind: Kind) {
         lifecycleScope.launch {
             sheetLeaves()
-            val said = withContext(Dispatchers.Default) { readScreen.now(kind) }.fold(
-                onSuccess = { getString(R.string.overlay_read_kept, it.kept.stamp, it.lines) },
-                onFailure = { getString(R.string.overlay_read_failed, it.message) },
-            )
+            val said = withContext(Dispatchers.Default) { readScreen.now(kind) }.said()
             Toast.makeText(this@CaptureService, said, Toast.LENGTH_LONG).show()
         }
     }
@@ -140,22 +140,16 @@ class CaptureService : LifecycleService() {
     /* The sheet that asked closes on the same tap, but stays on the display a frame or two, over what is read first. */
     private suspend fun sheetLeaves() = delay(SHEET_LEAVES_MS)
 
-    private fun show(state: ScanState) {
-        val text = when (state) {
-            ScanState.Idle -> getString(R.string.capture_notification_title)
-            is ScanState.Running -> getString(R.string.scan_running, getString(state.kind.label), state.progress.done, state.progress.held)
-            is ScanState.Ended -> when (val outcome = state.outcome) {
-                is Outcome.Finished<*> -> getString(R.string.scan_finished, getString(state.kind.label), outcome.entries.size)
-                is Outcome.Stopped<*> -> getString(R.string.scan_stopped, getString(state.kind.label), outcome.detail, outcome.entries.size)
-                is Outcome.Failed<*> -> getString(R.string.scan_failed, getString(state.kind.label), outcome.cause.toString())
-            }
-        }
-        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text, stoppable = state is ScanState.Running))
+    private suspend fun show(state: ScanState) {
+        val text = state.said() ?: getString(R.string.capture_notification_title)
+        val stop = if (state is ScanState.Running) getString(Res.string.stop) else null
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text, stop))
         /* The end of a scan is said out loud too: the notification is easy to miss under a game. */
         if (state is ScanState.Ended) Toast.makeText(this, text, Toast.LENGTH_LONG).show()
     }
 
-    private fun notification(text: String, stoppable: Boolean = false): Notification {
+    /** `stop` is the stop action's label, where the scan under way can be stopped from the notification. */
+    private fun notification(text: String, stop: String? = null): Notification {
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         val builder = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_menu_camera)
@@ -163,9 +157,9 @@ class CaptureService : LifecycleService() {
             .setContentText(text)
             .setContentIntent(open)
             .setOngoing(true)
-        if (stoppable) {
-            val stop = PendingIntent.getService(this, 1, Intent(this, CaptureService::class.java).setAction(ACTION_STOP_SCAN), PendingIntent.FLAG_IMMUTABLE)
-            builder.addAction(0, getString(R.string.scan_stop), stop)
+        if (stop != null) {
+            val stopping = PendingIntent.getService(this, 1, Intent(this, CaptureService::class.java).setAction(ACTION_STOP_SCAN), PendingIntent.FLAG_IMMUTABLE)
+            builder.addAction(0, stop, stopping)
         }
 
         return builder.build()

@@ -1,10 +1,9 @@
 package com.gloryapps.worscanner.ui.home
 
-import com.gloryapps.worscanner.azhor.Linking
-import com.gloryapps.worscanner.azhor.Sending
-import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.scanner.azhor.Send
+import com.gloryapps.worscanner.scanner.runs.Kept
 import com.gloryapps.worscanner.capture.SharedFolder
-import com.gloryapps.worscanner.scan.ScanState
+import com.gloryapps.worscanner.scanner.runs.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Grants
 import com.gloryapps.worscanner.ui.Permission
@@ -42,29 +41,12 @@ sealed interface Stage {
 internal data class JustScanned(
     val scan: Kept.Scan,
     val kind: Kind,
-    /** It stopped at a touch of the screen, the player's own stop; any other stop is said by `scan.detail`. */
-    val touched: Boolean,
+    /** It stopped at the player's Stop; any other stop is said by `scan.detail`. */
+    val byPlayer: Boolean,
     /** The emulator's folder Save lands in; null on a device without one. */
     val shared: SharedFolder?,
     val send: Send = Send.Idle,
 )
-
-/** Where sending the scan to the site stands. */
-internal sealed interface Send {
-
-    /** Nothing tried yet. */
-    data object Idle : Send
-
-    /** The link step, the code the site shows typed here; `failed` is why the last code did not link. */
-    data class Code(val failed: Linking? = null) : Send
-
-    data object Underway : Send
-
-    data object Sent : Send
-
-    /** The site did not take it, and said why: unlinked, too large, refused, or no answer. */
-    data class Unsent(val why: Sending) : Send
-}
 
 internal sealed interface HomeEvent {
 

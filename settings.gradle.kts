@@ -30,3 +30,5 @@ dependencyResolutionManagement {
 
 include(":app")
 include(":scanner")
+include(":ui")
+include(":windows")

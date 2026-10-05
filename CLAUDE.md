@@ -1,8 +1,9 @@
 # wor-scanner
 
-A native Android app that scans a Watcher of Realms storage on the device it runs on, reads each
-tile off its panel and writes a JSON the azhor lab imports: gear, legendary and epic heroes,
-and artifacts. Shipped as an APK on GitHub.
+Scans a Watcher of Realms storage, reads each tile off its panel and writes a JSON the azhor lab
+imports: gear, legendary and epic heroes, and artifacts. An Android app scans the game on the device
+it runs on; a Windows app scans the game's own PC client beside it. Shipped as an APK and a Windows
+zip on GitHub.
 
 | Area | Read before working there |
 | --- | --- |
@@ -16,7 +17,7 @@ and artifacts. Shipped as an APK on GitHub.
 - A kind is a sub-package of `scanner`'s `kinds/` with one `Scan` object: its layout, its record's
   serializer, what it reads off a tile, and its own model of the panel, written with `text/`'s
   instruments. The walk over the grid names no kind: `Kind.scan()` in `scanner` and `Kind.named` in the
-  app's `ui/Kinds.kt` are the only two places that do. Adding one is the checklist in `bootstrap/architecture.md`.
+  `ui` module's `Kinds.kt` are the only two places that do. Adding one is the checklist in `bootstrap/architecture.md`.
 - A kind's words are transcribed from the wiki, spelled as the page spells them. No code or data is shared with the azhor lab: the JSON the app writes and the lab's two addresses it is sent to, `/scanner/link` and `/scanner/scans`, are the whole contract.
 - Use `resultOf { }`, never `runCatching`: it swallows `CancellationException`.
 - A piece's identity is its grid position, never its content.
