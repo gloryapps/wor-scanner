@@ -3,6 +3,7 @@ package com.gloryapps.worscanner.windows.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -15,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gloryapps.worscanner.scanner.account.Enhancement
 import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.ui.Accented
 import com.gloryapps.worscanner.ui.Card
@@ -23,6 +25,8 @@ import com.gloryapps.worscanner.ui.Lead
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Link
 import com.gloryapps.worscanner.ui.Linked
+import com.gloryapps.worscanner.ui.Pill
+import com.gloryapps.worscanner.ui.Section
 import com.gloryapps.worscanner.ui.Standing
 import com.gloryapps.worscanner.ui.Way
 import com.gloryapps.worscanner.ui.resources.icon_folder
@@ -35,6 +39,7 @@ import com.gloryapps.worscanner.windows.resources.game_closed
 import com.gloryapps.worscanner.windows.resources.game_looking
 import com.gloryapps.worscanner.windows.resources.game_not_windows
 import com.gloryapps.worscanner.windows.resources.game_open
+import com.gloryapps.worscanner.windows.resources.gear_to_scan
 import com.gloryapps.worscanner.windows.resources.open_folder
 import com.gloryapps.worscanner.windows.resources.scan_account
 import com.gloryapps.worscanner.windows.resources.scan_again
@@ -64,6 +69,12 @@ internal fun HomeScreen(modifier: Modifier = Modifier, viewModel: HomeViewModel 
 private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().background(Colors.screen).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(said(state.game), style = Lettering.body, color = if (state.game is Game.Open) Colors.text else Colors.warning)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Section(stringResource(Res.string.gear_to_scan))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Enhancement.entries.forEach { band -> Pill(band.word, chosen = band in state.enhancements) { onEvent(HomeEvent.Toggle(band)) } }
+            }
+        }
         Accented(
             label = stringResource(if (state.scanning) Res.string.scanning_account else Res.string.scan_account),
             modifier = Modifier.fillMaxWidth(),

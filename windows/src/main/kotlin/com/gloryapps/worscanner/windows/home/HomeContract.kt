@@ -1,5 +1,6 @@
 package com.gloryapps.worscanner.windows.home
 
+import com.gloryapps.worscanner.scanner.account.Enhancement
 import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.runs.KeptAccount
@@ -14,6 +15,8 @@ internal data class HomeState(
     val account: AccountRead? = null,
     val linked: Boolean = false,
     val send: Send = Send.Idle,
+    /** The bands of enhancement the gear scan keeps. */
+    val enhancements: Set<Enhancement> = setOf(Enhancement.AT_16),
 )
 
 /** An account scanned: the scans made of it, which are what is sent, and how many cards of each they hold. */
@@ -46,6 +49,9 @@ internal sealed interface HomeEvent {
     data class Link(val code: String) : HomeEvent
 
     data object Unlink : HomeEvent
+
+    /** One band of enhancement in or out of the gear scan. */
+    data class Toggle(val band: Enhancement) : HomeEvent
 }
 
 internal sealed interface HomeEffect {

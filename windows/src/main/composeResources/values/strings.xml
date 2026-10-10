@@ -4,6 +4,7 @@
     <string name="game_open">Watcher of Realms is open, %1$s × %2$s</string>
     <string name="game_closed">Open Watcher of Realms on this PC.</string>
     <string name="game_not_windows">The scanner finds the game on Windows; this system is not Windows.</string>
+    <string name="gear_to_scan">Gear to scan</string>
     <string name="scan_account">Scan the account</string>
     <string name="scanning_account">Scanning the account…</string>
     <string name="account_scanned">%1$s heroes, %2$s pieces of gear and %3$s artifacts</string>

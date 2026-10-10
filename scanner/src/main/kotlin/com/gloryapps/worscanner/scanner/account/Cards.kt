@@ -17,9 +17,11 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 
-/** The account's lists as the cards a scan of each kind writes, in `game`'s words. */
-class Cards(private val game: Game, private val account: Account) {
-    val gear: List<ScannedGear> by lazy { account.gear.mapNotNull(::piece) }
+/** The account's lists as the cards a scan of each kind writes, in `game`'s words; its gear only in the bands of `enhancements`. */
+class Cards(private val game: Game, private val account: Account, private val enhancements: Set<Enhancement> = Enhancement.entries.toSet()) {
+    val gear: List<ScannedGear> by lazy {
+        account.gear.filter { entry -> entry.int("iIntensifyLvl")?.let(Enhancement::of) in enhancements }.mapNotNull(::piece)
+    }
 
     /** The epic and legendary heroes, the furthest raised copy where the account holds two. */
     val heroes: List<ScannedHero> by lazy {
@@ -32,7 +34,6 @@ class Cards(private val game: Game, private val account: Account) {
 
     val artifacts: List<ScannedArtifact> by lazy { account.artifacts.mapNotNull(::artifact) }
 
-    /* A secondary at 0 is one the piece's level has not revealed yet: its card prints no number for it. */
     private fun piece(entry: JsonElement): ScannedGear? {
         val known = entry.long("iItemId")?.let(game.gear::get) ?: return null
         val main = entry.list("vMasterAttrList").firstOrNull()?.let { attribute(it.int("iAttrId"), it.long("iValue"), entry.long("iExtraMasterAttrValue")?.takeIf { bonus -> bonus != 0L }) }
@@ -43,8 +44,7 @@ class Cards(private val game: Game, private val account: Account) {
             ancient = entry.int("iStarLvl")?.let { it in ANCIENT } == true,
             variant = entry.long("iVaryEffectId")?.let { game.variants[it shr EFFECT_SHIFT]?.get(it and EFFECT_INDEX) },
             exclusive = entry.long("iExclusiveEffectId")?.let { game.exclusives[it shr EFFECT_SHIFT] },
-            attributes = (listOfNotNull(main) + entry.list("vViceAttrList").filter { it.long("iValue") != 0L }.mapNotNull { attribute(it.int("iAttrId"), it.long("iValue"), null) })
-                .distinctBy { it.name },
+            attributes = (listOfNotNull(main) + entry.list("vViceAttrList").mapNotNull { attribute(it.int("iAttrId"), it.long("iValue"), null) }).distinctBy { it.name },
         )
     }
 

@@ -7,6 +7,7 @@ import com.gloryapps.worscanner.scanner.azhor.Sender
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.runs.Accounts
 import com.gloryapps.worscanner.scanner.runs.Reports
+import com.gloryapps.worscanner.windows.app.FileEnhancements
 import com.gloryapps.worscanner.windows.game.Desktop
 import com.gloryapps.worscanner.windows.game.GameWatch
 import com.gloryapps.worscanner.windows.memory.GameMemory
@@ -33,11 +34,14 @@ internal class HomeViewModel(
     private val accounts: Accounts,
     private val sender: Sender,
     private val reports: Reports,
+    private val enhancements: FileEnhancements,
 ) : ViewModel() {
     private val game = if (Desktop.present) watch.game.map { window -> window?.let { Game.Open(it.client.width, it.client.height) } ?: Game.Closed } else flowOf(Game.NotWindows)
     private val local = MutableStateFlow(HomeState())
 
-    val state: StateFlow<HomeState> = combine(game, sender.linked, local) { game, linked, local -> local.copy(game = game, linked = linked, send = local.send.standing(linked)) }
+    val state: StateFlow<HomeState> = combine(game, sender.linked, enhancements.chosen, local) { game, linked, bands, local ->
+        local.copy(game = game, linked = linked, send = local.send.standing(linked), enhancements = bands)
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MS), HomeState())
 
     private val _effects = Channel<HomeEffect>(Channel.BUFFERED)
@@ -53,6 +57,7 @@ internal class HomeViewModel(
                 if (account != null) sender.linkAndSend(event.code, account.scans, ::sending) else sender.link(event.code, ::sending)
             }
             HomeEvent.Unlink -> viewModelScope.launch { sender.unlink() }
+            is HomeEvent.Toggle -> viewModelScope.launch { enhancements.toggle(event.band) }
         }
     }
 
@@ -69,7 +74,7 @@ internal class HomeViewModel(
         if (local.value.scanning) return
         local.update { it.copy(scanning = true) }
         viewModelScope.launch {
-            val read = resultOf { GameMemory.of(game.handle).getOrThrow().use { accounts.read(it) } }.map(::AccountRead)
+            val read = resultOf { GameMemory.of(game.handle).getOrThrow().use { accounts.read(it, enhancements.chosen.value) } }.map(::AccountRead)
             read.onFailure { reports.failed("scanning the account", it) }
             val account = read.getOrNull()?.takeIf { it.heroes + it.gear + it.artifacts > 0 }
             val said = if (account != null) null else read.exceptionOrNull()?.said() ?: getString(Res.string.account_empty)

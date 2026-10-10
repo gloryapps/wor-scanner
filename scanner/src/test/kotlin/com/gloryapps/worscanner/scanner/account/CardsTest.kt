@@ -15,10 +15,16 @@ import kotlin.test.assertEquals
 
 /** Entries as Pedro's account held them on 2026-10-10, read in the shipped game's words. */
 class CardsTest {
-    private fun cards(heroes: List<String> = emptyList(), gear: List<String> = emptyList(), artifacts: List<String> = emptyList()) = Cards(
+    private fun cards(
+        heroes: List<String> = emptyList(),
+        gear: List<String> = emptyList(),
+        artifacts: List<String> = emptyList(),
+        enhancements: Set<Enhancement> = Enhancement.entries.toSet(),
+    ) = Cards(
         Game.shipped,
         Account(startedAt = "20261010-122135", heroes = heroes.map(Json::parseToJsonElement), gear = gear.map(Json::parseToJsonElement),
             artifacts = artifacts.map(Json::parseToJsonElement), found = emptyMap(), seconds = 0.0),
+        enhancements,
     )
 
     private fun percent(name: Attribute, value: Double) = ReadAttribute(name, value, ValueUnit.PERCENTAGE, null)
@@ -49,10 +55,12 @@ class CardsTest {
     }
 
     @Test
-    fun `a secondary the piece's level has not revealed yet is no attribute`() {
-        val unrevealed = VIERNAS_BANGLE.replace(""""iAttrId":19,"iValue":1700""", """"iAttrId":19,"iValue":0""").replace(""""iAttrId":14,"iValue":2550""", """"iAttrId":14,"iValue":0""")
+    fun `only the pieces in the bands of enhancement chosen are cards`() {
+        val unraised = VIERNAS_BANGLE.replace(""""iIntensifyLvl":16""", """"iIntensifyLvl":3""")
 
-        assertEquals(listOf(Attribute.ATK_BONUS, Attribute.ATK, Attribute.CRIT_RATE), cards(gear = listOf(unrevealed)).gear.single().attributes.map { it.name })
+        assertEquals(1, cards(gear = listOf(VIERNAS_BANGLE, unraised), enhancements = setOf(Enhancement.AT_16)).gear.size)
+        assertEquals(0, cards(gear = listOf(unraised), enhancements = setOf(Enhancement.AT_16)).gear.size)
+        assertEquals(2, cards(gear = listOf(VIERNAS_BANGLE, unraised)).gear.size)
     }
 
     @Test
