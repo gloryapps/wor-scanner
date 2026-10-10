@@ -49,6 +49,13 @@ class CardsTest {
     }
 
     @Test
+    fun `a secondary the piece's level has not revealed yet is no attribute`() {
+        val unrevealed = VIERNAS_BANGLE.replace(""""iAttrId":19,"iValue":1700""", """"iAttrId":19,"iValue":0""").replace(""""iAttrId":14,"iValue":2550""", """"iAttrId":14,"iValue":0""")
+
+        assertEquals(listOf(Attribute.ATK_BONUS, Attribute.ATK, Attribute.CRIT_RATE), cards(gear = listOf(unrevealed)).gear.single().attributes.map { it.name })
+    }
+
+    @Test
     fun `an artifact prints its level's own HP and ATK with what refining added, and its runic line apart`() {
         assertEquals(
             listOf(

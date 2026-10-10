@@ -32,6 +32,7 @@ class Cards(private val game: Game, private val account: Account) {
 
     val artifacts: List<ScannedArtifact> by lazy { account.artifacts.mapNotNull(::artifact) }
 
+    /* A secondary at 0 is one the piece's level has not revealed yet: its card prints no number for it. */
     private fun piece(entry: JsonElement): ScannedGear? {
         val known = entry.long("iItemId")?.let(game.gear::get) ?: return null
         val main = entry.list("vMasterAttrList").firstOrNull()?.let { attribute(it.int("iAttrId"), it.long("iValue"), entry.long("iExtraMasterAttrValue")?.takeIf { bonus -> bonus != 0L }) }
@@ -42,7 +43,8 @@ class Cards(private val game: Game, private val account: Account) {
             ancient = entry.int("iStarLvl")?.let { it in ANCIENT } == true,
             variant = entry.long("iVaryEffectId")?.let { game.variants[it shr EFFECT_SHIFT]?.get(it and EFFECT_INDEX) },
             exclusive = entry.long("iExclusiveEffectId")?.let { game.exclusives[it shr EFFECT_SHIFT] },
-            attributes = (listOfNotNull(main) + entry.list("vViceAttrList").mapNotNull { attribute(it.int("iAttrId"), it.long("iValue"), null) }).distinctBy { it.name },
+            attributes = (listOfNotNull(main) + entry.list("vViceAttrList").filter { it.long("iValue") != 0L }.mapNotNull { attribute(it.int("iAttrId"), it.long("iValue"), null) })
+                .distinctBy { it.name },
         )
     }
 
