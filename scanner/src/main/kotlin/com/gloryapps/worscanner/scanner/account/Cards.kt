@@ -38,13 +38,16 @@ class Cards(private val game: Game, private val account: Account, private val ch
 
     private fun piece(entry: JsonElement): ScannedGear? {
         val known = entry.long("iItemId")?.let(game.gear::get) ?: return null
+        val variant = entry.long("iVaryEffectId")?.let { game.variants[it shr EFFECT_SHIFT]?.get(it and EFFECT_INDEX) }
         val main = entry.list("vMasterAttrList").firstOrNull()?.let { attribute(it.int("iAttrId"), it.long("iValue"), entry.long("iExtraMasterAttrValue")?.takeIf { bonus -> bonus != 0L }) }
 
         return ScannedGear(
             set = known.set,
             slot = Slot.entries.firstOrNull { it.word == known.slot },
             ancient = entry.int("iStarLvl")?.let { it in ANCIENT } == true,
-            variant = entry.long("iVaryEffectId")?.let { game.variants[it shr EFFECT_SHIFT]?.get(it and EFFECT_INDEX) },
+            variant = variant?.slug,
+            variantEffect = variant?.effect,
+            variantAttributes = variant?.attributes.orEmpty().mapNotNull { (id, value) -> attribute(id.toInt(), value, null) },
             exclusive = entry.long("iExclusiveEffectId")?.let { game.exclusives[it shr EFFECT_SHIFT] },
             attributes = (listOfNotNull(main) + entry.list("vViceAttrList").mapNotNull { attribute(it.int("iAttrId"), it.long("iValue"), null) }).distinctBy { it.name },
         )

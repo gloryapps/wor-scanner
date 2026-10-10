@@ -12,6 +12,10 @@ data class ScannedGear(
     val ancient: Boolean,
     /** The variant's slug as wor-api's gear variants name it; null on a piece that is none, or whose panel does not name it. */
     val variant: String?,
+    /** The one of the variant's effects the piece rolled, worded as wor-api's gear variants word it. */
+    val variantEffect: String? = null,
+    /** What that effect adds where it is attributes, as Bloodthirst adds ATK Spd. 20; none where it is not. */
+    val variantAttributes: List<ReadAttribute> = emptyList(),
     /** What the card printed above the word Exclusive, as read; who that is belongs to the lab. */
     val exclusive: String?,
     /** The primary first, in the order the card prints them. */

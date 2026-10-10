@@ -40,6 +40,7 @@ class CardsTest {
                     slot = Slot.BANGLE,
                     ancient = true,
                     variant = "on-the-house",
+                    variantEffect = "Increases DMG by 2%. No Gold is required when enhancing this gear.",
                     exclusive = "Vierna",
                     attributes = listOf(
                         percent(Attribute.ATK_BONUS, 66.0),
@@ -52,6 +53,16 @@ class CardsTest {
             ),
             cards(gear = listOf(VIERNAS_BANGLE)).gear,
         )
+    }
+
+    @Test
+    fun `a variant piece says which of its variant's effects it rolled, and the attributes that effect adds`() {
+        val bloodthirst = VIERNAS_BANGLE.replace(""""iVaryEffectId":4312147165305""", """"iVaryEffectId":${(1001L shl 32) + 55}""")
+
+        val card = cards(gear = listOf(bloodthirst)).gear.single()
+
+        assertEquals("bloodthirst" to "ATK Spd. +20", card.variant to card.variantEffect)
+        assertEquals(listOf(flat(Attribute.ATK_SPEED, 20.0)), card.variantAttributes)
     }
 
     @Test
