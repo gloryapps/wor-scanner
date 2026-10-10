@@ -48,7 +48,7 @@ object GearScan : Scan<ScannedGear>() {
             set = set,
             slot = slot,
             ancient = bannerHas(rows, "ancient"),
-            variant = bannerHas(rows, "variant"),
+            variant = null,
             exclusive = exclusiveIn(belowTitle(rows)),
             attributes = if (primary != null) listOf(primary) + read.map { it.copy(bonus = null) } else read,
         )

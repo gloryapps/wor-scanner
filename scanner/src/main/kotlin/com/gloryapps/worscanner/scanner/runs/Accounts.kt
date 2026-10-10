@@ -21,7 +21,7 @@ import java.time.LocalDateTime
 /** An account read and kept: the game's own file, what it holds, and the scans of each kind made of it, which are what the lab imports, with how many cards each holds. */
 data class KeptAccount(val file: File, val account: Account, val scans: List<File>, val cards: Map<Kind, Int>)
 
-/** Accounts read off the game's memory, each kept in a folder of `accounts` named by the stamp its read began at. */
+/** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, both named by the stamp the read began at. */
 class Accounts(private val root: File, private val game: Game = Game.shipped) {
     suspend fun read(memory: Memory): KeptAccount {
         val account = readAccount(memory, startedAt = LocalDateTime.now().format(STAMP))
@@ -34,7 +34,7 @@ class Accounts(private val root: File, private val game: Game = Game.shipped) {
         val cards = Cards(game, account)
 
         return KeptAccount(
-            file = File(folder, "account.json").apply { writeText(Json.encodeToString(Account.serializer(), account)) },
+            file = File(root, "reads/${account.startedAt}.json").apply { parentFile.mkdirs(); writeText(Json.encodeToString(Account.serializer(), account)) },
             account = account,
             scans = listOf(
                 write(folder, account.startedAt, Kind.GEAR, cards.gear, ScannedGear.serializer()),

@@ -14,13 +14,13 @@ class AccountsTest {
     private val root: File = createTempDirectory().toFile()
 
     @Test
-    fun `an account read is kept in a folder named by its stamp, the game's own file beside a scan of each kind`() = runTest {
+    fun `an account read keeps a scan of each kind in a folder named by its stamp, and the game's own file apart`() = runTest {
         val memory = LaidOutHeap().apply { table("m_vArtifacts" to table(array = listOf(table("iItemId" to 219201, "iLevel" to 25, "iStageLvl" to 5)))) }
 
         val kept = Accounts(root).read(memory)
 
         val folder = File(root, "accounts/${kept.account.startedAt}")
-        assertEquals(File(folder, "account.json"), kept.file)
+        assertEquals(File(root, "reads/${kept.account.startedAt}.json"), kept.file)
         assertEquals(kept.account, Json.decodeFromString(Account.serializer(), kept.file.readText()))
         assertEquals(listOf("gear", "heroes", "artifacts").map { File(folder, "$it.json") }, kept.scans)
         val artifacts = Json.decodeFromString(ScanFile.serializer(ScannedArtifact.serializer()), kept.scans.last().readText())

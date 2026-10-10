@@ -10,7 +10,8 @@ data class ScannedGear(
     val set: String?,
     val slot: Slot?,
     val ancient: Boolean,
-    val variant: Boolean,
+    /** The variant's slug as wor-api's gear variants name it; null on a piece that is none, or whose panel does not name it. */
+    val variant: String?,
     /** What the card printed above the word Exclusive, as read; who that is belongs to the lab. */
     val exclusive: String?,
     /** The primary first, in the order the card prints them. */

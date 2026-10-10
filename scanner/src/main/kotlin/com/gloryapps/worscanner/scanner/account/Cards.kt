@@ -40,7 +40,7 @@ class Cards(private val game: Game, private val account: Account) {
             set = known.set,
             slot = Slot.entries.firstOrNull { it.word == known.slot },
             ancient = entry.int("iStarLvl")?.let { it in ANCIENT } == true,
-            variant = (entry.long("iVaryEffectId") ?: 0L) != 0L,
+            variant = entry.long("iVaryEffectId")?.let { game.variants[it shr EFFECT_SHIFT]?.get(it and EFFECT_INDEX) },
             exclusive = entry.long("iExclusiveEffectId")?.let { game.exclusives[it shr EFFECT_SHIFT] },
             attributes = (listOfNotNull(main) + entry.list("vViceAttrList").mapNotNull { attribute(it.int("iAttrId"), it.long("iValue"), null) }).distinctBy { it.name },
         )
@@ -97,8 +97,9 @@ class Cards(private val game: Game, private val account: Account) {
         const val EPIC = 4
         /** The attribute types of an artifact level's own HP and ATK, in the order `artifactLevels` keeps them. */
         val OWN = listOf(7, 1)
-        /** An exclusive piece's effect, in the upper half of the id the account keeps. */
+        /** A piece's exclusive or variant effect: its group in the upper half of the id the account keeps, its index in the lower. */
         const val EFFECT_SHIFT = 32
+        const val EFFECT_INDEX = 0xFFFF_FFFFL
         /** The flags of Awakened I to V and beyond, one bit each. */
         const val AWAKENINGS = 0xFFL
     }

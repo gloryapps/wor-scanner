@@ -33,7 +33,7 @@ class CardsTest {
                     set = "cataclysm",
                     slot = Slot.BANGLE,
                     ancient = false,
-                    variant = true,
+                    variant = "on-the-house",
                     exclusive = "Vierna",
                     attributes = listOf(
                         percent(Attribute.ATK_BONUS, 66.0),

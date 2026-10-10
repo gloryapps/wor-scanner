@@ -11,6 +11,8 @@ data class Game(
     val gear: Map<Long, GamePiece>,
     /** An exclusive effect's hero or faction, by name. */
     val exclusives: Map<Long, String>,
+    /** A variant's slug, by its effect's group and its index in the group. */
+    val variants: Map<Long, Map<Long, String>>,
     val heroes: Map<Long, GameHero>,
     val artifacts: Map<Long, GameArtifact>,
     /** HP and ATK by level, first level first, by an artifact's `levels`. */
