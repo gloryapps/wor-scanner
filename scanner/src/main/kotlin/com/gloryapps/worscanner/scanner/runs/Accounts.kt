@@ -2,7 +2,7 @@ package com.gloryapps.worscanner.scanner.runs
 
 import com.gloryapps.worscanner.scanner.account.Account
 import com.gloryapps.worscanner.scanner.account.Cards
-import com.gloryapps.worscanner.scanner.account.Enhancement
+import com.gloryapps.worscanner.scanner.account.ScanChoices
 import com.gloryapps.worscanner.scanner.account.Game
 import com.gloryapps.worscanner.scanner.account.readAccount
 import com.gloryapps.worscanner.scanner.kinds.Kind
@@ -24,11 +24,11 @@ data class KeptAccount(val file: File, val account: Account, val scans: List<Fil
 
 /** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, both named by the stamp the read began at. */
 class Accounts(private val root: File, private val game: Game = Game.shipped) {
-    /** Reads the account off `memory`; the gear scan holds only the pieces in the bands of `enhancements`. */
-    suspend fun read(memory: Memory, enhancements: Set<Enhancement> = Enhancement.entries.toSet()): KeptAccount {
+    /** Reads the account off `memory`; its gear and artifacts scans hold only what `choices` keeps. */
+    suspend fun read(memory: Memory, choices: ScanChoices): KeptAccount {
         val account = readAccount(memory, startedAt = LocalDateTime.now().format(STAMP))
 
-        return withContext(Dispatchers.IO) { keep(account, Cards(game, account, enhancements)) }
+        return withContext(Dispatchers.IO) { keep(account, Cards(game, account, choices)) }
     }
 
     /* The lab takes a scan as the whole of its kind, so a kind with no cards sends none rather than one that empties the account's. */

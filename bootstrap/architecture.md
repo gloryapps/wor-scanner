@@ -120,8 +120,8 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   posted with that token. A 401 forgets the token. A debug build never reaches the lab.
 - An account read off the game's memory is one JSON file under `accounts/`, `kind` `account`, each
   entry in the game's own fields, with how many entries every table holding each list had, under
-  `reads/`, apart from the folder of `accounts/` holding a scan of each kind made of it, its gear only
-  in the bands of enhancement the player chose. A kind with no cards has no scan: the lab takes a
+  `reads/`, apart from the folder of `accounts/` holding a scan of each kind made of it, its gear and
+  artifacts only those the player chose to send (`ScanChoices`). A kind with no cards has no scan: the lab takes a
   scan as the whole of its kind. Those scans are what the Windows app sends the lab and opens for
   the player.
 - Preferences in DataStore. Room enters only if scan history inside the app is ever wanted, and

@@ -17,10 +17,10 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 
-/** The account's lists as the cards a scan of each kind writes, in `game`'s words; its gear only in the bands of `enhancements`. */
-class Cards(private val game: Game, private val account: Account, private val enhancements: Set<Enhancement> = Enhancement.entries.toSet()) {
+/** The account's lists as the cards a scan of each kind writes, in `game`'s words; its gear and artifacts only those `choices` keeps. */
+class Cards(private val game: Game, private val account: Account, private val choices: ScanChoices) {
     val gear: List<ScannedGear> by lazy {
-        account.gear.filter { entry -> entry.int("iIntensifyLvl")?.let(Enhancement::of) in enhancements }.mapNotNull(::piece)
+        account.gear.filter { entry -> entry.int("iIntensifyLvl")?.let(Enhancement::of) in choices.enhancements }.mapNotNull(::piece)
     }
 
     /** The epic and legendary heroes, the furthest raised copy where the account holds two. */
@@ -32,7 +32,9 @@ class Cards(private val game: Game, private val account: Account, private val en
             .mapNotNull(::hero)
     }
 
-    val artifacts: List<ScannedArtifact> by lazy { account.artifacts.mapNotNull(::artifact) }
+    val artifacts: List<ScannedArtifact> by lazy {
+        account.artifacts.mapNotNull(::artifact).filter { choices.artifacts.keeps(it.level ?: 0, exclusive = it.exclusive != null) }
+    }
 
     private fun piece(entry: JsonElement): ScannedGear? {
         val known = entry.long("iItemId")?.let(game.gear::get) ?: return null

@@ -23,7 +23,7 @@ internal val windowsModule = module {
     single { GameWatch(CoroutineScope(SupervisorJob())) }
     single<Reports> { LogReports(File(folder, "wor-scanner.log")) }
     single { Accounts(folder) }
-    single { FileEnhancements(File(folder, "gear-bands")) }
+    single { FileScanChoices(File(folder, "scan-choices.json")) }
     single { Link(HttpAzhorApi(Built.AZHOR_URL), FileTokenStore(File(folder, "link"))) }
     factory { Sender(get()) }
     viewModel { HomeViewModel(get(), get(), get(), get(), get()) }

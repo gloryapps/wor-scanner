@@ -5,6 +5,10 @@
     <string name="game_closed">Open Watcher of Realms on this PC.</string>
     <string name="game_not_windows">The scanner finds the game on Windows; this system is not Windows.</string>
     <string name="gear_to_scan">Gear to scan</string>
+    <string name="artifacts_to_scan">Artifacts to scan</string>
+    <string name="artifacts_worth_wearing">Worth wearing</string>
+    <string name="artifacts_all">All</string>
+    <string name="artifacts_worth_wearing_said">Every +25 artifact, and every exclusive from +10.</string>
     <string name="scan_account">Scan the account</string>
     <string name="scanning_account">Scanning the account…</string>
     <string name="account_scanned">%1$s heroes, %2$s pieces of gear and %3$s artifacts</string>

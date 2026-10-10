@@ -1,6 +1,7 @@
 package com.gloryapps.worscanner.scanner.runs
 
 import com.gloryapps.worscanner.scanner.account.Account
+import com.gloryapps.worscanner.scanner.account.ScanChoices
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
 import com.gloryapps.worscanner.scanner.lua.LaidOutHeap
 import kotlinx.coroutines.test.runTest
@@ -17,7 +18,7 @@ class AccountsTest {
     fun `an account read keeps a scan of each kind it holds in a folder named by its stamp, and the game's own file apart`() = runTest {
         val memory = LaidOutHeap().apply { table("m_vArtifacts" to table(array = listOf(table("iItemId" to 219201, "iLevel" to 25, "iStageLvl" to 5)))) }
 
-        val kept = Accounts(root).read(memory)
+        val kept = Accounts(root).read(memory, ScanChoices.EVERYTHING)
 
         val folder = File(root, "accounts/${kept.account.startedAt}")
         assertEquals(File(root, "reads/${kept.account.startedAt}.json"), kept.file)

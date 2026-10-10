@@ -19,12 +19,12 @@ class CardsTest {
         heroes: List<String> = emptyList(),
         gear: List<String> = emptyList(),
         artifacts: List<String> = emptyList(),
-        enhancements: Set<Enhancement> = Enhancement.entries.toSet(),
+        choices: ScanChoices = ScanChoices.EVERYTHING,
     ) = Cards(
         Game.shipped,
         Account(startedAt = "20261010-122135", heroes = heroes.map(Json::parseToJsonElement), gear = gear.map(Json::parseToJsonElement),
             artifacts = artifacts.map(Json::parseToJsonElement), found = emptyMap(), seconds = 0.0),
-        enhancements,
+        choices,
     )
 
     private fun percent(name: Attribute, value: Double) = ReadAttribute(name, value, ValueUnit.PERCENTAGE, null)
@@ -58,9 +58,19 @@ class CardsTest {
     fun `only the pieces in the bands of enhancement chosen are cards`() {
         val unraised = VIERNAS_BANGLE.replace(""""iIntensifyLvl":16""", """"iIntensifyLvl":3""")
 
-        assertEquals(1, cards(gear = listOf(VIERNAS_BANGLE, unraised), enhancements = setOf(Enhancement.AT_16)).gear.size)
-        assertEquals(0, cards(gear = listOf(unraised), enhancements = setOf(Enhancement.AT_16)).gear.size)
+        assertEquals(1, cards(gear = listOf(VIERNAS_BANGLE, unraised), choices = ScanChoices(setOf(Enhancement.AT_16))).gear.size)
+        assertEquals(0, cards(gear = listOf(unraised), choices = ScanChoices(setOf(Enhancement.AT_16))).gear.size)
         assertEquals(2, cards(gear = listOf(VIERNAS_BANGLE, unraised)).gear.size)
+    }
+
+    @Test
+    fun `worth wearing keeps an artifact at +25, and an exclusive one from +10`() {
+        val exclusiveAt10 = SPEAR_OF_LEONIDAS.replace(""""iLevel":25""", """"iLevel":10""")
+        val exclusiveAt9 = SPEAR_OF_LEONIDAS.replace(""""iLevel":25""", """"iLevel":9""")
+        val worthWearing = ScanChoices(artifacts = ArtifactsToScan.WORTH_WEARING)
+
+        assertEquals(listOf(25, 10), cards(artifacts = listOf(SPEAR_OF_LEONIDAS, exclusiveAt10, exclusiveAt9, PLAIN_AT_24), choices = worthWearing).artifacts.map { it.level })
+        assertEquals(4, cards(artifacts = listOf(SPEAR_OF_LEONIDAS, exclusiveAt10, exclusiveAt9, PLAIN_AT_24)).artifacts.size)
     }
 
     @Test
@@ -126,6 +136,7 @@ class CardsTest {
             """"iExtraMasterAttrValue":0,"iExclusiveEffectId":38684770435543,"iVaryEffectId":4312147165305,"iHeroId":0,"bLocked":false}"""
         const val SPEAR_OF_LEONIDAS = """{"iItemUid":"10058813626433","iItemId":219201,"iLevel":25,"iStageLvl":5,"iHeroId":235500001,""" +
             """"vRefineAttrs":[{"uiAttrId":1,"uiValue":575},{"uiAttrId":7,"uiValue":1730}],"vDarkAttrs":[{"uiAttrId":13,"uiValue":470}]}"""
+        const val PLAIN_AT_24 = """{"iItemUid":"4295169997","iItemId":202701,"iLevel":24,"iStageLvl":4,"iHeroId":0}"""
         const val PELAGIOS = """{"iHeroId":222400000,"iBaseId":2224,"iLevel":60,"iStarLevel":6,"iSublimLevel":6,"iAwakeningFlag":0,"mSkillLevel":{"1":2,"2":2,"3":3,"0":3}}"""
     }
 }

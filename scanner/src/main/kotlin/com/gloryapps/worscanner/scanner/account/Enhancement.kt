@@ -1,6 +1,9 @@
 package com.gloryapps.worscanner.scanner.account
 
+import kotlinx.serialization.Serializable
+
 /** The bands a piece's enhancement falls in, as the game's own gear filter offers them. */
+@Serializable
 enum class Enhancement(val levels: IntRange, val word: String) {
     FROM_0(0..3, "+0~+3"),
     FROM_4(4..7, "+4~+7"),

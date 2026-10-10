@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A Windows app that reads the whole account off the game's own PC client on the same PC, every
   hero, piece of gear and artifact in seconds, without opening a screen, and sends it to Azhor’s
   Master Smithy. Its gear goes by the game's own bands of enhancement, +16 alone unless you choose
-  more.
+  more, and its artifacts are those worth wearing, every +25 and every exclusive from +10, unless you
+  choose all.
 
 ### Changed
 

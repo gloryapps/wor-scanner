@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gloryapps.worscanner.scanner.account.ArtifactsToScan
 import com.gloryapps.worscanner.scanner.account.Enhancement
 import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.ui.Accented
@@ -38,12 +39,17 @@ import com.gloryapps.worscanner.windows.resources.account_scanned
 import com.gloryapps.worscanner.windows.resources.game_closed
 import com.gloryapps.worscanner.windows.resources.game_looking
 import com.gloryapps.worscanner.windows.resources.game_not_windows
+import com.gloryapps.worscanner.windows.resources.artifacts_all
+import com.gloryapps.worscanner.windows.resources.artifacts_worth_wearing
+import com.gloryapps.worscanner.windows.resources.artifacts_worth_wearing_said
+import com.gloryapps.worscanner.windows.resources.artifacts_to_scan
 import com.gloryapps.worscanner.windows.resources.game_open
 import com.gloryapps.worscanner.windows.resources.gear_to_scan
 import com.gloryapps.worscanner.windows.resources.open_folder
 import com.gloryapps.worscanner.windows.resources.scan_account
 import com.gloryapps.worscanner.windows.resources.scan_again
 import com.gloryapps.worscanner.windows.resources.scanning_account
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -72,8 +78,17 @@ private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier:
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Section(stringResource(Res.string.gear_to_scan))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Enhancement.entries.forEach { band -> Pill(band.word, chosen = band in state.enhancements) { onEvent(HomeEvent.Toggle(band)) } }
+                Enhancement.entries.forEach { band -> Pill(band.word, chosen = band in state.choices.enhancements) { onEvent(HomeEvent.Toggle(band)) } }
             }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Section(stringResource(Res.string.artifacts_to_scan))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ArtifactsToScan.entries.forEach { kept ->
+                    Pill(stringResource(kept.label), chosen = kept == state.choices.artifacts) { onEvent(HomeEvent.ChooseArtifacts(kept)) }
+                }
+            }
+            if (state.choices.artifacts == ArtifactsToScan.WORTH_WEARING) Text(stringResource(Res.string.artifacts_worth_wearing_said), style = Lettering.caption, color = Colors.muted)
         }
         Accented(
             label = stringResource(if (state.scanning) Res.string.scanning_account else Res.string.scan_account),
@@ -112,6 +127,12 @@ private fun Sending(account: AccountRead?, linked: Boolean, send: Send, onEvent:
         Lead(way)
     }
 }
+
+private val ArtifactsToScan.label: StringResource
+    get() = when (this) {
+        ArtifactsToScan.WORTH_WEARING -> Res.string.artifacts_worth_wearing
+        ArtifactsToScan.EVERY -> Res.string.artifacts_all
+    }
 
 @Composable
 private fun said(game: Game): String = when (game) {
