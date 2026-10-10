@@ -26,13 +26,13 @@ class CardsTest {
     private fun flat(name: Attribute, value: Double, bonus: Double? = null) = ReadAttribute(name, value, ValueUnit.FLAT, bonus)
 
     @Test
-    fun `a piece read off the memory is the card the panel printed when it was scanned`() {
+    fun `a piece read off the memory is the card the panel printed when it was scanned, ancient where its Variant banner hides it`() {
         assertEquals(
             listOf(
                 ScannedGear(
                     set = "cataclysm",
                     slot = Slot.BANGLE,
-                    ancient = false,
+                    ancient = true,
                     variant = "on-the-house",
                     exclusive = "Vierna",
                     attributes = listOf(

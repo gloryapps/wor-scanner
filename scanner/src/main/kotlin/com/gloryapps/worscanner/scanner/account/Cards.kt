@@ -92,8 +92,8 @@ class Cards(private val game: Game, private val account: Account) {
     }
 
     private companion object {
-        /** The client's star tiers whose cards print Ancient; 12 and 13 are the Variant ones. */
-        val ANCIENT = setOf(10, 11)
+        /** The client's star tiers with an ancient piece's numbers: 10 and 11, and 13, a variant of an ancient piece, whose card prints Variant instead. */
+        val ANCIENT = setOf(10, 11, 13)
         const val EPIC = 4
         /** The attribute types of an artifact level's own HP and ATK, in the order `artifactLevels` keeps them. */
         val OWN = listOf(7, 1)
