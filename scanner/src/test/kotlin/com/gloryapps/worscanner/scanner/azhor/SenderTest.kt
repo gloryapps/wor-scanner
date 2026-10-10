@@ -1,6 +1,7 @@
 package com.gloryapps.worscanner.scanner.azhor
 
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlin.test.Test
@@ -42,6 +43,26 @@ class SenderTest {
     @Test
     fun `a code the lab links sends the scan straight after`() {
         assertEquals(listOf(Send.Underway, Send.Underway, Send.Sent), shown { sender().linkAndSend(CODE, scans, it) })
+    }
+
+    @Test
+    fun `a code the lab links with nothing to send leaves the scanner linked, Send one press away`() {
+        assertEquals(listOf(Send.Underway, Send.Idle), shown { sender().link(CODE, it) })
+    }
+
+    @Test
+    fun `a code the lab refuses with nothing to send goes back to the link step, saying so`() {
+        assertEquals(listOf(Send.Underway, Send.Code(failed = Linking.Refused)), shown { sender().link("WRONG", it) })
+    }
+
+    @Test
+    fun `an unlinked scanner says so, and starts on the link step`() = runBlocking {
+        val sender = sender(token = "token")
+
+        sender.unlink()
+
+        assertEquals(false, sender.linked.first())
+        assertEquals(Send.Code(), sender.start())
     }
 
     @Test

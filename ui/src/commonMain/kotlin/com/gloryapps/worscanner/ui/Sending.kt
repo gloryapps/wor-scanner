@@ -44,6 +44,7 @@ import com.gloryapps.worscanner.ui.resources.lab_unlinked
 import com.gloryapps.worscanner.ui.resources.lab_unlinked_said
 import com.gloryapps.worscanner.ui.resources.lab_unreachable
 import com.gloryapps.worscanner.ui.resources.lab_unreachable_said
+import com.gloryapps.worscanner.ui.resources.link
 import com.gloryapps.worscanner.ui.resources.link_again
 import com.gloryapps.worscanner.ui.resources.link_hint
 import com.gloryapps.worscanner.ui.resources.link_lasts
@@ -54,10 +55,13 @@ import com.gloryapps.worscanner.ui.resources.link_step_1
 import com.gloryapps.worscanner.ui.resources.link_step_2
 import com.gloryapps.worscanner.ui.resources.link_step_3
 import com.gloryapps.worscanner.ui.resources.link_title
+import com.gloryapps.worscanner.ui.resources.linked
 import com.gloryapps.worscanner.ui.resources.send
 import com.gloryapps.worscanner.ui.resources.send_hint
+import com.gloryapps.worscanner.ui.resources.send_nothing
 import com.gloryapps.worscanner.ui.resources.sending
 import com.gloryapps.worscanner.ui.resources.try_again
+import com.gloryapps.worscanner.ui.resources.unlink
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -75,18 +79,38 @@ class Way(val label: String, val icon: ImageVector?, val hint: String?, val onCl
 
 /**
  * The way for each standing. `onLink` takes the code as typed; `next` follows a scan sent, and
- * `instead` keeps one the lab would not take, both as the platform has them.
+ * `instead` keeps one the lab would not take, both as the platform has them. With nothing `held` to
+ * send yet, the scanner can only be linked.
  */
 @Composable
-fun wayOf(send: Send, code: String, onSend: () -> Unit, onLink: (String) -> Unit, next: Way, instead: Way): Way = when (send) {
-    Send.Idle -> Way(stringResource(Res.string.send), vectorResource(Res.drawable.icon_send), stringResource(Res.string.send_hint), onSend)
-    is Send.Code -> Way(stringResource(Res.string.link_send), vectorResource(Res.drawable.icon_link), stringResource(Res.string.link_send_hint), { onLink(dashed(code)) }, enabled = code.length == CODE)
+fun wayOf(send: Send, code: String, onSend: () -> Unit, onLink: (String) -> Unit, next: Way, instead: Way, held: Boolean = true): Way = when (send) {
+    Send.Idle -> if (held) {
+        Way(stringResource(Res.string.send), vectorResource(Res.drawable.icon_send), stringResource(Res.string.send_hint), onSend)
+    } else {
+        Way(stringResource(Res.string.send), vectorResource(Res.drawable.icon_send), stringResource(Res.string.send_nothing), null, enabled = false)
+    }
+    is Send.Code -> Way(
+        stringResource(if (held) Res.string.link_send else Res.string.link),
+        vectorResource(Res.drawable.icon_link),
+        stringResource(Res.string.link_send_hint),
+        { onLink(dashed(code)) },
+        enabled = code.length == CODE,
+    )
     Send.Underway -> Way(stringResource(Res.string.sending), null, null, null, enabled = false)
     Send.Sent -> next
     is Send.Unsent -> when (send.why) {
         Sending.Unlinked -> Way(stringResource(Res.string.link_again), vectorResource(Res.drawable.icon_link), null, onSend)
         Sending.Unanswered, Sending.Sent -> Way(stringResource(Res.string.try_again), vectorResource(Res.drawable.icon_refresh), null, onSend)
         Sending.TooLarge, Sending.Refused -> instead
+    }
+}
+
+/** That scans go to the site, and the way to undo it. */
+@Composable
+fun Linked(onUnlink: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(Res.string.linked), style = Lettering.body, color = Colors.text)
+        Inline(stringResource(Res.string.unlink), onClick = onUnlink)
     }
 }
 

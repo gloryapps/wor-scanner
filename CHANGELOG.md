@@ -9,10 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- A Windows app that scans the game's own PC client on the same PC, without an emulator: it reads
-  with Windows' own text recognition, taps with the mouse, pauses while another window is in front,
-  stops with Esc or the Stop on its sign, and sends a scan to Azhor’s Master Smithy as the Android
-  app does.
+- A Windows app that reads the whole account off the game's own PC client on the same PC, every
+  hero, piece of gear and artifact in seconds, without opening a screen, and sends it to Azhor’s
+  Master Smithy.
 
 ### Changed
 

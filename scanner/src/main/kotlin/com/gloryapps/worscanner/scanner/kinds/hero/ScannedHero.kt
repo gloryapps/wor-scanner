@@ -14,7 +14,7 @@ import kotlinx.serialization.json.jsonPrimitive
 /** A hero as its three tabs showed it; what they did not show is null, and who the hero is belongs to the lab. */
 @Serializable
 data class ScannedHero(
-    /** As the panel prints it, in capitals. */
+    /** As the panel prints it, in capitals; as the game spells it where read off its memory. */
     val name: String?,
     val level: Int?,
     /** The filled slots of six, purple and gold. */

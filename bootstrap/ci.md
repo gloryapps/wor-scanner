@@ -9,9 +9,9 @@ Tests run locally, `./gradlew test`, before a push; nothing runs on a push to `d
 `main` runs them again with the signed build it would publish, so a release never ships over a red
 test or a key that does not sign, and Actions minutes are spent only there.
 
-The Windows app's senses only run on Windows: their tests skip anywhere else. They run on a Windows
-desktop by hand, on any branch, `gh workflow run windows.yml --ref <branch>`, which keeps the test
-report and the frame it copied as the run's `windows-test` artifact, and the app itself as
+The Windows app's reading of the game's window and memory only runs on Windows: those tests skip
+anywhere else. They run on a Windows desktop by hand, on any branch, `gh workflow run windows.yml
+--ref <branch>`, which keeps the test report as the run's `windows-test` artifact, and the app itself as
 `wor-scanner-windows`: a folder holding its own Java runtime and `WoR Scanner.exe`, run as it is.
 
 ## Release

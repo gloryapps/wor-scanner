@@ -37,7 +37,9 @@ fun Outcome<*>.wire(): String = when (this) {
 /** How a file's outcome ended; null for a word no scan writes. */
 fun endedOf(wire: String): Ended? = Ended.entries.firstOrNull { wire.substringBefore(':') == it.name.lowercase() }
 
-fun <T> writeScan(folder: File, scan: ScanFile<T>, card: KSerializer<T>) = File(folder, SCAN).writeText(JSON.encodeToString(ScanFile.serializer(card), scan))
+fun <T> writeScan(folder: File, scan: ScanFile<T>, card: KSerializer<T>) = File(folder, SCAN).writeText(scan.json(card))
+
+fun <T> ScanFile<T>.json(card: KSerializer<T>): String = JSON.encodeToString(ScanFile.serializer(card), this)
 
 fun <T> readScan(folder: File, card: KSerializer<T>): ScanFile<T> = JSON.decodeFromString(ScanFile.serializer(card), File(folder, SCAN).readText())
 

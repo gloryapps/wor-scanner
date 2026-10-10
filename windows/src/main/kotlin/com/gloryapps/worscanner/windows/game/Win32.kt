@@ -17,8 +17,6 @@ internal interface UserCalls : User32 {
 
     fun SetThreadDpiAwarenessContext(context: Pointer): Pointer?
 
-    fun SetWindowDisplayAffinity(window: HWND, affinity: Int): Boolean
-
     companion object {
         val user: UserCalls by lazy { Native.load("user32", UserCalls::class.java, W32APIOptions.DEFAULT_OPTIONS) }
     }

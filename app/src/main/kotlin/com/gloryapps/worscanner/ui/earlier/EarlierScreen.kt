@@ -35,6 +35,7 @@ import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Confirm
 import com.gloryapps.worscanner.ui.ExportSheet
 import com.gloryapps.worscanner.ui.Inline
+import com.gloryapps.worscanner.ui.Linked
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Link
 import com.gloryapps.worscanner.ui.Panel
@@ -170,10 +171,7 @@ private fun Reading(kept: Kept, newest: Boolean, onEvent: (EarlierEvent) -> Unit
 @Composable
 private fun Site(linked: Boolean, onEvent: (EarlierEvent) -> Unit) {
     if (linked) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.earlier_linked), style = Lettering.body, color = Colors.text)
-            Inline(stringResource(R.string.earlier_unlink), onClick = { onEvent(EarlierEvent.Unlink) })
-        }
+        Linked(onUnlink = { onEvent(EarlierEvent.Unlink) })
     } else {
         Text(stringResource(R.string.earlier_unlinked), style = Lettering.body, color = Colors.muted)
     }

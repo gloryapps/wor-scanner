@@ -33,9 +33,7 @@ jobs:
         if: always()
         with:
           name: windows-test
-          path: |
-            windows/build/reports/tests/test
-            windows/build/desktop-test
+          path: windows/build/reports/tests/test
 
       - uses: actions/upload-artifact@v4
         with:

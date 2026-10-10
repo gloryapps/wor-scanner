@@ -2,7 +2,7 @@
 
 Scans a Watcher of Realms storage, reads each tile off its panel and writes a JSON the azhor lab
 imports: gear, legendary and epic heroes, and artifacts. An Android app scans the game on the device
-it runs on; a Windows app scans the game's own PC client beside it. Shipped as an APK and a Windows
+it runs on; a Windows app reads the whole account off the memory of the game's own PC client beside it. Shipped as an APK and a Windows
 zip on GitHub.
 
 | Area | Read before working there |

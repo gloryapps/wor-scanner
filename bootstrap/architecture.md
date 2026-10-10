@@ -13,8 +13,9 @@ on a store.
 - `app` — Android: implements `scanner`'s interfaces and holds everything the player sees.
 - `ui` — Kotlin Multiplatform, Android and the JVM: what every platform draws with and says the same
   way, in Compose Multiplatform. It holds no screen; screens are each platform's.
-- `windows` — Windows, beside the game's own PC client: implements `scanner`'s interfaces with
-  Windows' APIs and holds everything the player sees there, in Compose for Desktop.
+- `windows` — Windows, beside the game's own PC client: opens the game's memory as `scanner`'s
+  `Memory`, reads the account off it and sends it to the lab, and holds everything the player sees
+  there, in Compose for Desktop. It scans no screen.
 - What the build knows once, every platform reads from `gradle.properties`: the app's name, its
   version and the lab's address.
 - A module is named after what it is, never where it sits: `scanner`, not `core:domain`.
@@ -29,17 +30,23 @@ on a store.
   name, a skill by place. The app keeps no list of heroes or artifacts; it would fall behind every
   one the game adds.
 - If the app's transcription and the lab's drift, the option is a third project both read; not now.
+- An account read off the game's memory names everything by the client's ids. `account/`'s `Cards`
+  turns them into the same cards a scan writes with `resources/game.json`, which wor-extract's
+  `tools/export_scanner.py` writes from one version of the client: a hero, set or artifact the game
+  adds reaches the lab once it is written again and shipped.
 
 ## Inside `scanner`
 
 | Package | What it is | May know |
 | --- | --- | --- |
 | `text/` | the instruments a reader is written with: each takes a row or a block and a candidate list, and knows nothing of what the row is part of | nothing |
-| `senses/` | the interfaces a platform implements: what the display shows, the hand, the recogniser | text |
+| `senses/` | the interfaces a platform implements: what the display shows, the hand, the recogniser, the game's memory | text |
 | `game/` | the words every kind shares and the rows they are read off | text |
 | `scan/` | the walk over a grid, written once for every kind | senses, text |
 | `kinds/<kind>/` | one kind: its record, where its screen puts things, how its panel reads | scan, game, senses, text |
 | `kinds/` | `Kind`, and `Kind.scan()` | every kind |
+| `lua/` | Lua 5.3's strings and tables in the game's memory, as a 64-bit build lays them out | senses |
+| `account/` | the account as the running game holds it: the table each list lives in, found by a field only that table has; and its lists as the cards each kind's scan writes | lua, senses, game, kinds |
 | `runs/` | a scan run and kept on disk, as the lab reads it | everything above |
 | `azhor/` | the lab's client | nothing |
 
@@ -111,6 +118,10 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   clipboard does not cross an emulator's border.
 - The lab is reached at its two addresses only: a code traded once for a token, and each scan
   posted with that token. A 401 forgets the token. A debug build never reaches the lab.
+- An account read off the game's memory is one JSON file under `accounts/`, `kind` `account`, each
+  entry in the game's own fields, with how many entries every table holding each list had, in a
+  folder of its own beside a scan of each kind made of it. Those three are what the Windows app sends
+  the lab.
 - Preferences in DataStore. Room enters only if scan history inside the app is ever wanted, and
   brings the no-destructive-migration rule with it.
 

@@ -4,8 +4,13 @@
     <string name="game_open">Watcher of Realms is open, %1$s × %2$s</string>
     <string name="game_closed">Open Watcher of Realms on this PC.</string>
     <string name="game_not_windows">The scanner finds the game on Windows; this system is not Windows.</string>
-    <string name="reading">Reading…</string>
+    <string name="scan_account">Scan the account</string>
+    <string name="scanning_account">Scanning the account…</string>
+    <string name="account_scanned">%1$s heroes, %2$s pieces of gear and %3$s artifacts</string>
+    <string name="account_none">No account scanned yet</string>
+    <string name="account_refused">Windows would not let the scanner read the game (error %1$s): open the game as usual, not as administrator.</string>
+    <string name="account_empty">The game holds no account yet: sign in, wait for the city, then scan it again.</string>
+    <string name="scan_again">Scan it again</string>
+    <string name="account_failed">The account could not be read: %1$s</string>
     <string name="open_folder">Open folder</string>
-    <string name="esc_to_stop">Esc stops it too</string>
-    <string name="paused">Paused: bring the game back to go on</string>
 </resources>

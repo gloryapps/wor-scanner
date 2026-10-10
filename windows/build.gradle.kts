@@ -32,6 +32,8 @@ compose.desktop {
             packageVersion = providers.gradleProperty("worscanner.version").get()
             /* What `suggestRuntimeModules` found the app needs beyond Compose's own. */
             modules("java.instrument", "jdk.unsupported")
+            /* The Android launcher icon drawn for Windows, as `composeResources/drawable/icon.xml` draws it in the window. */
+            windows { iconFile.set(project.file("icon.ico")) }
         }
     }
 }

@@ -53,6 +53,10 @@
     <string name="send_hint">It waits in Import a scan on the site.</string>
     <string name="link_send">Link and send</string>
     <string name="link_send_hint">You only link once. After that, Send is one press.</string>
+    <string name="link">Link</string>
+    <string name="send_nothing">Scan first, then send.</string>
+    <string name="linked">Linked to Azhor’s Master Smithy.</string>
+    <string name="unlink">unlink</string>
     <string name="link_again">Link again</string>
     <string name="try_again">Try again</string>
     <string name="link_title">Link this scanner to your account</string>
