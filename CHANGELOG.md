@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-11
+
 ### Fixed
 
 - Where Watcher of Realms runs as administrator, the scanner says so, and **Restart as
@@ -123,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scans gear, legendary heroes and mythic artifacts off the game's screen and writes a JSON for Azhor’s Master Smithy.
 - Exports a scan into the folder LDPlayer or BlueStacks shares with the PC, or through Android's share sheet.
 
-[unreleased]: https://github.com/gloryapps/wor-scanner/compare/v0.5.0...HEAD
+[unreleased]: https://github.com/gloryapps/wor-scanner/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/gloryapps/wor-scanner/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/gloryapps/wor-scanner/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/gloryapps/wor-scanner/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/gloryapps/wor-scanner/compare/v0.2.1...v0.3.0
