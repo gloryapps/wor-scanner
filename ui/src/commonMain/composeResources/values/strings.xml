@@ -50,7 +50,7 @@
 
     <string name="send">Send to Azhor’s Master Smithy</string>
     <string name="sending">Sending…</string>
-    <string name="send_hint">It waits in Import a scan on the site.</string>
+    <string name="send_hint">It goes straight to your account on the site.</string>
     <string name="link_send">Link and send</string>
     <string name="link_send_hint">You only link once. After that, Send is one press.</string>
     <string name="link">Link</string>
@@ -77,6 +77,6 @@
     <string name="lab_refused">The site did not read this file as a scan</string>
     <string name="lab_refused_said">Keep the file instead, then drop it on Import a scan on the site.</string>
     <string name="lab_sent">Sent to your account</string>
-    <string name="lab_sent_said">Open Import a scan on Azhor’s Master Smithy to bring it in.</string>
+    <string name="lab_sent_said">Your account on Azhor’s Master Smithy already shows it.</string>
     <string name="scan_else">Scan something else</string>
 </resources>

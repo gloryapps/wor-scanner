@@ -34,9 +34,9 @@ data class GameAttribute(val word: String, val hundredths: Boolean, val percenta
 @Serializable
 data class GamePiece(val set: String?, val slot: String)
 
-/** A hero's name, rarity (4 epic, 5 legendary), and the skills after the ultimate in the lab's order. */
+/** A hero's name, rarity (4 epic, 5 legendary), the skills after the ultimate in the lab's order, and the factions it counts under, as the game prints them. */
 @Serializable
-data class GameHero(val name: String, val rarity: Int, val row: List<GameSkill>)
+data class GameHero(val name: String, val rarity: Int, val row: List<GameSkill>, val factions: List<String>)
 
 /** Where a skill's level sits in the account's levels, none where it is never raised, and the promotion that unlocks it. */
 @Serializable

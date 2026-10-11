@@ -1,6 +1,7 @@
 package com.gloryapps.worscanner.windows.app
 
 import com.gloryapps.worscanner.scanner.account.ArtifactsToScan
+import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.account.Enhancement
 import com.gloryapps.worscanner.scanner.account.ScanChoices
 import kotlinx.coroutines.runBlocking
@@ -19,11 +20,18 @@ class FileScanChoicesTest {
 
     @Test
     fun `what the player chose stands the next time the app starts`() = runBlocking {
-        val chosen = ScanChoices(setOf(Enhancement.FROM_12, Enhancement.AT_16), ArtifactsToScan.EVERY)
+        val chosen = ScanChoices(setOf(Enhancement.FROM_12, Enhancement.AT_16), ArtifactsToScan.EVERY, Arrival.ADD)
 
         FileScanChoices(file).keep(chosen)
 
         assertEquals(chosen, FileScanChoices(file).chosen.value)
+    }
+
+    @Test
+    fun `a file kept before the arrival could be chosen keeps its choices, the scan in place of what the lab holds`() {
+        file.writeText("""{"enhancements":["FROM_12","AT_16"],"artifacts":"EVERY"}""")
+
+        assertEquals(ScanChoices(setOf(Enhancement.FROM_12, Enhancement.AT_16), ArtifactsToScan.EVERY, Arrival.REPLACE), FileScanChoices(file).chosen.value)
     }
 
     @Test

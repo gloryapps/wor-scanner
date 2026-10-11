@@ -121,9 +121,12 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
 - An account read off the game's memory is one JSON file under `accounts/`, `kind` `account`, each
   entry in the game's own fields, with how many entries every table holding each list had, under
   `reads/`, apart from the folder of `accounts/` holding a scan of each kind made of it, its gear and
-  artifacts only those the player chose to send (`ScanChoices`). A kind with no cards has no scan: the lab takes a
-  scan as the whole of its kind. Those scans are what the Windows app sends the lab and opens for
-  the player.
+  artifacts only those the player chose to send, and each with the `arrival` he chose: `replace`, the
+  lab's list of its kind becomes the scan's, or `add`, the scan is laid over it (`ScanChoices`). A
+  scan of the screen says `add`. The heroes scan's `collection` is how many heroes of each faction
+  the account has collected, by the game's own list of every hero it has held. A kind with no cards
+  has no scan: in place of the lab's list it would empty it. Those scans are what the Windows app
+  sends the lab and opens for the player.
 - Preferences in DataStore. Room enters only if scan history inside the app is ever wanted, and
   brings the no-destructive-migration rule with it.
 

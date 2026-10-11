@@ -1,5 +1,6 @@
 package com.gloryapps.worscanner.scanner.runs
 
+import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.scan.Outcome
 import com.gloryapps.worscanner.scanner.scan.ScanEntry
 import kotlinx.serialization.EncodeDefault
@@ -8,12 +9,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 
-/** A scan as the lab reads it: what was scanned, the display it ran on, how it ended, and one entry per tile. */
+/** A scan as the lab reads it: what was scanned, how the lab takes it, the display it ran on, how it ended, and one entry per tile. */
 @Serializable
 data class ScanFile<T>(
     @EncodeDefault val version: Int = 2,
     /** A `Kind` id; `entries[].card` is shaped by it. */
     val kind: String,
+    /** A scan of the screen may have read part of the storage, so it is laid over what the lab holds. */
+    @EncodeDefault val arrival: Arrival = Arrival.ADD,
     val startedAt: String,
     val width: Int,
     val height: Int,
@@ -21,6 +24,8 @@ data class ScanFile<T>(
     /** Why it stopped, and the rows of the frame it stopped on, where it did. */
     val detail: String? = null,
     val seen: List<String> = emptyList(),
+    /** A heroes scan of the account: how many heroes of each faction it has collected, as the game's Collection Progress counts them. */
+    val collection: Map<String, Int>? = null,
     val entries: List<ScanEntry<T>>,
 )
 

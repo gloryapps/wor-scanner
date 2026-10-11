@@ -2,6 +2,7 @@ package com.gloryapps.worscanner.windows.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gloryapps.worscanner.scanner.account.ScanChoices
 import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.scanner.azhor.Sender
 import com.gloryapps.worscanner.scanner.resultOf
@@ -57,9 +58,14 @@ internal class HomeViewModel(
                 if (account != null) sender.linkAndSend(event.code, account.scans, ::sending) else sender.link(event.code, ::sending)
             }
             HomeEvent.Unlink -> viewModelScope.launch { sender.unlink() }
-            is HomeEvent.Toggle -> viewModelScope.launch { choices.keep(choices.chosen.value.toggled(event.band)) }
-            is HomeEvent.ChooseArtifacts -> viewModelScope.launch { choices.keep(choices.chosen.value.copy(artifacts = event.artifacts)) }
+            is HomeEvent.Toggle -> choose { it.toggled(event.band) }
+            is HomeEvent.ChooseArtifacts -> choose { it.copy(artifacts = event.artifacts) }
+            is HomeEvent.ChooseArrival -> choose { it.copy(arrival = event.arrival) }
         }
+    }
+
+    private fun choose(change: (ScanChoices) -> ScanChoices) {
+        viewModelScope.launch { choices.keep(change(choices.chosen.value)) }
     }
 
     /* The link step stands while the scanner is not linked, whatever was last tried; linking anew leaves nothing tried. */
