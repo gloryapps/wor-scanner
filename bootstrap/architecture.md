@@ -127,7 +127,8 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   the account has collected, by the game's own list of every hero it has held. One more scan is of
   the game's plan, `kind` `plan`, a card per recommendation rule: no screen shows the plan as a grid,
   so it is no `Kind`. A kind with no cards has no scan: in place of the lab's list it would empty it.
-  Those scans are what the Windows app sends the lab and opens for the player.
+  Those scans are what the Windows app sends the lab and opens for the player. The newest 20 reads
+  are kept, each with its scans; every read keeps the whole account again, so older ones go.
 - Preferences in DataStore. Room enters only if scan history inside the app is ever wanted, and
   brings the no-destructive-migration rule with it.
 

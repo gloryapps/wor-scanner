@@ -39,7 +39,7 @@ internal class HomeViewModel(
     private val reports: Reports,
     private val choices: FileScanChoices,
 ) : ViewModel() {
-    private val game = if (Desktop.present) watch.game.map { window -> window?.let { Game.Open(it.client.width, it.client.height) } ?: Game.Closed } else flowOf(Game.NotWindows)
+    private val game = if (Desktop.present) watch.game.map { window -> if (window != null) Game.Open else Game.Closed } else flowOf(Game.NotWindows)
     private val local = MutableStateFlow(HomeState())
 
     val state: StateFlow<HomeState> = combine(game, sender.linked, choices.chosen, local) { game, linked, chosen, local ->

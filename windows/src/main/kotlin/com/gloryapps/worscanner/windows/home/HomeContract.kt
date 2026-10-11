@@ -35,8 +35,7 @@ internal data class AccountRead(val scans: List<File>, val heroes: Int, val gear
 internal sealed interface Game {
     data object Looking : Game
 
-    /** `width` by `height` is the area the game draws in, in the display's pixels. */
-    data class Open(val width: Int, val height: Int) : Game
+    data object Open : Game
 
     data object Closed : Game
 

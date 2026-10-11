@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The scanner keeps its last 20 scans, deleting older ones, where the folder grew with every scan.
+- **On the site** says the gear plans go with the rest: replaced by the game’s plan, or the game’s
+  plan added beside them.
+
+### Fixed
+
+- With Watcher of Realms minimised, the scanner still finds it and scans the account, where it
+  asked to open the game.
+- The scanner finds the game whatever its client titles its window, where it looked for the
+  global client's title only.
+- **Try again** after a send that stopped halfway sends only what Azhor’s Master Smithy had not
+  taken yet, so gear added to the site no longer arrives twice.
+
+## [0.6.0] - 2026-10-11
+
 ### Added
 
 - A scan also sends the game's gear recommendation rules, which Azhor’s Master Smithy keeps as a
@@ -130,7 +147,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scans gear, legendary heroes and mythic artifacts off the game's screen and writes a JSON for Azhor’s Master Smithy.
 - Exports a scan into the folder LDPlayer or BlueStacks shares with the PC, or through Android's share sheet.
 
-[unreleased]: https://github.com/gloryapps/wor-scanner/compare/v0.5.1...HEAD
+[unreleased]: https://github.com/gloryapps/wor-scanner/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/gloryapps/wor-scanner/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/gloryapps/wor-scanner/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/gloryapps/wor-scanner/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/gloryapps/wor-scanner/compare/v0.3.0...v0.4.0

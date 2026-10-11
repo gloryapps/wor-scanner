@@ -6,8 +6,8 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /** A Lua 5.3 heap laid out by hand as a 64-bit game's would be, one object after the next, short strings kept once. */
-internal class LaidOutHeap(private val start: Long = 0x1_2340_0000L) : Memory {
-    private val bytes = ByteBuffer.allocate(SIZE).order(ByteOrder.LITTLE_ENDIAN)
+internal class LaidOutHeap(private val start: Long = 0x1_2340_0000L, size: Int = SIZE) : Memory {
+    private val bytes = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN)
     private val interned = mutableMapOf<String, Long>()
     private var next = 64
 

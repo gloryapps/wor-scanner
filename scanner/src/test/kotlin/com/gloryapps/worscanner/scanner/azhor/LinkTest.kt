@@ -69,6 +69,37 @@ class LinkTest {
     }
 
     @Test
+    fun `a send tried again goes on from the first scan the site did not take`() = runBlocking {
+        val site = Site(listOf(Sending.Sent, Sending.Unanswered))
+        val link = Link(site, Kept(TOKEN))
+        link.send(scans)
+
+        assertEquals(Sending.Sent, link.send(scans))
+        assertEquals(scans.take(2) + scans.drop(1), site.sent.map { it.second })
+    }
+
+    @Test
+    fun `a scan the site took whole is sent again when asked`() = runBlocking {
+        val site = Site()
+        val link = Link(site, Kept(TOKEN))
+        link.send(scans)
+        link.send(scans)
+
+        assertEquals(scans + scans, site.sent.map { it.second })
+    }
+
+    @Test
+    fun `a scanner linked anew sends every scan, since the site may be another account`() = runBlocking {
+        val site = Site(listOf(Sending.Sent, Sending.Unanswered))
+        val link = Link(site, Kept(TOKEN))
+        link.send(scans)
+        link.link(CODE)
+        link.send(scans)
+
+        assertEquals(scans.take(2) + scans, site.sent.map { it.second })
+    }
+
+    @Test
     fun `a token the site no longer knows is forgotten`() = runBlocking {
         val kept = Kept(TOKEN)
 

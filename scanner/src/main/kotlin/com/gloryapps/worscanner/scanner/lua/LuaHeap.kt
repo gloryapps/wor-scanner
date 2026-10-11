@@ -173,5 +173,6 @@ private const val MAX_SHORT = 40
 private const val MAX_TEXT = 65_536L
 private const val MAX_NODE_LOG = 20
 private const val MAX_ARRAY = 1_000_000L
-private const val CHUNK = 8 shl 20
+/** How much of the game's memory a sweep reads at once. */
+internal const val CHUNK = 8 shl 20
 private const val PAST = 128
