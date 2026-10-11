@@ -20,6 +20,8 @@ jobs:
   release:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    outputs:
+      releasing: ${{ steps.notes.outputs.releasing }}
     steps:
       - name: Refuse a pull request from anywhere but dev
         if: github.head_ref != 'dev'
@@ -30,48 +32,60 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # A merge is a release only when the changelog has notes under [Unreleased]; one without, a README or a past version's notes, reaches main building nothing.
+      - name: Read the release's notes from the changelog
+        id: notes
+        run: |
+          mkdir "$RUNNER_TEMP/release"
+          awk '$0 == "## [Unreleased]" { found = 1; next } found && (/^## / || /^\[[^]]+\]: /) { exit } found' CHANGELOG.md > "$RUNNER_TEMP/release/notes.md"
+          if grep -q '[^[:space:]]' "$RUNNER_TEMP/release/notes.md"; then
+            echo "releasing=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Nothing under ## [Unreleased]: this merge is no release and builds nothing."
+            echo "releasing=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-java@v4
+        if: steps.notes.outputs.releasing == 'true'
         with:
           distribution: temurin
           java-version: |
             17
             25
       - uses: gradle/actions/setup-gradle@v4
+        if: steps.notes.outputs.releasing == 'true'
 
       - name: Read the version being released
+        if: steps.notes.outputs.releasing == 'true'
         id: version
         run: echo "name=$(sed -n 's/^worscanner.version=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
 
       - name: Refuse a version already released
+        if: steps.notes.outputs.releasing == 'true'
         run: |
           if git rev-parse -q --verify "refs/tags/v${{ steps.version.outputs.name }}" > /dev/null; then
             echo "v${{ steps.version.outputs.name }} is already released" >&2
             exit 1
           fi
 
-      - name: Read the release's notes from the changelog
-        run: |
-          mkdir "$RUNNER_TEMP/release"
-          awk '$0 == "## [Unreleased]" { found = 1; next } found && (/^## / || /^\[[^]]+\]: /) { exit } found' CHANGELOG.md > "$RUNNER_TEMP/release/notes.md"
-          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release/notes.md"; then
-            echo "CHANGELOG.md has nothing under ## [Unreleased]" >&2
-            exit 1
-          fi
-
       # The Android app is paused: its tests still run, but no APK is built or released.
       - name: Test
+        if: steps.notes.outputs.releasing == 'true'
         run: ./gradlew test
 
       - name: Keep what the merge publishes
+        if: steps.notes.outputs.releasing == 'true'
         run: echo "${{ steps.version.outputs.name }}" > "$RUNNER_TEMP/release/version"
       - uses: actions/upload-artifact@v4
+        if: steps.notes.outputs.releasing == 'true'
         with:
           name: release
           path: ${{ runner.temp }}/release
 
   # The Windows app, the release's one download, is built on Windows and kept for the merge to publish.
   windows:
-    if: github.event_name == 'pull_request' && github.head_ref == 'dev'
+    needs: release
+    if: github.event_name == 'pull_request' && github.head_ref == 'dev' && needs.release.outputs.releasing == 'true'
     runs-on: windows-latest
     defaults:
       run:
@@ -117,13 +131,21 @@ jobs:
             exit 1
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
+          if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/artifacts" --jq '.artifacts[].name' | grep -qx release; then
+            echo "releasing=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Its pull request built nothing: this merge is no release."
+            echo "releasing=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v4
+        if: steps.build.outputs.releasing == 'true'
         with:
           name: release
           run-id: ${{ steps.build.outputs.run }}
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/release
       - uses: actions/download-artifact@v4
+        if: steps.build.outputs.releasing == 'true'
         with:
           name: release-windows
           run-id: ${{ steps.build.outputs.run }}
@@ -131,10 +153,12 @@ jobs:
           path: ${{ runner.temp }}/release
 
       - name: Read the version being released
+        if: steps.build.outputs.releasing == 'true'
         id: version
         run: echo "name=$(cat "$RUNNER_TEMP/release/version")" >> "$GITHUB_OUTPUT"
 
       - name: Publish the GitHub release
+        if: steps.build.outputs.releasing == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.name }}
@@ -145,6 +169,7 @@ jobs:
 
       # dev moves to the next minor and dates what was unreleased; a patch or a major is set on dev by hand before its pull request.
       - name: Start the next version on dev
+        if: steps.build.outputs.releasing == 'true'
         env:
           VERSION: ${{ steps.version.outputs.name }}
         run: |

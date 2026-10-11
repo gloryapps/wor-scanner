@@ -1,7 +1,9 @@
 # CI & release
 
 `main` is what is released; `dev` is where work lands. `main` moves only by a pull request from `dev`,
-merged with a merge commit, and each merge is a release.
+merged with a merge commit. A merge is a release when `CHANGELOG.md` has notes under
+`## [Unreleased]`; one without, such as a README or a past version's notes, reaches `main` building
+and publishing nothing.
 
 ## Verification
 
@@ -35,16 +37,17 @@ and the APK and mapping assets back into `release.yml`, as they stand in 0.3.0's
 On the pull request:
 
 1. Fails one from any branch but `dev`.
-2. Reads the version and fails if the tag `v<version>` already exists, or if `CHANGELOG.md` has
-   nothing under `## [Unreleased]`.
-3. Runs the tests, and keeps the notes and the version as the run's `release` artifact.
-4. On a Windows runner, tests the Windows app on its desktop and builds it, a folder holding its own
+2. Reads the notes under `## [Unreleased]`. With none, the pull request is no release: it passes
+   building nothing, and its merge publishes nothing.
+3. Reads the version and fails if the tag `v<version>` already exists.
+4. Runs the tests, and keeps the notes and the version as the run's `release` artifact.
+5. On a Windows runner, tests the Windows app on its desktop and builds it, a folder holding its own
    Java runtime, zipped as `wor-scanner-windows.zip` and kept as the run's `release-windows` artifact.
 
 On the merge, which is a merge commit so that `dev`'s commits reach `main` as they are:
 
 1. Builds nothing: takes that artifact from the pull request's run that built the merge commit's
-   second parent.
+   second parent, and stops there when that run built none.
 2. Creates the tag on the merge commit and a GitHub release holding `wor-scanner-windows.zip`, with
    the notes. Its name carries no version, so `releases/latest/download/wor-scanner-windows.zip`
    always downloads the newest.

@@ -36,7 +36,7 @@ Changelog's sections: those lines are the next release's notes (`bootstrap/ci.md
 
 New work is on a new branch off `dev`; nothing is worked on or committed on `dev` itself. A branch
 lands on `dev` squashed. `dev` reaches `main` only by a pull request merged with a merge commit, and
-that merge is a release (`bootstrap/ci.md`).
+that merge is a release when `CHANGELOG.md` has notes under `## [Unreleased]` (`bootstrap/ci.md`).
 
 ## Tests
 
