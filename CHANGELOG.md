@@ -26,9 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   choose all.
 - A scan the site will not take says to keep the file instead.
 
-### Removed
+### Deprecated
 
-- The Android app is not part of this release; its last release stays 0.3.0.
+- The Android app: please don't use it for now. It stays at 0.3.0 and is no longer kept up with the
+  game or the site while we work on it; use the Windows app instead.
 
 ## [0.3.0] - 2026-10-02
 
