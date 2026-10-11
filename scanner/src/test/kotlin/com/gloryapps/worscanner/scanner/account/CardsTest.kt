@@ -22,7 +22,7 @@ class CardsTest {
         artifacts: List<String> = emptyList(),
         collected: List<Long> = emptyList(),
         rules: List<String> = emptyList(),
-        choices: ScanChoices = ScanChoices.EVERYTHING,
+        choices: ScanChoices = EVERYTHING,
     ) = Cards(
         Game.shipped,
         Account(startedAt = "20261010-122135", heroes = heroes.map(Json::parseToJsonElement), gear = gear.map(Json::parseToJsonElement),

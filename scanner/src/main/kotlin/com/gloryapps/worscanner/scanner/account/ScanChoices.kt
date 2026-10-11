@@ -17,10 +17,6 @@ data class ScanChoices(
 
         return if (next.isEmpty()) this else copy(enhancements = next)
     }
-
-    companion object {
-        val EVERYTHING = ScanChoices(Enhancement.entries.toSet(), ArtifactsToScan.EVERY)
-    }
 }
 
 /** Which artifacts a scan sends. */

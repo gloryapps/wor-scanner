@@ -1,13 +1,12 @@
 package com.gloryapps.worscanner.windows.game
 
-import com.gloryapps.worscanner.scanner.text.Box
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class GameWindowTest {
     private fun window(title: String, width: Int = 1280, height: Int = 720, shown: Boolean = true, handle: Long = 1) =
-        TopWindow(handle, title, shown, Box(0, 0, width, height))
+        TopWindow(handle, title, shown, width.toLong() * height)
 
     @Test
     fun `the game is the window titled as the game`() {
@@ -22,8 +21,13 @@ class GameWindowTest {
     }
 
     @Test
-    fun `a game minimised or hidden is not found`() {
+    fun `a game hidden is not found`() {
         assertNull(gameAmong(listOf(window("Watcher of Realms", shown = false))))
+    }
+
+    @Test
+    fun `a game minimised is found, since a scan reads its memory and not its face`() {
+        assertEquals(2, gameAmong(listOf(window("Watcher of Realms", width = 0, height = 0, handle = 2)))?.handle)
     }
 
     @Test

@@ -20,9 +20,10 @@ It runs on Windows, beside the game's own PC client. The Android app is deprecat
 4. **Send** puts the scan straight on your account on the site. The first time, the app asks for the
    site's code: open **Import a scan**, press **Link**, and type the code it shows within ten minutes.
 
-Scans and a log are kept in `%LOCALAPPDATA%\WoR Scanner`; **Open folder** shows them, and a scan
-kept there is imported by dropping it on that same dialog. If the game runs as administrator, the
-app has to as well: it says so, and **Restart as administrator** opens it again as one.
+The last 20 scans and a log are kept in `%LOCALAPPDATA%\WoR Scanner`; **Open folder** shows
+them, and a scan kept there is imported by dropping it on that same dialog. If the game runs as
+administrator, the app has to as well: it says so, and **Restart as administrator** opens it again
+as one.
 
 ## Android
 

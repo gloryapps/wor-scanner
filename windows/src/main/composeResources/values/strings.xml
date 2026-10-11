@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="game_looking">Looking for Watcher of Realms…</string>
-    <string name="game_open">Watcher of Realms is open, %1$s × %2$s</string>
+    <string name="game_open">Watcher of Realms is open.</string>
     <string name="game_closed">Open Watcher of Realms on this PC.</string>
     <string name="game_not_windows">The scanner finds the game on Windows; this system is not Windows.</string>
     <string name="gear_to_scan">Gear to scan</string>
@@ -12,8 +12,8 @@
     <string name="arrival">On the site</string>
     <string name="arrival_replace">Replace what it holds</string>
     <string name="arrival_add">Add to it</string>
-    <string name="arrival_replace_said">The site’s heroes, gear and artifacts become those the scan sends.</string>
-    <string name="arrival_add_said">Those the scan sends are added to the site’s heroes, gear and artifacts.</string>
+    <string name="arrival_replace_said">The site’s heroes, gear, artifacts and gear plans become those the scan sends.</string>
+    <string name="arrival_add_said">Those the scan sends are added to the site’s heroes, gear, artifacts and gear plans.</string>
     <string name="scan_account">Scan the account</string>
     <string name="scanning_account">Scanning the account…</string>
     <string name="account_scanned">%1$s heroes, %2$s pieces of gear and %3$s artifacts</string>

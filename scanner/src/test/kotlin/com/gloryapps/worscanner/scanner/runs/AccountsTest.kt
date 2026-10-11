@@ -2,7 +2,7 @@ package com.gloryapps.worscanner.scanner.runs
 
 import com.gloryapps.worscanner.scanner.account.Account
 import com.gloryapps.worscanner.scanner.account.Arrival
-import com.gloryapps.worscanner.scanner.account.ScanChoices
+import com.gloryapps.worscanner.scanner.account.EVERYTHING
 import com.gloryapps.worscanner.scanner.account.ScannedRule
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
 import com.gloryapps.worscanner.scanner.kinds.hero.ScannedHero
@@ -21,14 +21,14 @@ class AccountsTest {
     fun `an account read keeps a scan of each kind it holds in a folder named by its stamp, and the game's own file apart`() = runTest {
         val memory = LaidOutHeap().apply { table("m_vArtifacts" to table(array = listOf(table("iItemId" to 219201, "iLevel" to 25, "iStageLvl" to 5)))) }
 
-        val kept = Accounts(root).read(memory, ScanChoices.EVERYTHING)
+        val kept = Accounts(root).read(memory, EVERYTHING)
 
-        val folder = File(root, "accounts/${kept.account.startedAt}")
-        assertEquals(File(root, "reads/${kept.account.startedAt}.json"), kept.file)
-        assertEquals(kept.account, Json.decodeFromString(Account.serializer(), kept.file.readText()))
-        assertEquals(listOf(File(folder, "artifacts.json")), kept.scans)
+        val stamp = kept.scans.single().parentFile.name
+        assertEquals(listOf(File(root, "accounts/$stamp/artifacts.json")), kept.scans)
+        val read = Json.decodeFromString(Account.serializer(), File(root, "reads/$stamp.json").readText())
+        assertEquals(stamp to 1, read.startedAt to read.artifacts.size)
         val artifacts = Json.decodeFromString(ScanFile.serializer(ScannedArtifact.serializer()), kept.scans.single().readText())
-        assertEquals("artifacts" to kept.account.startedAt, artifacts.kind to artifacts.startedAt)
+        assertEquals("artifacts" to stamp, artifacts.kind to artifacts.startedAt)
         assertEquals(listOf("Spear of Leonidas" to 6), artifacts.entries.map { it.card.name to it.card.skill })
     }
 
@@ -42,13 +42,28 @@ class AccountsTest {
             table("m_vArtifacts" to table(array = listOf(table("iItemId" to 219201, "iLevel" to 25, "iStageLvl" to 5))))
         }
 
-        val kept = Accounts(root).read(memory, ScanChoices.EVERYTHING.copy(arrival = Arrival.ADD))
+        val kept = Accounts(root).read(memory, EVERYTHING.copy(arrival = Arrival.ADD))
 
         val heroes = Json.decodeFromString(ScanFile.serializer(ScannedHero.serializer()), kept.scans.first().readText())
         val artifacts = Json.decodeFromString(ScanFile.serializer(ScannedArtifact.serializer()), kept.scans.last().readText())
         assertEquals(listOf(Arrival.ADD, Arrival.ADD), listOf(heroes.arrival, artifacts.arrival))
         assertEquals(listOf(1, 1, 1, 0), listOf("The Supreme Arbiters", "The Star Piercers", "The Watchguard", "The North Throne").map(heroes.collection.orEmpty()::getValue))
         assertEquals(null, artifacts.collection)
+    }
+
+    @Test
+    fun `only the newest reads are kept, each with the scans made of it`() = runTest {
+        val older = (1..Accounts.KEPT).map { "20260101-0000%02d".format(it) }
+        older.forEach { stamp ->
+            File(root, "accounts/$stamp").mkdirs()
+            File(root, "reads/$stamp.json").apply { parentFile.mkdirs(); writeText("{}") }
+        }
+
+        Accounts(root).read(LaidOutHeap(), EVERYTHING)
+
+        val kept = File(root, "accounts").list().orEmpty().sorted()
+        assertEquals(older.drop(1), kept.dropLast(1))
+        assertEquals(kept.map { "$it.json" }, File(root, "reads").list().orEmpty().sorted())
     }
 
     @Test
@@ -66,12 +81,11 @@ class AccountsTest {
             table("m_EquipRecommendRulesMap" to table(2 to table(array = listOf(rule))))
         }
 
-        val kept = Accounts(root).read(memory, ScanChoices.EVERYTHING)
+        val plan = Accounts(root).read(memory, EVERYTHING).scans.single()
 
-        val plan = File(root, "accounts/${kept.account.startedAt}/plan.json")
-        assertEquals(listOf(plan), kept.scans)
+        assertEquals("plan.json", plan.name)
         val scan = Json.decodeFromString(ScanFile.serializer(ScannedRule.serializer()), plan.readText())
-        assertEquals(Triple("plan", kept.account.startedAt, Arrival.REPLACE), Triple(scan.kind, scan.startedAt, scan.arrival))
+        assertEquals(Triple("plan", plan.parentFile.name, Arrival.REPLACE), Triple(scan.kind, scan.startedAt, scan.arrival))
         assertEquals(
             Json.parseToJsonElement(
                 """{"name":"Crit DPS","side":"bangles-amulets-rings","sets":["fatality","the-doom"],"main":["Crit. DMG"],""" +

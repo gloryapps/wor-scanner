@@ -22,25 +22,29 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.time.LocalDateTime
 
-/** An account read and kept: the game's own file, what it holds, and the scans made of it, one of each kind and one of its plan, which are what the lab imports, with how many cards each kind's holds; a kind with none has no scan. */
-data class KeptAccount(val file: File, val account: Account, val scans: List<File>, val cards: Map<Kind, Int>)
+/** An account read and kept: the scans made of it, one of each kind and one of its plan, which are what the lab imports, with how many cards each kind's holds; a kind with none has no scan. */
+data class KeptAccount(val scans: List<File>, val cards: Map<Kind, Int>)
 
-/** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, both named by the stamp the read began at. */
-class Accounts(private val root: File, private val game: Game = Game.shipped) {
+/** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, both named by the stamp the read began at; the newest [KEPT] of each. */
+class Accounts(root: File, private val game: Game = Game.shipped) {
+    private val scans = File(root, "accounts")
+    private val reads = File(root, "reads")
+
     /** Reads the account off `memory`; its gear and artifacts scans hold only what `choices` keeps, and every scan arrives as `choices` says. */
     suspend fun read(memory: Memory, choices: ScanChoices): KeptAccount {
         val account = readAccount(memory, startedAt = LocalDateTime.now().format(STAMP))
 
-        return withContext(Dispatchers.IO) { keep(account, Cards(game, account, choices), choices.arrival) }
+        return withContext(Dispatchers.IO) {
+            keep(account, Cards(game, account, choices), choices.arrival).also { listOf(scans, reads).forEach(::newestOnly) }
+        }
     }
 
     /* A scan in place of the lab's list of its kind would empty it where it holds no cards, so a kind with none sends none. */
     private fun keep(account: Account, cards: Cards, arrival: Arrival): KeptAccount {
-        val folder = File(root, "accounts/${account.startedAt}").apply { mkdirs() }
+        val folder = File(scans, account.startedAt).apply { mkdirs() }
+        File(reads, "${account.startedAt}.json").apply { parentFile.mkdirs(); writeText(Json.encodeToString(Account.serializer(), account)) }
 
         return KeptAccount(
-            file = File(root, "reads/${account.startedAt}.json").apply { parentFile.mkdirs(); writeText(Json.encodeToString(Account.serializer(), account)) },
-            account = account,
             scans = listOfNotNull(
                 write(folder, account.startedAt, arrival, Kind.GEAR.id, cards.gear, ScannedGear.serializer()),
                 write(folder, account.startedAt, arrival, Kind.HEROES.id, cards.heroes, ScannedHero.serializer(), cards.collection),
@@ -50,6 +54,10 @@ class Accounts(private val root: File, private val game: Game = Game.shipped) {
             cards = mapOf(Kind.GEAR to cards.gear.size, Kind.HEROES to cards.heroes.size, Kind.ARTIFACTS to cards.artifacts.size),
         )
     }
+
+    /* Every read keeps the whole account again, so the oldest go; a stamp sorts as the time it names. */
+    private fun newestOnly(folder: File) =
+        folder.listFiles().orEmpty().sortedByDescending { it.name }.drop(KEPT).forEach { it.deleteRecursively() }
 
     /* A scan made of an account read no display and read every tile: no size, and finished. */
     private fun <T> write(
@@ -75,5 +83,9 @@ class Accounts(private val root: File, private val game: Game = Game.shipped) {
         )
 
         return File(folder, "$kind.json").apply { writeText(scan.json(card)) }
+    }
+
+    companion object {
+        const val KEPT = 20
     }
 }

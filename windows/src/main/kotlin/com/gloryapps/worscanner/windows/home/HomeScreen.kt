@@ -170,7 +170,7 @@ private val Arrival.said: StringResource
 @Composable
 private fun said(game: Game): String = when (game) {
     Game.Looking -> stringResource(Res.string.game_looking)
-    is Game.Open -> stringResource(Res.string.game_open, game.width, game.height)
+    Game.Open -> stringResource(Res.string.game_open)
     Game.Closed -> stringResource(Res.string.game_closed)
     Game.NotWindows -> stringResource(Res.string.game_not_windows)
 }

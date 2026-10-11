@@ -10,7 +10,6 @@ import java.awt.Dimension
 import javax.swing.JFrame
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
-import kotlin.math.roundToInt
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -43,13 +42,13 @@ class OnTheDesktopTest {
 
     private fun game(): TopWindow = assertNotNull(runBlocking { Desktop.game() }, "no window titled as the game")
 
-    private fun pixels(swing: Int) = (swing * standIn.graphicsConfiguration.defaultTransform.scaleX).roundToInt()
-
     @Test
-    fun `the game's window is found by its title, as large as the face it draws`() {
-        val client = game().client
+    fun `the game's window is found by its title, minimised too`() {
+        val shown = game().handle
+        SwingUtilities.invokeAndWait { standIn.extendedState = JFrame.ICONIFIED }
+        Thread.sleep(SETTLE_MS)
 
-        assertEquals(pixels(WIDTH) to pixels(HEIGHT), client.width to client.height)
+        assertEquals(shown, game().handle)
     }
 
     @Test

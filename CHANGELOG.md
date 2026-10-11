@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The scanner keeps its last 20 scans, deleting older ones, where the folder grew with every scan.
+- **On the site** says the gear plans go with the rest: replaced by the game’s plan, or the game’s
+  plan added beside them.
+
+### Fixed
+
+- With Watcher of Realms minimised, the scanner still finds it and scans the account, where it
+  asked to open the game.
+- **Try again** after a send that stopped halfway sends only what Azhor’s Master Smithy had not
+  taken yet, so gear added to the site no longer arrives twice.
+
 ## [0.6.0] - 2026-10-11
 
 ### Added

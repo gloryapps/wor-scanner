@@ -60,4 +60,20 @@ class LuaHeapTest {
 
         assertEquals(emptyMap(), heap.holders(setOf("m_vArtifacts")))
     }
+
+    @Test
+    fun `a holder is found wherever it lies across the edge of the chunks memory is swept in`() = runTest {
+        for (before in ACROSS downTo 0 step 16) {
+            val memory = LaidOutHeap(size = CHUNK + 2 * ACROSS)
+            memory.gap(CHUNK - before)
+            val holder = memory.table("m_vArtifacts" to memory.table())
+
+            assertEquals(mapOf("m_vArtifacts" to setOf(holder.address)), LuaHeap(memory).holders(setOf("m_vArtifacts")), "laid out from ${CHUNK - before}")
+        }
+    }
+
+    private companion object {
+        /** Further than a holder's string, nodes and table run, so each of them lies across the edge once. */
+        const val ACROSS = 320
+    }
 }
