@@ -1,6 +1,7 @@
 package com.gloryapps.worscanner.scanner.runs
 
 import com.gloryapps.worscanner.scanner.account.Account
+import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.account.Cards
 import com.gloryapps.worscanner.scanner.account.ScanChoices
 import com.gloryapps.worscanner.scanner.account.Game
@@ -24,34 +25,51 @@ data class KeptAccount(val file: File, val account: Account, val scans: List<Fil
 
 /** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, both named by the stamp the read began at. */
 class Accounts(private val root: File, private val game: Game = Game.shipped) {
-    /** Reads the account off `memory`; its gear and artifacts scans hold only what `choices` keeps. */
+    /** Reads the account off `memory`; its gear and artifacts scans hold only what `choices` keeps, and every scan arrives as `choices` says. */
     suspend fun read(memory: Memory, choices: ScanChoices): KeptAccount {
         val account = readAccount(memory, startedAt = LocalDateTime.now().format(STAMP))
 
-        return withContext(Dispatchers.IO) { keep(account, Cards(game, account, choices)) }
+        return withContext(Dispatchers.IO) { keep(account, Cards(game, account, choices), choices.arrival) }
     }
 
-    /* The lab takes a scan as the whole of its kind, so a kind with no cards sends none rather than one that empties the account's. */
-    private fun keep(account: Account, cards: Cards): KeptAccount {
+    /* A scan in place of the lab's list of its kind would empty it where it holds no cards, so a kind with none sends none. */
+    private fun keep(account: Account, cards: Cards, arrival: Arrival): KeptAccount {
         val folder = File(root, "accounts/${account.startedAt}").apply { mkdirs() }
 
         return KeptAccount(
             file = File(root, "reads/${account.startedAt}.json").apply { parentFile.mkdirs(); writeText(Json.encodeToString(Account.serializer(), account)) },
             account = account,
             scans = listOfNotNull(
-                write(folder, account.startedAt, Kind.GEAR, cards.gear, ScannedGear.serializer()),
-                write(folder, account.startedAt, Kind.HEROES, cards.heroes, ScannedHero.serializer()),
-                write(folder, account.startedAt, Kind.ARTIFACTS, cards.artifacts, ScannedArtifact.serializer()),
+                write(folder, account.startedAt, arrival, Kind.GEAR, cards.gear, ScannedGear.serializer()),
+                write(folder, account.startedAt, arrival, Kind.HEROES, cards.heroes, ScannedHero.serializer(), cards.collection),
+                write(folder, account.startedAt, arrival, Kind.ARTIFACTS, cards.artifacts, ScannedArtifact.serializer()),
             ),
             cards = mapOf(Kind.GEAR to cards.gear.size, Kind.HEROES to cards.heroes.size, Kind.ARTIFACTS to cards.artifacts.size),
         )
     }
 
     /* A scan made of an account read no display and read every tile: no size, and finished. */
-    private fun <T> write(folder: File, startedAt: String, kind: Kind, cards: List<T>, card: KSerializer<T>): File? {
+    private fun <T> write(
+        folder: File,
+        startedAt: String,
+        arrival: Arrival,
+        kind: Kind,
+        cards: List<T>,
+        card: KSerializer<T>,
+        collection: Map<String, Int>? = null,
+    ): File? {
         if (cards.isEmpty()) return null
         val entries = cards.mapIndexed { index, it -> ScanEntry(index, row = 0, column = 0, card = it, rows = emptyList()) }
-        val scan = ScanFile(kind = kind.id, startedAt = startedAt, width = 0, height = 0, outcome = Outcome.Finished(entries).wire(), entries = entries)
+        val scan = ScanFile(
+            kind = kind.id,
+            arrival = arrival,
+            startedAt = startedAt,
+            width = 0,
+            height = 0,
+            outcome = Outcome.Finished(entries).wire(),
+            collection = collection,
+            entries = entries,
+        )
 
         return File(folder, "${kind.id}.json").apply { writeText(scan.json(card)) }
     }

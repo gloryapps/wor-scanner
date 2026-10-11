@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.scanner.account.ArtifactsToScan
+import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.account.Enhancement
 import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.ui.Accented
@@ -43,6 +44,11 @@ import com.gloryapps.worscanner.windows.resources.artifacts_all
 import com.gloryapps.worscanner.windows.resources.artifacts_worth_wearing
 import com.gloryapps.worscanner.windows.resources.artifacts_worth_wearing_said
 import com.gloryapps.worscanner.windows.resources.artifacts_to_scan
+import com.gloryapps.worscanner.windows.resources.arrival
+import com.gloryapps.worscanner.windows.resources.arrival_add
+import com.gloryapps.worscanner.windows.resources.arrival_add_said
+import com.gloryapps.worscanner.windows.resources.arrival_replace
+import com.gloryapps.worscanner.windows.resources.arrival_replace_said
 import com.gloryapps.worscanner.windows.resources.game_open
 import com.gloryapps.worscanner.windows.resources.gear_to_scan
 import com.gloryapps.worscanner.windows.resources.open_folder
@@ -75,20 +81,21 @@ internal fun HomeScreen(modifier: Modifier = Modifier, viewModel: HomeViewModel 
 private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().background(Colors.screen).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(said(state.game), style = Lettering.body, color = if (state.game is Game.Open) Colors.text else Colors.warning)
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Section(stringResource(Res.string.gear_to_scan))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Enhancement.entries.forEach { band -> Pill(band.word, chosen = band in state.choices.enhancements) { onEvent(HomeEvent.Toggle(band)) } }
+        Choice(stringResource(Res.string.gear_to_scan)) {
+            Enhancement.entries.forEach { band -> Pill(band.word, chosen = band in state.choices.enhancements) { onEvent(HomeEvent.Toggle(band)) } }
+        }
+        Choice(
+            stringResource(Res.string.artifacts_to_scan),
+            said = if (state.choices.artifacts == ArtifactsToScan.WORTH_WEARING) stringResource(Res.string.artifacts_worth_wearing_said) else null,
+        ) {
+            ArtifactsToScan.entries.forEach { kept ->
+                Pill(stringResource(kept.label), chosen = kept == state.choices.artifacts) { onEvent(HomeEvent.ChooseArtifacts(kept)) }
             }
         }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Section(stringResource(Res.string.artifacts_to_scan))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                ArtifactsToScan.entries.forEach { kept ->
-                    Pill(stringResource(kept.label), chosen = kept == state.choices.artifacts) { onEvent(HomeEvent.ChooseArtifacts(kept)) }
-                }
+        Choice(stringResource(Res.string.arrival), said = stringResource(state.choices.arrival.said)) {
+            Arrival.entries.forEach { arrival ->
+                Pill(stringResource(arrival.label), chosen = arrival == state.choices.arrival) { onEvent(HomeEvent.ChooseArrival(arrival)) }
             }
-            if (state.choices.artifacts == ArtifactsToScan.WORTH_WEARING) Text(stringResource(Res.string.artifacts_worth_wearing_said), style = Lettering.caption, color = Colors.muted)
         }
         Accented(
             label = stringResource(if (state.scanning) Res.string.scanning_account else Res.string.scan_account),
@@ -99,6 +106,16 @@ private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier:
         state.said?.let { Text(it, style = Lettering.data, color = Colors.muted) }
         Sending(state.account, state.linked, state.send, onEvent)
         if (state.kept != null) Link(stringResource(Res.string.open_folder)) { onEvent(HomeEvent.OpenKept) }
+    }
+}
+
+/** A choice the scan takes: its pills under `title`, and what the one chosen does beneath them where it needs saying. */
+@Composable
+private fun Choice(title: String, said: String? = null, pills: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Section(title)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { pills() }
+        said?.let { Text(it, style = Lettering.caption, color = Colors.muted) }
     }
 }
 
@@ -132,6 +149,18 @@ private val ArtifactsToScan.label: StringResource
     get() = when (this) {
         ArtifactsToScan.WORTH_WEARING -> Res.string.artifacts_worth_wearing
         ArtifactsToScan.EVERY -> Res.string.artifacts_all
+    }
+
+private val Arrival.label: StringResource
+    get() = when (this) {
+        Arrival.REPLACE -> Res.string.arrival_replace
+        Arrival.ADD -> Res.string.arrival_add
+    }
+
+private val Arrival.said: StringResource
+    get() = when (this) {
+        Arrival.REPLACE -> Res.string.arrival_replace_said
+        Arrival.ADD -> Res.string.arrival_add_said
     }
 
 @Composable

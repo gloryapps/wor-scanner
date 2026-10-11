@@ -37,4 +37,13 @@ class ScanFileTest {
 
         assertTrue("\"version\":2" in text, text)
     }
+
+    @Test
+    fun `a scan of the screen is laid over what the lab holds, and one written before it said so reads the same`() {
+        val scan = ScanFile<Int>(kind = "gear", startedAt = "20260909-120000", width = 1280, height = 720, outcome = "finished", entries = emptyList())
+        val before = """{"version":2,"kind":"gear","startedAt":"20260909-120000","width":1280,"height":720,"outcome":"finished","entries":[]}"""
+
+        assertTrue("\"arrival\":\"add\"" in Json.encodeToString(ScanFile.serializer(Int.serializer()), scan))
+        assertEquals(scan, Json.decodeFromString(ScanFile.serializer(Int.serializer()), before))
+    }
 }

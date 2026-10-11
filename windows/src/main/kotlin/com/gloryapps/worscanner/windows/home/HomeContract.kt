@@ -1,6 +1,7 @@
 package com.gloryapps.worscanner.windows.home
 
 import com.gloryapps.worscanner.scanner.account.ArtifactsToScan
+import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.account.Enhancement
 import com.gloryapps.worscanner.scanner.account.ScanChoices
 import com.gloryapps.worscanner.scanner.azhor.Send
@@ -17,7 +18,7 @@ internal data class HomeState(
     val account: AccountRead? = null,
     val linked: Boolean = false,
     val send: Send = Send.Idle,
-    /** What the scan sends of the gear and artifacts. */
+    /** What the scan sends of the gear and artifacts, and how the lab takes it. */
     val choices: ScanChoices = ScanChoices(),
 )
 
@@ -56,6 +57,8 @@ internal sealed interface HomeEvent {
     data class Toggle(val band: Enhancement) : HomeEvent
 
     data class ChooseArtifacts(val artifacts: ArtifactsToScan) : HomeEvent
+
+    data class ChooseArrival(val arrival: Arrival) : HomeEvent
 }
 
 internal sealed interface HomeEffect {

@@ -19,11 +19,12 @@ class CardsTest {
         heroes: List<String> = emptyList(),
         gear: List<String> = emptyList(),
         artifacts: List<String> = emptyList(),
+        collected: List<Long> = emptyList(),
         choices: ScanChoices = ScanChoices.EVERYTHING,
     ) = Cards(
         Game.shipped,
         Account(startedAt = "20261010-122135", heroes = heroes.map(Json::parseToJsonElement), gear = gear.map(Json::parseToJsonElement),
-            artifacts = artifacts.map(Json::parseToJsonElement), found = emptyMap(), seconds = 0.0),
+            artifacts = artifacts.map(Json::parseToJsonElement), collected = collected, found = emptyMap(), seconds = 0.0),
         choices,
     )
 
@@ -141,7 +142,27 @@ class CardsTest {
         assertEquals(emptyList(), cards(heroes = listOf(PELAGIOS.replace(""""iBaseId":2224""", """"iBaseId":${Game.shipped.heroes.entries.first { it.value.rarity < 4 }.key}"""))).heroes)
     }
 
+    @Test
+    fun `the collection counts each hero the account has held once, under each of its factions, whatever its rarity`() {
+        val (rex, brienne, nunea) = listOf(2001L, 2002L, 2003L)
+
+        val collection = cards(collected = listOf(rex, brienne, brienne, nunea)).collection
+
+        assertEquals(listOf(2, 1, 0), listOf("The Watchguard", "The Star Piercers", "The Unnamable").map(collection::getValue))
+        assertEquals(FACTIONS, collection.keys)
+    }
+
+    @Test
+    fun `a hero the shipped game does not know counts under no faction`() {
+        assertEquals(setOf(0), cards(collected = listOf(1L)).collection.values.toSet())
+    }
+
     private companion object {
+        val FACTIONS = setOf(
+            "The Watchguard", "The North Throne", "The Nightmare Council", "The Cursed Cult", "The Infernal Blast", "The Star Piercers",
+            "The Esoteria Order", "The Chaos Dominion", "The Supreme Arbiters", "The Grey Blades", "The Unnamable",
+        )
+
         const val VIERNAS_BANGLE = """{"iItemUid":27420,"iItemId":3218803,"iStarLvl":13,"iIntensifyLvl":16,"vMasterAttrList":[{"iId":304,"iAttrId":13,"iValue":6600}],""" +
             """"vViceAttrList":[{"iId":303,"iAttrId":1,"iValue":469},{"iId":309,"iAttrId":24,"iValue":1350},{"iId":302,"iAttrId":19,"iValue":1700},{"iId":306,"iAttrId":14,"iValue":2550}],""" +
             """"iExtraMasterAttrValue":0,"iExclusiveEffectId":38684770435543,"iVaryEffectId":4312147165305,"iHeroId":0,"bLocked":false}"""

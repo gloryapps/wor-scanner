@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Choose under **On the site** whether a scan replaces the heroes, gear and artifacts Azhor’s Master
+  Smithy holds, as it does unless you choose otherwise, or is added to them.
+- A scan sends how many heroes of each faction the account has collected, of every rarity, as the
+  game’s Collection Progress shows them.
+
+### Changed
+
+- A scan sent is on your account on the site at once, with nothing left to import there.
+
 ## [0.4.0] - 2026-10-11
 
 ### Added
@@ -28,8 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
-- The Android app: please don't use it for now. It stays at 0.3.0 and is no longer kept up with the
-  game or the site while we work on it; use the Windows app instead.
+- The Android app, for now.
 
 ## [0.3.0] - 2026-10-02
 

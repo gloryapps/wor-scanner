@@ -22,6 +22,8 @@ data class Account(
     val heroes: List<JsonElement>,
     val gear: List<JsonElement>,
     val artifacts: List<JsonElement>,
+    /** Every hero the account has held, by the client's base id: what the game's Collection Progress counts. */
+    val collected: List<Long>,
     /** How many entries every table holding each list had: the largest is the one read, the others copies the game let go. */
     val found: Map<Holding, List<Int>>,
     val seconds: Double,
@@ -40,22 +42,29 @@ suspend fun readAccount(memory: Memory, startedAt: String): Account = withContex
     val started = TimeSource.Monotonic.markNow()
     val heap = LuaHeap(memory)
     val holders = heap.holders(Holding.entries.map { it.anchor }.toSet())
-    val lists = Holding.entries.associateWith { holding -> holders[holding.anchor].orEmpty().map { heap.entries(it, holding.list) } }
-    val read = lists.mapValues { (holding, candidates) -> candidates.maxByOrNull { it.size }.orEmpty().mapNotNull { heap.entry(it, holding) } }
+    /* Each list's holders with what each holds, the one holding most first. */
+    val lists = Holding.entries.associateWith { holding ->
+        holders[holding.anchor].orEmpty().map { it to heap.values<LuaValue.Table>(it, holding.list) }.sortedByDescending { (_, list) -> list.size }
+    }
+    val read = lists.mapValues { (holding, candidates) -> candidates.firstOrNull()?.second.orEmpty().mapNotNull { heap.entry(it, holding) } }
 
     Account(
         startedAt = startedAt,
         heroes = read.getValue(Holding.HEROES),
         gear = read.getValue(Holding.GEAR),
         artifacts = read.getValue(Holding.ARTIFACTS),
-        found = lists.mapValues { (_, candidates) -> candidates.map { it.size }.sortedDescending() },
+        collected = lists.getValue(Holding.HEROES).firstOrNull()?.let { (holder, _) -> heap.values<LuaValue.Integer>(holder, COLLECTED).map { it.value } }.orEmpty(),
+        found = lists.mapValues { (_, candidates) -> candidates.map { (_, list) -> list.size } },
         seconds = started.elapsedNow().inWholeMilliseconds / 1000.0,
     )
 }
 
-/** The tables the field `list` of the table at `holder` holds. */
-private fun LuaHeap.entries(holder: Long, list: String): List<LuaValue.Table> =
-    (field(holder, list) as? LuaValue.Table)?.let { fields(it.address) }?.values?.filterIsInstance<LuaValue.Table>().orEmpty()
+/** Where the heroes' holder keeps every hero the account has held, by base id. */
+private const val COLLECTED = "m_OwenHeroBaseId"
+
+/** The values of type `V` the table in the field `list` of the table at `holder` holds. */
+private inline fun <reified V : LuaValue> LuaHeap.values(holder: Long, list: String): List<V> =
+    (field(holder, list) as? LuaValue.Table)?.let { fields(it.address) }?.values?.filterIsInstance<V>().orEmpty()
 
 /** An entry as JSON without its `shared` fields, read to an attribute in a piece's attribute list. */
 private fun LuaHeap.entry(entry: LuaValue.Table, holding: Holding): JsonElement? =

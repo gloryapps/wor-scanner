@@ -17,7 +17,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 
-/** The account's lists as the cards a scan of each kind writes, in `game`'s words; its gear and artifacts only those `choices` keeps. */
+/** The account's lists as the cards a scan of each kind writes, and its heroes' collection, in `game`'s words; its gear and artifacts only those `choices` keeps. */
 class Cards(private val game: Game, private val account: Account, private val choices: ScanChoices) {
     val gear: List<ScannedGear> by lazy {
         account.gear.filter { entry -> entry.int("iIntensifyLvl")?.let(Enhancement::of) in choices.enhancements }.mapNotNull(::piece)
@@ -30,6 +30,13 @@ class Cards(private val game: Game, private val account: Account, private val ch
             .groupBy { it.long("iBaseId") }.values
             .map { copies -> copies.maxWith(compareBy({ it.int("iStarLevel") }, { it.int("iSublimLevel") }, { it.int("iLevel") })) }
             .mapNotNull(::hero)
+    }
+
+    /** How many heroes of each faction the account has collected, as the game's Collection Progress counts them: of any rarity, one of two factions in both. */
+    val collection: Map<String, Int> by lazy {
+        val collected = account.collected.distinct().mapNotNull(game.heroes::get)
+
+        game.heroes.values.flatMap { it.factions }.distinct().associateWith { faction -> collected.count { faction in it.factions } }
     }
 
     val artifacts: List<ScannedArtifact> by lazy {

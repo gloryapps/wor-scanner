@@ -5,8 +5,8 @@ import kotlin.test.assertEquals
 
 class ScanChoicesTest {
     @Test
-    fun `a scan sends +16 gear and the artifacts worth wearing until the player chooses`() {
-        assertEquals(ScanChoices(setOf(Enhancement.AT_16), ArtifactsToScan.WORTH_WEARING), ScanChoices())
+    fun `a scan sends +16 gear and the artifacts worth wearing, in place of what the lab holds, until the player chooses`() {
+        assertEquals(ScanChoices(setOf(Enhancement.AT_16), ArtifactsToScan.WORTH_WEARING, Arrival.REPLACE), ScanChoices())
     }
 
     @Test

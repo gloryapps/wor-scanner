@@ -9,6 +9,11 @@
     <string name="artifacts_worth_wearing">Worth wearing</string>
     <string name="artifacts_all">All</string>
     <string name="artifacts_worth_wearing_said">Every +25 artifact, and every exclusive from +10.</string>
+    <string name="arrival">On the site</string>
+    <string name="arrival_replace">Replace what it holds</string>
+    <string name="arrival_add">Add to it</string>
+    <string name="arrival_replace_said">The site’s heroes, gear and artifacts become those the scan sends.</string>
+    <string name="arrival_add_said">Those the scan sends are added to the site’s heroes, gear and artifacts.</string>
     <string name="scan_account">Scan the account</string>
     <string name="scanning_account">Scanning the account…</string>
     <string name="account_scanned">%1$s heroes, %2$s pieces of gear and %3$s artifacts</string>

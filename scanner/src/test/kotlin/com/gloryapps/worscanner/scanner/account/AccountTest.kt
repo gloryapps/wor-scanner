@@ -59,12 +59,21 @@ class AccountTest {
     }
 
     @Test
+    fun `every hero the account has held is read by base id from the table its heroes are read from`() = runTest {
+        memory.table("m_CharactorDatas" to memory.table(101 to hero(101, 59)), "m_OwenHeroBaseId" to memory.table(array = listOf(2235)))
+        memory.table("m_CharactorDatas" to memory.table(101 to hero(101, 60), 102 to hero(102, 1)), "m_OwenHeroBaseId" to memory.table(array = listOf(2235, 2001, 2019)))
+
+        assertEquals(listOf(2235L, 2001L, 2019L), readAccount(memory, STARTED).collected)
+    }
+
+    @Test
     fun `a game holding none of the lists yet reads as an account with nothing in it`() = runTest {
         memory.table("iLimit" to 200)
 
         val account = readAccount(memory, STARTED)
 
         assertEquals(listOf(emptyList<JsonElement>()), listOf(account.heroes, account.gear, account.artifacts).distinct())
+        assertEquals(emptyList(), account.collected)
     }
 
     @Test
@@ -74,7 +83,7 @@ class AccountTest {
         val written = json(Json.encodeToString(Account.serializer(), readAccount(memory, STARTED).copy(seconds = 1.0)))
 
         assertEquals(
-            json("""{"kind":"account","startedAt":"$STARTED","heroes":[],"gear":[],"artifacts":[{"iLevel":20}],"found":{"heroes":[],"gear":[],"artifacts":[1]},"seconds":1.0}"""),
+            json("""{"kind":"account","startedAt":"$STARTED","heroes":[],"gear":[],"artifacts":[{"iLevel":20}],"collected":[],"found":{"heroes":[],"gear":[],"artifacts":[1]},"seconds":1.0}"""),
             written,
         )
     }
