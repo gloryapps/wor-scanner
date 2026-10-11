@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - With Watcher of Realms minimised, the scanner still finds it and scans the account, where it
   asked to open the game.
+- The scanner finds the game whatever its client titles its window, where it looked for the
+  global client's title only.
 - **Try again** after a send that stopped halfway sends only what Azhor’s Master Smithy had not
   taken yet, so gear added to the site no longer arrives twice.
 
