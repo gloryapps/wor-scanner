@@ -16,7 +16,7 @@ android {
         applicationId = "com.gloryapps.worscanner"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionName = providers.gradleProperty("worscanner.version").get()
+        versionName = providers.gradleProperty("worscanner.released").get()
         versionCode = versionName!!.split('.').fold(0) { code, part -> code * 100 + part.toInt() }
         resValue("string", "app_name", providers.gradleProperty("worscanner.name").get())
     }

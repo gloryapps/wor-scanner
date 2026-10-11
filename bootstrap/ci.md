@@ -22,8 +22,9 @@ folder in `%LOCALAPPDATA%` and its link to the lab are its own, beside the relea
 
 ## Release
 
-`dev` is always on the version it is building: `worscanner.version` in `gradle.properties`, which debug
-builds show with a `-dev` suffix. `versionCode` derives from it (`0.1.0` → `100`).
+`dev` holds the version last released, `worscanner.released` in `gradle.properties`: every build is
+versioned as it, a debug build with a `-dev` suffix, and a release builds the next. What is next is not
+known until the release's notes are. `versionCode` derives from the version (`0.1.0` → `100`).
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), written for whoever
 scans: a change lands with its line under `## [Unreleased]`, and a release's notes are that section.
@@ -43,9 +44,11 @@ On the pull request:
 1. Fails one from any branch but `dev`.
 2. Reads the notes under `## [Unreleased]`. With none, the pull request is no release: it passes
    building nothing, and its merge publishes nothing.
-3. Reads the version and fails if the tag `v<version>` already exists.
+3. Chooses the version from the one last released: the next minor where the notes hold `### Added`
+   or `### Removed`, the next patch where they only change or fix. Fails if the tag `v<version>`
+   already exists.
 4. Runs the tests, and keeps the notes and the version as the run's `release` artifact.
-5. On a Windows runner, tests the Windows app on its desktop and builds it, a folder holding its own
+5. On a Windows runner, tests the Windows app on its desktop and builds it as that version, a folder holding its own
    Java runtime, zipped as `wor-scanner-windows.zip` and kept as the run's `release-windows` artifact.
 
 On the merge, which is a merge commit so that `dev`'s commits reach `main` as they are:
@@ -55,9 +58,9 @@ On the merge, which is a merge commit so that `dev`'s commits reach `main` as th
 2. Creates the tag on the merge commit and a GitHub release holding `wor-scanner-windows.zip`, with
    the notes. Its name carries no version, so `releases/latest/download/wor-scanner-windows.zip`
    always downloads the newest.
-3. Commits `Start <next minor>` to `dev`, which also heads those notes `## [<version>] - <date>` under
-   an empty `## [Unreleased]` and adds the version's compare link: pull `dev` before working on. A
-   patch or a major is set in `worscanner.version` on `dev` by hand, before its pull request.
+3. Commits `Released <version>` to `dev`, setting `worscanner.released` to it, which also heads those
+   notes `## [<version>] - <date>` under an empty `## [Unreleased]` and adds the version's compare
+   link: pull `dev` before working on. No notes choose a major; the first one adds how.
 
 A merge whose run GitHub never started is released by running the workflow on `main` by hand,
 which does what the merge does while the pull request's artifact is kept, 90 days:

@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       releasing: ${{ steps.notes.outputs.releasing }}
+      version: ${{ steps.version.outputs.name }}
     steps:
       - name: Refuse a pull request from anywhere but dev
         if: github.head_ref != 'dev'
@@ -55,10 +56,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         if: steps.notes.outputs.releasing == 'true'
 
-      - name: Read the version being released
+      # The next minor where the notes add or remove something, the next patch where they only change or fix.
+      - name: Choose the version being released
         if: steps.notes.outputs.releasing == 'true'
         id: version
-        run: echo "name=$(sed -n 's/^worscanner.version=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
+        run: |
+          IFS=. read -r major minor patch <<< "$(sed -n 's/^worscanner.released=//p' gradle.properties)"
+          if grep -qE '^### (Added|Removed)$' "$RUNNER_TEMP/release/notes.md"; then
+            echo "name=$major.$((minor + 1)).0" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=$major.$minor.$((patch + 1))" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Refuse a version already released
         if: steps.notes.outputs.releasing == 'true'
@@ -101,7 +109,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Test and build the Windows app
-        run: ./gradlew :windows:test :windows:createDistributable
+        run: ./gradlew :windows:test :windows:createDistributable -Pworscanner.released=${{ needs.release.outputs.version }}
 
       - name: Zip the app's folder
         run: 7z a "$RUNNER_TEMP/wor-scanner-windows.zip" "./windows/build/compose/binaries/main/app/WoR Scanner"
@@ -167,25 +175,23 @@ jobs:
           gh release create "v$VERSION" "wor-scanner-windows.zip" --repo "$GITHUB_REPOSITORY" \
             --title "v$VERSION" --notes-file notes.md --target "$GITHUB_SHA"
 
-      # dev moves to the next minor and dates what was unreleased; a patch or a major is set on dev by hand before its pull request.
-      - name: Start the next version on dev
+      # dev records the version as released and dates what was unreleased.
+      - name: Record the release on dev
         if: steps.build.outputs.releasing == 'true'
         env:
           VERSION: ${{ steps.version.outputs.name }}
         run: |
           git switch dev
-          IFS=. read -r major minor patch <<< "$VERSION"
-          next="$major.$((minor + 1)).0"
-          sed -i "s/^worscanner.version=$VERSION$/worscanner.version=$next/" gradle.properties
+          sed -i "s/^worscanner.released=.*$/worscanner.released=$VERSION/" gradle.properties
           sed -i \
             -e "s/^## \[Unreleased\]$/## [Unreleased]\n\n## [$VERSION] - $(date -u +%F)/" \
             -e "s|^\[unreleased\]: \(.*\)/compare/\(v[0-9.]*\)\.\.\.HEAD$|[unreleased]: \1/compare/v$VERSION...HEAD\n[$VERSION]: \1/compare/\2...v$VERSION|" \
             CHANGELOG.md
           if git diff --quiet; then
-            echo "dev is already past $VERSION"
+            echo "dev already records $VERSION"
             exit 0
           fi
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git commit -am "Start $next"
+          git commit -am "Released $VERSION"
           git push origin HEAD:dev
