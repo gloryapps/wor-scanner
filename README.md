@@ -4,9 +4,8 @@ Reads your Watcher of Realms account, its epic and legendary heroes, its gear an
 sends it to [Azhor’s Master Smithy](https://azhor-wor.netlify.app).
 
 Releases ship the Windows app, for the game's own PC client on the same PC: it is [right
-below](#on-windows). The Android app, which reads the game's screen in an emulator, is paused; its
-last release is [0.3.0](../../releases/tag/v0.3.0), and what it does is described from
-[Android](#android) on.
+below](#on-windows). The Android app, which reads the game's screen in an emulator, is deprecated for
+now: please don't use it while we work on it ([Android](#android)).
 
 ## On Windows
 
@@ -28,6 +27,10 @@ kept there is imported by dropping it on that same dialog. If Windows will not l
 game, the game was opened as administrator: open it as usual.
 
 ## Android
+
+> **Deprecated for now: please don't use the Android app.** It stays at
+> [0.3.0](../../releases/tag/v0.3.0) and is no longer kept up with the game or the site while we work
+> on it; use the [Windows app](#on-windows) instead. What follows describes 0.3.0.
 
 1. Download `wor-scanner.apk` from the [0.3.0 release](../../releases/tag/v0.3.0).
 2. LDPlayer or BlueStacks: drag the APK onto the emulator's window. A phone: open the APK and allow
