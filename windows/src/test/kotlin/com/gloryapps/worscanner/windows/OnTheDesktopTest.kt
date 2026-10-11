@@ -15,9 +15,10 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import com.sun.jna.Memory as Buffer
 
-/** A window titled as the game on a real Windows desktop, found and its process read. Run on a Windows runner by hand; skipped on any other system. */
+/** A window on a real Windows desktop, listed as the desktop shows it and its process read. Run on a Windows runner by hand; skipped on any other system. */
 class OnTheDesktopTest {
     private lateinit var standIn: JFrame
 
@@ -25,7 +26,7 @@ class OnTheDesktopTest {
     fun open() {
         assumeTrue("the desktop is Windows'", Desktop.present)
         SwingUtilities.invokeAndWait {
-            standIn = JFrame("Watcher of Realms").apply {
+            standIn = JFrame(TITLE).apply {
                 contentPane = JPanel().apply { preferredSize = Dimension(WIDTH, HEIGHT) }
                 pack()
                 setLocation(80, 80)
@@ -40,27 +41,31 @@ class OnTheDesktopTest {
         if (::standIn.isInitialized) SwingUtilities.invokeAndWait { standIn.dispose() }
     }
 
-    private fun game(): TopWindow = assertNotNull(runBlocking { Desktop.game() }, "no window titled as the game")
+    private fun listed(): TopWindow = assertNotNull(runBlocking { Desktop.windows() }.firstOrNull { it.title == TITLE }, "the stand-in is not listed")
 
     @Test
-    fun `the game's window is found by its title, minimised too`() {
-        val shown = game().handle
+    fun `a window is listed with its title and class, and still shown once minimised`() {
+        val shown = listed()
         SwingUtilities.invokeAndWait { standIn.extendedState = JFrame.ICONIFIED }
         Thread.sleep(SETTLE_MS)
+        val minimised = listed()
 
-        assertEquals(shown, game().handle)
+        assertEquals("SunAwtFrame", shown.kind)
+        assertEquals(shown.handle, minimised.handle)
+        assertTrue(minimised.shown)
     }
 
     @Test
-    fun `the game's window opens the memory of the process that draws it`() {
+    fun `a window opens the memory of the process that draws it`() {
         val written = Buffer(16).apply { write(0, ByteArray(16) { (it * 3).toByte() }, 0, 16) }
 
-        GameMemory.of(game().handle).getOrThrow().use { memory ->
+        GameMemory.of(listed().handle).getOrThrow().use { memory ->
             assertEquals((0 until 16).map { (it * 3).toByte() }, memory.read(Pointer.nativeValue(written), 16)?.toList())
         }
     }
 
     private companion object {
+        const val TITLE = "A stand-in for the game"
         const val WIDTH = 640
         const val HEIGHT = 360
         const val SETTLE_MS = 500L

@@ -28,7 +28,7 @@ internal object Desktop {
 
     suspend fun game(): TopWindow? = gameAmong(windows())
 
-    private suspend fun windows(): List<TopWindow> = withContext(Dispatchers.IO) {
+    suspend fun windows(): List<TopWindow> = withContext(Dispatchers.IO) {
         buildList {
             User32.INSTANCE.EnumWindows(WNDENUMPROC { window, _ -> add(topWindow(window)); true }, null)
         }
