@@ -18,8 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.gloryapps.worscanner.scan.ScanState
-import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.scanner.runs.ScanState
+import com.gloryapps.worscanner.scanner.runs.Scanning
 import com.gloryapps.worscanner.ui.Colors
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject

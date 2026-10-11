@@ -6,7 +6,7 @@ import android.graphics.Path
 import android.view.accessibility.AccessibilityEvent
 import com.gloryapps.worscanner.scanner.senses.Touch
 import kotlinx.coroutines.CancellableContinuation
-import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.android.ext.android.inject
 import java.util.concurrent.atomic.AtomicReference
@@ -28,9 +28,12 @@ class TouchService : AccessibilityService(), Touch {
 
     override fun onInterrupt() = Unit
 
-    override suspend fun tap(x: Int, y: Int) = stroke(Path().apply { moveTo(x.toFloat(), y.toFloat()) }, TAP_MILLIS)
+    /* A touch of the screen cancels the gesture under way: the tap goes again once the touch has passed, so a touch never stops a scan; Stop does. */
+    override suspend fun tap(x: Int, y: Int) {
+        while (!send(GestureDescription.StrokeDescription(Path().apply { moveTo(x.toFloat(), y.toFloat()) }, 0, TAP_MILLIS))) delay(AGAIN_MILLIS)
+    }
 
-    /* The finger stops and stays before it lifts, so the grid takes no fling from the release. */
+    /* The finger stops and stays before it lifts, so the grid takes no fling from the release. A drag a touch cut short is left as it went: the walk measures where the grid stopped. */
     override suspend fun drag(fromX: Int, fromY: Int, toX: Int, toY: Int, millis: Long) {
         val move = GestureDescription.StrokeDescription(
             Path().apply {
@@ -42,30 +45,25 @@ class TouchService : AccessibilityService(), Touch {
             true,
         )
         val hold = move.continueStroke(Path().apply { moveTo(toX.toFloat(), toY.toFloat()) }, 0, HOLD_MILLIS, false)
-        send(move)
-        send(hold)
+        if (send(move)) send(hold)
     }
 
-    /** Android cancels an injected gesture the moment a finger touches the screen: the player took it back, and the scan ends as stopped. */
-    private class TouchedByHand : CancellationException("a finger touched the screen")
-
-    private suspend fun stroke(path: Path, millis: Long) = send(GestureDescription.StrokeDescription(path, 0, millis))
-
-    private suspend fun send(stroke: GestureDescription.StrokeDescription) = suspendCancellableCoroutine { continuation ->
+    /** Whether the gesture ran to its end; false where Android cancelled it, a finger having touched the screen. */
+    private suspend fun send(stroke: GestureDescription.StrokeDescription): Boolean = suspendCancellableCoroutine { continuation ->
         val ended = GestureEnded(continuation)
         continuation.invokeOnCancellation { ended.waiting.set(null) }
         if (!dispatchGesture(GestureDescription.Builder().addStroke(stroke).build(), ended, null)) ended.resume(Result.failure(IllegalStateException("gesture refused")))
     }
 
     /** Android 9 keeps every callback a gesture was dispatched with for as long as the service lives: this one lets go of the scan, and the frames it holds, once the gesture ends. */
-    private class GestureEnded(continuation: CancellableContinuation<Unit>) : GestureResultCallback() {
+    private class GestureEnded(continuation: CancellableContinuation<Boolean>) : GestureResultCallback() {
         val waiting = AtomicReference(continuation)
 
-        override fun onCompleted(gestureDescription: GestureDescription?) = resume(Result.success(Unit))
+        override fun onCompleted(gestureDescription: GestureDescription?) = resume(Result.success(true))
 
-        override fun onCancelled(gestureDescription: GestureDescription?) = resume(Result.failure(TouchedByHand()))
+        override fun onCancelled(gestureDescription: GestureDescription?) = resume(Result.success(false))
 
-        fun resume(result: Result<Unit>) {
+        fun resume(result: Result<Boolean>) {
             waiting.getAndSet(null)?.takeIf { it.isActive }?.resumeWith(result)
         }
     }
@@ -73,5 +71,7 @@ class TouchService : AccessibilityService(), Touch {
     private companion object {
         const val TAP_MILLIS = 60L
         const val HOLD_MILLIS = 200L
+        /** Long enough for a touch to have lifted before the tap goes again. */
+        const val AGAIN_MILLIS = 300L
     }
 }

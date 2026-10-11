@@ -2,30 +2,34 @@ package com.gloryapps.worscanner.ui
 
 import android.content.Context
 import android.text.format.Formatter
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import com.gloryapps.worscanner.R
-import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.scanner.runs.Kept
+import com.gloryapps.worscanner.scanner.runs.scans
 import com.gloryapps.worscanner.capture.Outbound
-import com.gloryapps.worscanner.scan.Ended
-import java.io.File
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-
-/** The stamp as a person reads it, in their own locale: `6 Sept 2026 · 19:18`. */
-fun Kept.shown(): String = "${at.format(DAY)} · ${at.format(HOUR)}"
+import com.gloryapps.worscanner.scanner.runs.Ended
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 
 /** The line under the stamp: what was read and how much, how big it is on disk, and how it ended. */
-fun Kept.said(context: Context): String = listOfNotNull(
-    kind?.let { context.getString(it.label) },
-    when (this) {
-        is Kept.Read -> context.getString(R.string.home_reading)
-        is Kept.Scan -> entries?.let { context.getString(R.string.overlay_kept, it) }
-    },
-    Formatter.formatShortFileSize(context, weight()),
-    (this as? Kept.Scan)?.ended(context),
-).joinToString(" · ")
+@Composable
+fun Kept.said(): String {
+    val context = LocalContext.current
+
+    return listOfNotNull(
+        kind?.let { stringResource(it.label) },
+        when (this) {
+            is Kept.Read -> context.getString(R.string.home_reading)
+            is Kept.Scan -> entries?.let { context.getString(R.string.overlay_kept, it) }
+        },
+        Formatter.formatShortFileSize(context, weight()),
+        (this as? Kept.Scan)?.ended(context),
+    ).joinToString(" · ")
+}
 
 /** One reading on its way out: the JSON it goes out under, and the files that travel with it. */
-fun Kept.outgoing(context: Context): Outgoing {
+suspend fun Kept.outgoing(context: Context): Outgoing {
     val leaving = outbound()
 
     return Outgoing(
@@ -33,7 +37,7 @@ fun Kept.outgoing(context: Context): Outgoing {
         files = leaving,
         scans = scans(),
         holds = buildList {
-            kind?.let { add(context.getString(R.string.export_kind) to context.getString(it.label)) }
+            kind?.let { add(context.getString(R.string.export_kind) to getString(it.label)) }
             if (this@outgoing is Kept.Scan) {
                 entries?.let { add(context.getString(R.string.export_entries) to "$it") }
                 add(context.getString(R.string.export_outcome) to ended(context))
@@ -43,9 +47,6 @@ fun Kept.outgoing(context: Context): Outgoing {
         },
     )
 }
-
-/** The JSON of a scan, which is what the lab imports; a Read's is not one. */
-internal fun Kept.scans(): List<File> = if (this is Kept.Scan) files.filter { it.extension == "json" } else emptyList()
 
 /** Why images travel with the JSON, said in the sheet so nobody wonders what the PNGs beside it are. */
 private fun Kept.images(context: Context): Pair<String, String>? {
@@ -104,6 +105,3 @@ fun Kept.Scan.ended(context: Context): String = context.getString(
 )
 
 private fun Kept.weight(): Long = files.sumOf { it.length() }
-
-private val DAY: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-private val HOUR: DateTimeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)

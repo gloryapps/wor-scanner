@@ -43,6 +43,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import com.gloryapps.worscanner.ui.resources.Res
+import com.gloryapps.worscanner.ui.resources.choose_kind
+import com.gloryapps.worscanner.ui.resources.read_tile
+import com.gloryapps.worscanner.ui.resources.scan
+import com.gloryapps.worscanner.ui.resources.stop
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -51,8 +57,8 @@ import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.MainActivity
 import com.gloryapps.worscanner.capture.CaptureService
 import com.gloryapps.worscanner.scan.Chosen
-import com.gloryapps.worscanner.scan.ScanState
-import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.scanner.runs.ScanState
+import com.gloryapps.worscanner.scanner.runs.Scanning
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Lettering
@@ -235,7 +241,7 @@ private fun Stop(onStop: () -> Unit) {
         Box(
             Modifier
                 .requiredSize(TARGET)
-                .clickable(interactionSource = null, indication = null, onClickLabel = stringResource(R.string.overlay_stop), onClick = onStop),
+                .clickable(interactionSource = null, indication = null, onClickLabel = stringResource(Res.string.stop), onClick = onStop),
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -270,7 +276,7 @@ internal fun Sheet(
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
-            stringResource(R.string.overlay_what).uppercase(),
+            stringResource(Res.string.choose_kind).uppercase(),
             Modifier.padding(start = 9.dp, top = 6.dp, end = 9.dp, bottom = 2.dp),
             style = Lettering.mark,
             color = Colors.faint,
@@ -283,17 +289,17 @@ internal fun Sheet(
             color = Colors.muted,
         )
         when {
-            running -> Action(label = stringResource(R.string.overlay_scan), said = stringResource(R.string.overlay_running), onClick = onScan)
+            running -> Action(label = stringResource(Res.string.scan), said = stringResource(R.string.overlay_running), onClick = onScan)
             touch != Standing.ON -> Action(
-                label = stringResource(R.string.overlay_scan),
+                label = stringResource(Res.string.scan),
                 said = stringResource(if (touch == Standing.STALLED) R.string.overlay_touch_stalled else R.string.overlay_touch_off),
                 colour = Colors.muted,
                 saidColour = Colors.warning,
                 onClick = onTouch,
             )
-            else -> Lead(stringResource(R.string.overlay_scan), stringResource(kind.label).lowercase(), onScan)
+            else -> Lead(stringResource(Res.string.scan), stringResource(kind.label).lowercase(), onScan)
         }
-        Action(label = stringResource(R.string.overlay_read), onClick = onRead)
+        Action(label = stringResource(Res.string.read_tile), onClick = onRead)
         Action(label = stringResource(R.string.overlay_app), onClick = onApp)
         Box(Modifier.padding(horizontal = 9.dp, vertical = 3.dp).fillMaxWidth().height(1.dp).background(Colors.hairline))
         Action(label = stringResource(R.string.overlay_close), colour = Colors.muted, onClick = onClose)

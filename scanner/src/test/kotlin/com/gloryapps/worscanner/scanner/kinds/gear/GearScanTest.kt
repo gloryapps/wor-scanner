@@ -42,7 +42,7 @@ class GearScanTest {
         assertEquals("cataclysm", card.set)
         assertEquals(Slot.BANGLE, card.slot)
         assertEquals(false, card.ancient)
-        assertEquals(true, card.variant)
+        assertEquals(null, card.variant)
         assertEquals("VIERNA", card.exclusive)
         assertEquals(
             listOf(

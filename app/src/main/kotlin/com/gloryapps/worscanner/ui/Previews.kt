@@ -23,8 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gloryapps.worscanner.capture.Emulator
-import com.gloryapps.worscanner.capture.Kept
-import com.gloryapps.worscanner.scan.Ended
+import com.gloryapps.worscanner.scanner.runs.Kept
+import com.gloryapps.worscanner.scanner.runs.Ended
 import com.gloryapps.worscanner.capture.SharedFolder
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import java.io.File

@@ -4,9 +4,10 @@ Settled 2026-09-07 from the `Scanner App` and `Scanner Overlay C` boards of the 
 project. One theme, dark: the app and the strip drawn over the game share it, so looking away from
 one and back at the other reads as one thing. There is no light variant.
 
-Values live in `ui/Colors.kt` and `ui/Lettering.kt`, one role per name. `ui/Theme.kt`'s `ScannerTheme`
-is the same two objects as Material reads them, for the components that ask Material rather than the
-roles. A screen names a role, never a value and never a size.
+Values live in the `ui` module's `Colors.kt` and `Lettering.kt`, one role per name, for every
+platform. Its `Theme.kt`'s `ScannerTheme` is the same two objects as Material reads them, for the
+components that ask Material rather than the roles. A screen names a role, never a value and never
+a size.
 
 ## Colour roles
 
@@ -32,7 +33,7 @@ roles. A screen names a role, never a value and never a size.
 
 ## Type roles
 
-Two voices in `Fonts`, both the device's own: `sans` talks, `mono` shows what the app read or wrote.
+Two voices in `Fonts`, both the platform's own: `sans` talks, `mono` shows what the app read or wrote.
 No font file ships with the app.
 
 | Role | Family, size | Where |
@@ -62,4 +63,4 @@ A filled action has a `Reach`: `SMALL` 30 dp tall in a strip over the screen, `R
 
 The screens are drawn for LDPlayer's window: 1280x720 px at 240 dpi, 853x480 dp, the previews' wide
 frame. A larger window only adds room; below 720 dp wide the columns stack and scroll. `Wide`, in
-`ui/Surfaces.kt`, tells a screen which of the two it is.
+the `ui` module's `Surfaces.kt`, tells a screen which of the two it is.

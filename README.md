@@ -1,15 +1,35 @@
 # WoR Scanner
 
-An Android app that reads your Watcher of Realms gear, legendary and epic heroes, and artifacts off
-the screen, one tile at a time, and writes a JSON file you import into
-[Azhor’s Master Smithy](https://azhor-wor.netlify.app).
+Reads your Watcher of Realms account, its epic and legendary heroes, its gear and its artifacts, and
+sends it to [Azhor’s Master Smithy](https://azhor-wor.netlify.app).
 
-It is made for the game running in an emulator on a PC, LDPlayer or BlueStacks. It may work on a
-phone, but that has not been tried.
+Releases ship the Windows app, for the game's own PC client on the same PC: it is [right
+below](#on-windows). The Android app, which reads the game's screen in an emulator, is paused; its
+last release is [0.3.0](../../releases/tag/v0.3.0), and what it does is described from
+[Android](#android) on.
 
-## Install
+## On Windows
 
-1. Download [`wor-scanner.apk`](../../releases/latest/download/wor-scanner.apk) from the latest [release](../../releases/latest).
+1. Download [`wor-scanner-windows.zip`](../../releases/latest/download/wor-scanner-windows.zip) from the
+   latest [release](../../releases/latest), unzip it anywhere, and open `WoR Scanner.exe` in the
+   `WoR Scanner` folder. It brings its own Java, so nothing else needs installing. The app is not
+   signed, so the first time Windows says it protected your PC: **More info**, then **Run anyway**.
+2. Open Watcher of Realms on the same PC as usual, not as administrator, sign in and wait for the
+   city; the app says it found the game.
+3. Choose the gear and the artifacts to scan, and press **Scan the account**. The app reads the
+   account straight from the game's memory, in seconds: there is no screen to prepare, and nothing in
+   the game is touched. **Scan it again** after a change in the game.
+4. **Send** puts the scan in **Import a scan** on the site, in your account, where it waits until you
+   import it. The first time, the app asks for the site's code: open **Import a scan**, press
+   **Link**, and type the code it shows within ten minutes.
+
+Scans and a log are kept in `%LOCALAPPDATA%\WoR Scanner`; **Open folder** shows them, and a scan
+kept there is imported by dropping it on that same dialog. If Windows will not let the app read the
+game, the game was opened as administrator: open it as usual.
+
+## Android
+
+1. Download `wor-scanner.apk` from the [0.3.0 release](../../releases/tag/v0.3.0).
 2. LDPlayer or BlueStacks: drag the APK onto the emulator's window. A phone: open the APK and allow
    installing apps from that source.
 3. Open WoR Scanner. The first time, it shows how a scan works and asks for its permissions, saying
@@ -19,7 +39,7 @@ When a newer release is out, a banner under the home screen's header offers it. 
 downloads the release and Android asks to install it over the one you have, your readings kept; the
 first time, Android also asks to let WoR Scanner install apps.
 
-## What it asks for, and why
+### What it asks for, and why
 
 | Permission | Why |
 | --- | --- |
@@ -29,7 +49,7 @@ first time, Android also asks to let WoR Scanner install apps.
 | Notifications (Android 13+) | For the notification that shows a scan's progress and its Stop. |
 | Install apps | To install a newer release it downloaded, once you confirm. |
 
-## Scanning
+### Scanning
 
 Press **Start** on the home screen, go to the game, tap the capsule to pick what to scan, and press
 **Scan**.
@@ -41,13 +61,13 @@ Press **Start** on the home screen, go to the game, tap the capsule to pick what
 - **Artifacts**: open Storage → Artifact, sorted as you want it scanned, and select the first
   artifact. The scan reads every artifact to the end of the grid, skipping those never enhanced.
 
-The scan taps and scrolls the grid itself; touching the screen stops it, and what it read so far is
-kept.
+The scan taps and scrolls the grid itself. Touching the screen only delays it; Stop, on the capsule or
+the notification, stops it, and what it read so far is kept.
 
 **How to scan**, in the home screen's header and on the first run's first page, plays a video of a
 whole scan, from Start to Sent.
 
-## Export
+### Export
 
 When a scan ends, the home screen shows it. **Send to Azhor’s Master Smithy** puts it in **Import a
 scan** on the site, in your account, where it waits until you import it. **Save** puts the file in
@@ -68,14 +88,16 @@ fixed in Azhor’s Master Smithy.
 
 Scans stay on the device until you export them, and are not backed up. **Send** uploads a scan's JSON
 to Azhor’s Master Smithy, into the account the scanner is linked to; its pictures stay on the device.
-Release builds send crash reports to Firebase Crashlytics: the crash, the kind being scanned, the
-display's size and how a scan ended. Nothing else leaves the device.
+The Android app's release builds send crash reports to Firebase Crashlytics: the crash, the kind
+being scanned, the display's size and how a scan ended. Nothing else leaves the device. The Windows
+app sends nothing but a scan you send; its log stays in its folder.
 
 ## Building
 
 ```bash
 ./gradlew test
 ./gradlew :app:assembleDebug
+./gradlew :windows:run
 ```
 
 How the code is laid out is in [`bootstrap/architecture.md`](bootstrap/architecture.md); how a release

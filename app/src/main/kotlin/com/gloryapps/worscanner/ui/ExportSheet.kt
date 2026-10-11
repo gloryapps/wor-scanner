@@ -23,13 +23,17 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import com.gloryapps.worscanner.ui.resources.Res
+import com.gloryapps.worscanner.ui.resources.send
+import com.gloryapps.worscanner.ui.resources.sending
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -142,7 +146,7 @@ fun ExportSheet(
             Column(Modifier.padding(horizontal = 22.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (sends) {
                     Accented(
-                        stringResource(if (sending) R.string.export_sending else R.string.export_send),
+                        stringResource(if (sending) Res.string.sending else Res.string.send),
                         Modifier.fillMaxWidth(),
                         enabled = !sending,
                         onClick = onSend,

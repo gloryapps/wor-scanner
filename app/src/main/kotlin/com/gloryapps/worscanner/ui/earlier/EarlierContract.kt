@@ -1,6 +1,6 @@
 package com.gloryapps.worscanner.ui.earlier
 
-import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.scanner.runs.Kept
 
 internal data class EarlierUiState(
     /** Null until the store has answered, so a start does not show an empty list first. */

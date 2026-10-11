@@ -51,6 +51,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import com.gloryapps.worscanner.ui.resources.Res
+import com.gloryapps.worscanner.ui.resources.cancel
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -59,7 +62,7 @@ import com.gloryapps.worscanner.BuildConfig
 import com.gloryapps.worscanner.R
 import com.gloryapps.worscanner.app.provided
 import com.gloryapps.worscanner.capture.CaptureService
-import com.gloryapps.worscanner.scan.ScanState
+import com.gloryapps.worscanner.scanner.runs.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.ui.Accented
 import com.gloryapps.worscanner.ui.Back
@@ -207,7 +210,7 @@ internal fun Ask(grants: Grants, onEvent: (HomeEvent) -> Unit, opened: Set<Permi
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
-            Edged(stringResource(R.string.cancel), onClick = { onEvent(HomeEvent.Dismiss) })
+            Edged(stringResource(Res.string.cancel), onClick = { onEvent(HomeEvent.Dismiss) })
             Accented(stringResource(R.string.home_start), enabled = grants.canScan, onClick = { onEvent(HomeEvent.Begin) })
         }
     }

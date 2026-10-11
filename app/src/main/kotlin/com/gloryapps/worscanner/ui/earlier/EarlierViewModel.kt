@@ -2,11 +2,11 @@ package com.gloryapps.worscanner.ui.earlier
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gloryapps.worscanner.azhor.Link
-import com.gloryapps.worscanner.capture.Kept
-import com.gloryapps.worscanner.capture.Readings
-import com.gloryapps.worscanner.scan.ScanState
-import com.gloryapps.worscanner.scan.Scanning
+import com.gloryapps.worscanner.scanner.azhor.Link
+import com.gloryapps.worscanner.scanner.runs.Kept
+import com.gloryapps.worscanner.scanner.runs.Readings
+import com.gloryapps.worscanner.scanner.runs.ScanState
+import com.gloryapps.worscanner.scanner.runs.Scanning
 import com.gloryapps.worscanner.ui.ExportDelegate
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Android launcher icon's middle 72 of its 108, on a rounded square of its background. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="72dp"
+    android:height="72dp"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+  <path
+      android:pathData="M16,0L56,0A16,16 0,0 1,72 16L72,56A16,16 0,0 1,56 72L16,72A16,16 0,0 1,0 56L0,16A16,16 0,0 1,16 0z"
+      android:fillColor="#0B0D12"/>
+  <path
+      android:pathData="M12.68,21.84L12.68,12.68L21.84,12.68"
+      android:strokeWidth="4.17"
+      android:fillColor="#00000000"
+      android:strokeColor="#9EC5FF"
+      android:strokeLineCap="square"/>
+  <path
+      android:pathData="M50.16,12.68L59.32,12.68L59.32,21.84"
+      android:strokeWidth="4.17"
+      android:fillColor="#00000000"
+      android:strokeColor="#9EC5FF"
+      android:strokeLineCap="square"/>
+  <path
+      android:pathData="M59.32,50.16L59.32,59.32L50.16,59.32"
+      android:strokeWidth="4.17"
+      android:fillColor="#00000000"
+      android:strokeColor="#9EC5FF"
+      android:strokeLineCap="square"/>
+  <path
+      android:pathData="M21.84,59.32L12.68,59.32L12.68,50.16"
+      android:strokeWidth="4.17"
+      android:fillColor="#00000000"
+      android:strokeColor="#9EC5FF"
+      android:strokeLineCap="square"/>
+  <path
+      android:pathData="M32.67,28.5L39.33,28.5A4.16,4.16 0,0 1,43.5 32.67L43.5,39.33A4.16,4.16 0,0 1,39.33 43.5L32.67,43.5A4.16,4.16 0,0 1,28.5 39.33L28.5,32.67A4.16,4.16 0,0 1,32.67 28.5z"
+      android:fillColor="#9EC5FF"/>
+</vector>

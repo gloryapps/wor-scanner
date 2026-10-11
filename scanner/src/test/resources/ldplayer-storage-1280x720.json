@@ -799,7 +799,7 @@
         "set": "cataclysm",
         "slot": "Bangle",
         "ancient": false,
-        "variant": true,
+        "variant": null,
         "exclusive": "VIERNA",
         "attributes": [
             {

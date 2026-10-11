@@ -2,12 +2,13 @@ package com.gloryapps.worscanner.ui.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.gloryapps.worscanner.azhor.Linking
-import com.gloryapps.worscanner.azhor.Sending
+import com.gloryapps.worscanner.scanner.azhor.Linking
+import com.gloryapps.worscanner.scanner.azhor.Send
+import com.gloryapps.worscanner.scanner.azhor.Sending
 import com.gloryapps.worscanner.capture.Emulator
-import com.gloryapps.worscanner.capture.Kept
+import com.gloryapps.worscanner.scanner.runs.Kept
 import com.gloryapps.worscanner.capture.SharedFolder
-import com.gloryapps.worscanner.scan.ScanState
+import com.gloryapps.worscanner.scanner.runs.ScanState
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.scan.Progress
 import com.gloryapps.worscanner.ui.Grants
@@ -97,7 +98,7 @@ private fun HomeAskedPreview() {
 private val LD_PLAYER = SharedFolder(Emulator.LD_PLAYER, "/mnt/shared/Pictures")
 
 private fun scanned(send: Send, scan: Kept.Scan = SCANNED) =
-    READY.copy(justScanned = JustScanned(scan, Kind.GEAR, touched = true, shared = LD_PLAYER, send = send))
+    READY.copy(justScanned = JustScanned(scan, Kind.GEAR, byPlayer = true, shared = LD_PLAYER, send = send))
 
 @Preview(name = "Just scanned · linked", widthDp = WIDE_W, heightDp = WIDE_H)
 @Composable
@@ -162,5 +163,5 @@ private fun ScannedSentPreview() {
 @Preview(name = "Just scanned · portrait, no emulator folder", widthDp = TALL_W, heightDp = TALL_H)
 @Composable
 private fun ScannedPortraitPreview() {
-    ScannerTheme { Home(READY.copy(justScanned = JustScanned(SCANNED, Kind.GEAR, touched = false, shared = null, send = Send.Code()))) { } }
+    ScannerTheme { Home(READY.copy(justScanned = JustScanned(SCANNED, Kind.GEAR, byPlayer = false, shared = null, send = Send.Code()))) { } }
 }
