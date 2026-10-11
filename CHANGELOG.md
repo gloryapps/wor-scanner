@@ -9,16 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- A Windows app that reads the whole account off the game's own PC client on the same PC, every
-  hero, piece of gear and artifact in seconds, without opening a screen, and sends it to Azhor’s
-  Master Smithy. Its gear goes by the game's own bands of enhancement, +16 alone unless you choose
-  more, and its artifacts are those worth wearing, every +25 and every exclusive from +10, unless you
-  choose all.
+- WoR Scanner for Windows. With Watcher of Realms open on the same PC, **Scan the account** reads
+  every epic and legendary hero, piece of gear and artifact straight from the game, in seconds and
+  without opening a screen, and **Send** puts them in Azhor’s Master Smithy. The game runs as usual;
+  nothing needs administrator rights.
+- A variant piece carries its variant's name, the effect it rolled and the attributes that effect
+  adds; an ancient piece's variant is marked ancient.
 
 ### Changed
 
-- Touching the screen no longer stops a scan; only Stop does.
+- The gear to scan goes by the game's bands of enhancement, +16 alone unless you choose more, and a
+  secondary the piece's level has not revealed yet is left off its card.
+- The artifacts to scan are those worth wearing, every +25 and every exclusive from +10, unless you
+  choose all.
 - A scan the site will not take says to keep the file instead.
+
+### Removed
+
+- The Android app is not part of this release; its last release stays 0.3.0.
 
 ## [0.3.0] - 2026-10-02
 

@@ -58,32 +58,18 @@ jobs:
             exit 1
           fi
 
-      - name: Write the keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
-
-      - name: Test and build the signed release
-        env:
-          KEYSTORE_FILE: ${{ runner.temp }}/release.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew test :app:assembleRelease
+      # The Android app is paused: its tests still run, but no APK is built or released.
+      - name: Test
+        run: ./gradlew test
 
       - name: Keep what the merge publishes
-        env:
-          VERSION: ${{ steps.version.outputs.name }}
-        run: |
-          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/release/wor-scanner.apk"
-          gzip -9 -c app/build/outputs/mapping/release/mapping.txt > "$RUNNER_TEMP/release/mapping-$VERSION.txt.gz"
-          echo "$VERSION" > "$RUNNER_TEMP/release/version"
+        run: echo "${{ steps.version.outputs.name }}" > "$RUNNER_TEMP/release/version"
       - uses: actions/upload-artifact@v4
         with:
           name: release
           path: ${{ runner.temp }}/release
 
-  # The Windows app is built on Windows, beside the APK, and kept for the merge to publish with it.
+  # The Windows app, the release's one download, is built on Windows and kept for the merge to publish.
   windows:
     if: github.event_name == 'pull_request' && github.head_ref == 'dev'
     runs-on: windows-latest
@@ -154,7 +140,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.name }}
         working-directory: ${{ runner.temp }}/release
         run: |
-          gh release create "v$VERSION" "wor-scanner.apk" "wor-scanner-windows.zip" "mapping-$VERSION.txt.gz" --repo "$GITHUB_REPOSITORY" \
+          gh release create "v$VERSION" "wor-scanner-windows.zip" --repo "$GITHUB_REPOSITORY" \
             --title "v$VERSION" --notes-file notes.md --target "$GITHUB_SHA"
 
       # dev moves to the next minor and dates what was unreleased; a patch or a major is set on dev by hand before its pull request.

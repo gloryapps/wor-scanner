@@ -25,15 +25,19 @@ scans: a change lands with its line under `## [Unreleased]`, and a release's not
 A release is a pull request from `dev` to `main` (`gh pr create --base main --head dev`), and
 `.github/workflows/release.yml` runs on both ends of it: as the pull request's check, and on the
 merge. One run per ref at a time; the runner sets up Java 17 for the build and 25 for the Gradle
-daemon, and hands the keystore's secret to the script through `env:`.
+daemon.
+
+Since 0.4.0 (2026-10-11) a release ships the Windows app alone: the Android app is paused at 0.3.0.
+Its tests still run, but no APK is built, signed or released, and an installed Android app finds no
+newer `wor-scanner.apk` to offer. Bringing Android back puts the keystore step, `:app:assembleRelease`
+and the APK and mapping assets back into `release.yml`, as they stand in 0.3.0's.
 
 On the pull request:
 
 1. Fails one from any branch but `dev`.
 2. Reads the version and fails if the tag `v<version>` already exists, or if `CHANGELOG.md` has
    nothing under `## [Unreleased]`.
-3. Runs the tests and builds the release APK, R8-optimized and signed, and keeps it as the run's
-   `release` artifact with its gzipped mapping, the notes and the version.
+3. Runs the tests, and keeps the notes and the version as the run's `release` artifact.
 4. On a Windows runner, tests the Windows app on its desktop and builds it, a folder holding its own
    Java runtime, zipped as `wor-scanner-windows.zip` and kept as the run's `release-windows` artifact.
 
@@ -41,12 +45,9 @@ On the merge, which is a merge commit so that `dev`'s commits reach `main` as th
 
 1. Builds nothing: takes that artifact from the pull request's run that built the merge commit's
    second parent.
-2. Creates the tag on the merge commit and a GitHub release holding `wor-scanner.apk`,
-   `wor-scanner-windows.zip` and `mapping-<version>.txt.gz`, with the notes. Neither app's name carries
-   a version, so `releases/latest/download/wor-scanner.apk` and `…/wor-scanner-windows.zip` always
-   download the newest. The app's update link
-   reads the latest release through GitHub's API and installs its `wor-scanner.apk`, so the asset
-   keeps that name.
+2. Creates the tag on the merge commit and a GitHub release holding `wor-scanner-windows.zip`, with
+   the notes. Its name carries no version, so `releases/latest/download/wor-scanner-windows.zip`
+   always downloads the newest.
 3. Commits `Start <next minor>` to `dev`, which also heads those notes `## [<version>] - <date>` under
    an empty `## [Unreleased]` and adds the version's compare link: pull `dev` before working on. A
    patch or a major is set in `worscanner.version` on `dev` by hand, before its pull request.
