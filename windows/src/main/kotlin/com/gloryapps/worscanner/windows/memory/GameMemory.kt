@@ -3,10 +3,12 @@ package com.gloryapps.worscanner.windows.memory
 import com.gloryapps.worscanner.scanner.senses.Memory
 import com.gloryapps.worscanner.scanner.senses.Span
 import com.sun.jna.Pointer
+import com.sun.jna.platform.win32.Advapi32Util
 import com.sun.jna.platform.win32.BaseTSD.SIZE_T
 import com.sun.jna.platform.win32.Kernel32
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef.HWND
+import com.sun.jna.platform.win32.WinError
 import com.sun.jna.platform.win32.WinNT
 import com.sun.jna.ptr.IntByReference
 import com.sun.jna.Memory as Buffer
@@ -39,8 +41,11 @@ internal class GameMemory private constructor(private val process: WinNT.HANDLE)
         Kernel32.INSTANCE.CloseHandle(process)
     }
 
-    /** Windows would not open the game's process: `code` is its error, 5 where the game runs as administrator and the app does not. */
+    /** Windows would not open the game's process: `code` is its error. */
     class Refused(val code: Int) : Exception("Windows would not open the game's memory, error $code")
+
+    /** Windows keeps the game's process from the scanner because the game runs as administrator and the scanner does not. */
+    class Elevated : Exception("The game runs as administrator and the scanner does not")
 
     companion object {
         /** The memory of the process drawing the window `window`. */
@@ -53,9 +58,13 @@ internal class GameMemory private constructor(private val process: WinNT.HANDLE)
 
         fun ofProcess(id: Int): Result<GameMemory> {
             val process = Kernel32.INSTANCE.OpenProcess(WinNT.PROCESS_QUERY_INFORMATION or WinNT.PROCESS_VM_READ, false, id)
+                ?: return Result.failure(refusal(Kernel32.INSTANCE.GetLastError()))
 
-            return if (process == null) Result.failure(Refused(Kernel32.INSTANCE.GetLastError())) else Result.success(GameMemory(process))
+            return Result.success(GameMemory(process))
         }
+
+        private fun refusal(code: Int): Exception =
+            if (code == WinError.ERROR_ACCESS_DENIED && !Advapi32Util.isCurrentProcessElevated()) Elevated() else Refused(code)
 
         private const val TOP = 0x7FFF_FFFF_FFFFL
         private const val MAX_SPAN = 1L shl 30

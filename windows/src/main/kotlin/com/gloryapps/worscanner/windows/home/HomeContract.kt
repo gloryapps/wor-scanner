@@ -9,11 +9,15 @@ import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.runs.KeptAccount
 import java.io.File
 
-/** `said` is why the last scan failed, `kept` the folder scans are kept in; `account` is the newest scan, to be sent to the lab, and `send` how sending it stands. */
+/**
+ * `said` is why the last scan failed, `elevate` that it failed because the game runs as administrator and the scanner does not;
+ * `kept` the folder scans are kept in; `account` is the newest scan, to be sent to the lab, and `send` how sending it stands.
+ */
 internal data class HomeState(
     val game: Game = Game.Looking,
     val scanning: Boolean = false,
     val said: String? = null,
+    val elevate: Boolean = false,
     val kept: File? = null,
     val account: AccountRead? = null,
     val linked: Boolean = false,
@@ -59,8 +63,13 @@ internal sealed interface HomeEvent {
     data class ChooseArtifacts(val artifacts: ArtifactsToScan) : HomeEvent
 
     data class ChooseArrival(val arrival: Arrival) : HomeEvent
+
+    /** Starts the scanner again as administrator, closing this one once Windows has. */
+    data object RestartAsAdministrator : HomeEvent
 }
 
 internal sealed interface HomeEffect {
     data class Open(val folder: File) : HomeEffect
+
+    data object Quit : HomeEffect
 }

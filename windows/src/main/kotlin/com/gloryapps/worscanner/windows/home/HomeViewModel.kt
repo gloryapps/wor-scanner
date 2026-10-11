@@ -8,11 +8,13 @@ import com.gloryapps.worscanner.scanner.azhor.Sender
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.runs.Accounts
 import com.gloryapps.worscanner.scanner.runs.Reports
+import com.gloryapps.worscanner.windows.app.Administrator
 import com.gloryapps.worscanner.windows.app.FileScanChoices
 import com.gloryapps.worscanner.windows.game.Desktop
 import com.gloryapps.worscanner.windows.game.GameWatch
 import com.gloryapps.worscanner.windows.memory.GameMemory
 import com.gloryapps.worscanner.windows.resources.Res
+import com.gloryapps.worscanner.windows.resources.account_elevated
 import com.gloryapps.worscanner.windows.resources.account_empty
 import com.gloryapps.worscanner.windows.resources.account_failed
 import com.gloryapps.worscanner.windows.resources.account_refused
@@ -61,6 +63,7 @@ internal class HomeViewModel(
             is HomeEvent.Toggle -> choose { it.toggled(event.band) }
             is HomeEvent.ChooseArtifacts -> choose { it.copy(artifacts = event.artifacts) }
             is HomeEvent.ChooseArrival -> choose { it.copy(arrival = event.arrival) }
+            HomeEvent.RestartAsAdministrator -> viewModelScope.launch { if (Administrator.restart()) _effects.send(HomeEffect.Quit) }
         }
     }
 
@@ -84,13 +87,17 @@ internal class HomeViewModel(
             val read = resultOf { GameMemory.of(game.handle).getOrThrow().use { accounts.read(it, choices.chosen.value) } }.map(::AccountRead)
             read.onFailure { reports.failed("scanning the account", it) }
             val account = read.getOrNull()?.takeIf { it.heroes + it.gear + it.artifacts > 0 }
-            val said = if (account != null) null else read.exceptionOrNull()?.said() ?: getString(Res.string.account_empty)
-            local.update { it.copy(scanning = false, said = said, kept = read.getOrNull()?.scans?.firstOrNull()?.parentFile ?: it.kept, account = account ?: it.account, send = Send.Idle) }
+            val failure = read.exceptionOrNull()
+            val said = if (account != null) null else failure?.said() ?: getString(Res.string.account_empty)
+            local.update { it.copy(scanning = false, said = said, elevate = failure is GameMemory.Elevated, kept = read.getOrNull()?.scans?.firstOrNull()?.parentFile ?: it.kept, account = account ?: it.account, send = Send.Idle) }
         }
     }
 
-    private suspend fun Throwable.said(): String =
-        if (this is GameMemory.Refused) getString(Res.string.account_refused, code) else getString(Res.string.account_failed, message ?: toString())
+    private suspend fun Throwable.said(): String = when (this) {
+        is GameMemory.Elevated -> getString(Res.string.account_elevated)
+        is GameMemory.Refused -> getString(Res.string.account_refused, code)
+        else -> getString(Res.string.account_failed, message ?: toString())
+    }
 
     private fun sending(send: Send) = local.update { it.copy(send = send) }
 

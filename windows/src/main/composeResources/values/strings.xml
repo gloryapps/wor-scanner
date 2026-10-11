@@ -18,7 +18,9 @@
     <string name="scanning_account">Scanning the account…</string>
     <string name="account_scanned">%1$s heroes, %2$s pieces of gear and %3$s artifacts</string>
     <string name="account_none">No account scanned yet</string>
-    <string name="account_refused">Windows would not let the scanner read the game (error %1$s): open the game as usual, not as administrator.</string>
+    <string name="account_refused">Windows would not let the scanner read the game (error %1$s).</string>
+    <string name="account_elevated">Watcher of Realms is running as administrator, so the scanner has to as well.</string>
+    <string name="restart_as_administrator">Restart as administrator</string>
     <string name="account_empty">The game holds no account yet: sign in, wait for the city, then scan it again.</string>
     <string name="scan_again">Scan it again</string>
     <string name="account_failed">The account could not be read: %1$s</string>

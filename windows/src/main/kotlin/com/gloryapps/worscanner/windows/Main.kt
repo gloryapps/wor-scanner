@@ -33,7 +33,8 @@ fun main() = application {
                 Box(Modifier.fillMaxSize().background(Colors.screen)) {
                     /* As tall as the screen holds now and the frame, set on the window itself: through WindowState, the echo of the last resize undoes it. */
                     HomeScreen(
-                        Modifier.wrapContentHeight(Alignment.Top, unbounded = true).onSizeChanged { content ->
+                        onQuit = ::exitApplication,
+                        modifier = Modifier.wrapContentHeight(Alignment.Top, unbounded = true).onSizeChanged { content ->
                             val frame = window.insets.let { it.top + it.bottom }
                             window.setSize(window.width, with(density) { content.height.toDp() }.value.roundToInt() + frame)
                         },

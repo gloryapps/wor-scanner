@@ -11,8 +11,8 @@ It runs on Windows, beside the game's own PC client. The Android app is deprecat
    latest [release](../../releases/latest), unzip it anywhere, and open `WoR Scanner.exe` in the
    `WoR Scanner` folder. It brings its own Java, so nothing else needs installing. The app is not
    signed, so the first time Windows says it protected your PC: **More info**, then **Run anyway**.
-2. Open Watcher of Realms on the same PC as usual, not as administrator, sign in and wait for the
-   city; the app says it found the game.
+2. Open Watcher of Realms on the same PC, sign in and wait for the city; the app says it found the
+   game.
 3. Choose the gear and the artifacts to scan, and whether the scan replaces what the site holds or
    is added to it, and press **Scan the account**. The app reads the account straight from the game's
    memory, in seconds: there is no screen to prepare, and nothing in the game is touched. **Scan it
@@ -21,8 +21,8 @@ It runs on Windows, beside the game's own PC client. The Android app is deprecat
    site's code: open **Import a scan**, press **Link**, and type the code it shows within ten minutes.
 
 Scans and a log are kept in `%LOCALAPPDATA%\WoR Scanner`; **Open folder** shows them, and a scan
-kept there is imported by dropping it on that same dialog. If Windows will not let the app read the
-game, the game was opened as administrator: open it as usual.
+kept there is imported by dropping it on that same dialog. If the game runs as administrator, the
+app has to as well: it says so, and **Restart as administrator** opens it again as one.
 
 ## Android
 
