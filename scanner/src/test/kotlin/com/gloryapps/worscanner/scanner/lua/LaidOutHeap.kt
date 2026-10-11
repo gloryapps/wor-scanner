@@ -11,7 +11,7 @@ internal class LaidOutHeap(private val start: Long = 0x1_2340_0000L) : Memory {
     private val interned = mutableMapOf<String, Long>()
     private var next = 64
 
-    /** A table whose array part holds `array` and whose nodes hold `fields`; a String value or key is a Lua string, an Int or Long an integer, a [Ref] a table. */
+    /** A table whose array part holds `array` and whose nodes hold `fields`; a String value or key is a Lua string, an Int or Long an integer, a [Ref] a table, a [Userdata] one. */
     fun table(vararg fields: Pair<Any, Any?>, array: List<Any?> = emptyList()): Ref {
         val log = generateSequence(0) { it + 1 }.first { (1 shl it) >= fields.size }
         val values = array.map(::value)
@@ -68,6 +68,7 @@ internal class LaidOutHeap(private val start: Long = 0x1_2340_0000L) : Memory {
         is Double -> of.toRawBits() to 0x03
         is String -> string(of) to 0x44
         is Ref -> of.address to 0x45
+        is Userdata -> of.address to 0x47
         else -> error("no Lua value for $of")
     }
 
@@ -77,6 +78,9 @@ internal class LaidOutHeap(private val start: Long = 0x1_2340_0000L) : Memory {
     }
 
     data class Ref(val address: Long)
+
+    /** An object of the client's own, as the game's rows reach Lua: no data to read. */
+    data class Userdata(val address: Long)
 
     private companion object {
         const val SIZE = 4 shl 20

@@ -4,6 +4,7 @@ import com.gloryapps.worscanner.scanner.game.Attribute
 import com.gloryapps.worscanner.scanner.game.ReadAttribute
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
 import com.gloryapps.worscanner.scanner.kinds.gear.ScannedGear
+import com.gloryapps.worscanner.scanner.kinds.gear.Side
 import com.gloryapps.worscanner.scanner.kinds.gear.Slot
 import com.gloryapps.worscanner.scanner.kinds.hero.HeroSkills
 import com.gloryapps.worscanner.scanner.kinds.hero.ScannedHero
@@ -13,18 +14,19 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Entries as Pedro's account held them on 2026-10-10, read in the shipped game's words. */
+/** Entries as Pedro's account held them on 2026-10-10, and rules as the game's code lays them out, read in the shipped game's words. */
 class CardsTest {
     private fun cards(
         heroes: List<String> = emptyList(),
         gear: List<String> = emptyList(),
         artifacts: List<String> = emptyList(),
         collected: List<Long> = emptyList(),
+        rules: List<String> = emptyList(),
         choices: ScanChoices = ScanChoices.EVERYTHING,
     ) = Cards(
         Game.shipped,
         Account(startedAt = "20261010-122135", heroes = heroes.map(Json::parseToJsonElement), gear = gear.map(Json::parseToJsonElement),
-            artifacts = artifacts.map(Json::parseToJsonElement), collected = collected, found = emptyMap(), seconds = 0.0),
+            artifacts = artifacts.map(Json::parseToJsonElement), collected = collected, rules = rules.map(Json::parseToJsonElement), found = emptyMap(), seconds = 0.0),
         choices,
     )
 
@@ -157,6 +159,49 @@ class CardsTest {
         assertEquals(setOf(0), cards(collected = listOf(1L)).collection.values.toSet())
     }
 
+    @Test
+    fun `a rule of the plan reads in the game's words, its sets in the order the game lists them and each secondary essential or in the pool`() {
+        assertEquals(
+            listOf(
+                ScannedRule(
+                    name = "Crit DPS",
+                    side = Side.BANGLES_AMULETS_RINGS,
+                    sets = listOf("fatality", "the-doom"),
+                    main = listOf(Attribute.CRIT_DAMAGE),
+                    secondaries = mapOf(Attribute.ATK to Demand.POOL, Attribute.ATK_BONUS to Demand.POOL, Attribute.CRIT_RATE to Demand.ESSENTIAL),
+                    match = 2,
+                ),
+            ),
+            cards(rules = listOf(CRIT_DPS)).rules,
+        )
+    }
+
+    @Test
+    fun `an attribute the game keeps that is none of the eleven words is not one of the rule's main attributes`() {
+        val widened = CRIT_DPS.replace(""""MainAttrMap":[25]""", """"MainAttrMap":[25,37,38,40]""")
+
+        assertEquals(listOf(Attribute.CRIT_DAMAGE), cards(rules = listOf(widened)).rules.single().main)
+    }
+
+    @Test
+    fun `a set the game names in no English, or the shipped game does not hold, stays in its rule as none`() {
+        val unnamed = CRIT_DPS.replace(""""SuitMap":[721300,720400]""", """"SuitMap":[999900,400005,721300]""")
+
+        assertEquals(listOf("the-doom", null, null), cards(rules = listOf(unnamed)).rules.single().sets)
+    }
+
+    @Test
+    fun `the weapons and breastplates side's rules come first, each side's in the order the game lists them`() {
+        val second = CRIT_DPS.replace("Crit DPS", "Crit DPS 2")
+
+        assertEquals(listOf("Tanks", "Crit DPS", "Crit DPS 2"), cards(rules = listOf(CRIT_DPS, TANKS, second)).rules.map { it.name })
+    }
+
+    @Test
+    fun `a rule on neither side is no card`() {
+        assertEquals(emptyList(), cards(rules = listOf(CRIT_DPS.replace(""""SuitType":2""", """"SuitType":0"""))).rules)
+    }
+
     private companion object {
         val FACTIONS = setOf(
             "The Watchguard", "The North Throne", "The Nightmare Council", "The Cursed Cult", "The Infernal Blast", "The Star Piercers",
@@ -169,6 +214,10 @@ class CardsTest {
         const val SPEAR_OF_LEONIDAS = """{"iItemUid":"10058813626433","iItemId":219201,"iLevel":25,"iStageLvl":5,"iHeroId":235500001,""" +
             """"vRefineAttrs":[{"uiAttrId":1,"uiValue":575},{"uiAttrId":7,"uiValue":1730}],"vDarkAttrs":[{"uiAttrId":13,"uiValue":470}]}"""
         const val PLAIN_AT_24 = """{"iItemUid":"4295169997","iItemId":202701,"iLevel":24,"iStageLvl":4,"iHeroId":0}"""
+        const val CRIT_DPS = """{"ID":3,"Name":"Crit DPS","IsSystem":false,"SuitType":2,"SuitMap":[721300,720400],"MainAttrMap":[25],""" +
+            """"SubAttrMap":[1,13,24],"MustAttrMap":[24],"SubAttrSatisfied":2,"iLastUpdateTime":1760090000}"""
+        const val TANKS = """{"ID":4,"Name":"Tanks","IsSystem":false,"SuitType":1,"SuitMap":[711400],"MainAttrMap":[],""" +
+            """"SubAttrMap":[19,14,7],"MustAttrMap":[],"SubAttrSatisfied":3,"iLastUpdateTime":1760090000}"""
         const val PELAGIOS = """{"iHeroId":222400000,"iBaseId":2224,"iLevel":60,"iStarLevel":6,"iSublimLevel":6,"iAwakeningFlag":0,"mSkillLevel":{"1":2,"2":2,"3":3,"0":3}}"""
     }
 }

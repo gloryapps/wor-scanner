@@ -5,7 +5,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** The two halves the storage shows: weapons and armors left, accessories right. */
-enum class Side { WEAPONS_BREASTPLATES, BANGLES_AMULETS_RINGS }
+@Serializable
+enum class Side {
+    @SerialName("weapons-breastplates") WEAPONS_BREASTPLATES,
+    @SerialName("bangles-amulets-rings") BANGLES_AMULETS_RINGS,
+}
 
 /** The five slots, each on its side; a Weapon always leads with ATK and a Breastplate with HP. */
 @Serializable

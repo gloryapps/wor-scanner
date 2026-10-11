@@ -5,6 +5,8 @@ import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.account.Cards
 import com.gloryapps.worscanner.scanner.account.ScanChoices
 import com.gloryapps.worscanner.scanner.account.Game
+import com.gloryapps.worscanner.scanner.account.PLAN
+import com.gloryapps.worscanner.scanner.account.ScannedRule
 import com.gloryapps.worscanner.scanner.account.readAccount
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
@@ -20,7 +22,7 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.time.LocalDateTime
 
-/** An account read and kept: the game's own file, what it holds, and the scans of each kind made of it, which are what the lab imports, with how many cards each holds; a kind with none has no scan. */
+/** An account read and kept: the game's own file, what it holds, and the scans made of it, one of each kind and one of its plan, which are what the lab imports, with how many cards each kind's holds; a kind with none has no scan. */
 data class KeptAccount(val file: File, val account: Account, val scans: List<File>, val cards: Map<Kind, Int>)
 
 /** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, both named by the stamp the read began at. */
@@ -40,9 +42,10 @@ class Accounts(private val root: File, private val game: Game = Game.shipped) {
             file = File(root, "reads/${account.startedAt}.json").apply { parentFile.mkdirs(); writeText(Json.encodeToString(Account.serializer(), account)) },
             account = account,
             scans = listOfNotNull(
-                write(folder, account.startedAt, arrival, Kind.GEAR, cards.gear, ScannedGear.serializer()),
-                write(folder, account.startedAt, arrival, Kind.HEROES, cards.heroes, ScannedHero.serializer(), cards.collection),
-                write(folder, account.startedAt, arrival, Kind.ARTIFACTS, cards.artifacts, ScannedArtifact.serializer()),
+                write(folder, account.startedAt, arrival, Kind.GEAR.id, cards.gear, ScannedGear.serializer()),
+                write(folder, account.startedAt, arrival, Kind.HEROES.id, cards.heroes, ScannedHero.serializer(), cards.collection),
+                write(folder, account.startedAt, arrival, Kind.ARTIFACTS.id, cards.artifacts, ScannedArtifact.serializer()),
+                write(folder, account.startedAt, arrival, PLAN, cards.rules, ScannedRule.serializer()),
             ),
             cards = mapOf(Kind.GEAR to cards.gear.size, Kind.HEROES to cards.heroes.size, Kind.ARTIFACTS to cards.artifacts.size),
         )
@@ -53,7 +56,7 @@ class Accounts(private val root: File, private val game: Game = Game.shipped) {
         folder: File,
         startedAt: String,
         arrival: Arrival,
-        kind: Kind,
+        kind: String,
         cards: List<T>,
         card: KSerializer<T>,
         collection: Map<String, Int>? = null,
@@ -61,7 +64,7 @@ class Accounts(private val root: File, private val game: Game = Game.shipped) {
         if (cards.isEmpty()) return null
         val entries = cards.mapIndexed { index, it -> ScanEntry(index, row = 0, column = 0, card = it, rows = emptyList()) }
         val scan = ScanFile(
-            kind = kind.id,
+            kind = kind,
             arrival = arrival,
             startedAt = startedAt,
             width = 0,
@@ -71,6 +74,6 @@ class Accounts(private val root: File, private val game: Game = Game.shipped) {
             entries = entries,
         )
 
-        return File(folder, "${kind.id}.json").apply { writeText(scan.json(card)) }
+        return File(folder, "$kind.json").apply { writeText(scan.json(card)) }
     }
 }

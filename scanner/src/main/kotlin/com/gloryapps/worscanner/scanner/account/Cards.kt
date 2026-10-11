@@ -4,6 +4,7 @@ import com.gloryapps.worscanner.scanner.game.Attribute
 import com.gloryapps.worscanner.scanner.game.ReadAttribute
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
 import com.gloryapps.worscanner.scanner.kinds.gear.ScannedGear
+import com.gloryapps.worscanner.scanner.kinds.gear.Side
 import com.gloryapps.worscanner.scanner.kinds.gear.Slot
 import com.gloryapps.worscanner.scanner.kinds.hero.HeroSkills
 import com.gloryapps.worscanner.scanner.kinds.hero.ScannedHero
@@ -17,7 +18,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 
-/** The account's lists as the cards a scan of each kind writes, and its heroes' collection, in `game`'s words; its gear and artifacts only those `choices` keeps. */
+/** The account's lists as the cards a scan of each kind writes, its heroes' collection and its plan's rules, in `game`'s words; its gear and artifacts only those `choices` keeps. */
 class Cards(private val game: Game, private val account: Account, private val choices: ScanChoices) {
     val gear: List<ScannedGear> by lazy {
         account.gear.filter { entry -> entry.int("iIntensifyLvl")?.let(Enhancement::of) in choices.enhancements }.mapNotNull(::piece)
@@ -42,6 +43,9 @@ class Cards(private val game: Game, private val account: Account, private val ch
     val artifacts: List<ScannedArtifact> by lazy {
         account.artifacts.mapNotNull(::artifact).filter { choices.artifacts.keeps(it.level ?: 0, exclusive = it.exclusive != null) }
     }
+
+    /** The weapons and breastplates side's first, each side's in the order the game lists them. */
+    val rules: List<ScannedRule> by lazy { account.rules.mapNotNull(::rule).sortedBy { it.side } }
 
     private fun piece(entry: JsonElement): ScannedGear? {
         val known = entry.long("iItemId")?.let(game.gear::get) ?: return null
@@ -98,9 +102,25 @@ class Cards(private val game: Game, private val account: Account, private val ch
         )
     }
 
+    /* A rule given no main attribute holds, once the game reads it, every main its sets' pieces roll: the same pieces pass. */
+    private fun rule(entry: JsonElement): ScannedRule? {
+        val essential = entry.ids("MustAttrMap").mapNotNull(::named).toSet()
+
+        return ScannedRule(
+            name = entry.text("Name").orEmpty(),
+            side = entry.int("SuitType")?.let(SIDES::get) ?: return null,
+            sets = entry.ids("SuitMap").map { game.sets[it] }.sortedWith(compareBy(nullsLast()) { it?.sort }).map { it?.set },
+            main = entry.ids("MainAttrMap").mapNotNull(::named).sorted(),
+            secondaries = (entry.ids("SubAttrMap").mapNotNull(::named) + essential).sorted().associateWith { if (it in essential) Demand.ESSENTIAL else Demand.POOL },
+            match = entry.int("SubAttrSatisfied") ?: return null,
+        )
+    }
+
+    private fun named(id: Long): Attribute? = game.attributes[id.toInt()]?.named
+
     private fun attribute(id: Int?, value: Long?, bonus: Long?): ReadAttribute? {
         val known = game.attributes[id ?: return null] ?: return null
-        val name = Attribute.entries.firstOrNull { it.word == known.word } ?: return null
+        val name = known.named ?: return null
 
         return ReadAttribute(name, known.printed(value ?: return null), if (known.percentage) ValueUnit.PERCENTAGE else ValueUnit.FLAT, bonus?.let(known::printed))
     }
@@ -116,10 +136,14 @@ class Cards(private val game: Game, private val account: Account, private val ch
         const val EFFECT_INDEX = 0xFFFF_FFFFL
         /** The flags of Awakened I to V and beyond, one bit each. */
         const val AWAKENINGS = 0xFFL
+        /** The side a rule's sets are worn on, by the number the game keeps it as. */
+        val SIDES = mapOf(1 to Side.WEAPONS_BREASTPLATES, 2 to Side.BANGLES_AMULETS_RINGS)
     }
 }
 
 private fun GameAttribute.printed(kept: Long): Double = if (hundredths) kept / 100.0 else kept.toDouble()
+
+private val GameAttribute.named: Attribute? get() = Attribute.entries.firstOrNull { it.word == word }
 
 private fun JsonElement.field(name: String): JsonElement? = (this as? JsonObject)?.get(name)
 
@@ -127,6 +151,11 @@ private fun JsonElement.field(name: String): JsonElement? = (this as? JsonObject
 private fun JsonElement.long(name: String): Long? = (field(name) as? JsonPrimitive)?.let { it.longOrNull ?: it.contentOrNull?.toLongOrNull() }
 
 private fun JsonElement.int(name: String): Int? = long(name)?.toInt()
+
+private fun JsonElement.text(name: String): String? = (field(name) as? JsonPrimitive)?.takeIf { it.isString }?.content
+
+/** The ids a field keyed by them was read as. */
+private fun JsonElement.ids(name: String): List<Long> = (field(name) as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.longOrNull }.orEmpty()
 
 /** A Lua sequence as the file holds it: an array, or an object keyed from 1. */
 private fun JsonElement.list(name: String): List<JsonElement> = when (val held = field(name)) {

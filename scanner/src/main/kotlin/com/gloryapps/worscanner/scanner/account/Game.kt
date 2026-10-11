@@ -9,6 +9,8 @@ data class Game(
     val version: String,
     val attributes: Map<Int, GameAttribute>,
     val gear: Map<Long, GamePiece>,
+    /** A set by its id, as a rule of the game's plan names it. */
+    val sets: Map<Long, GameSet>,
     /** An exclusive effect's hero or faction, by name. */
     val exclusives: Map<Long, String>,
     /** A variant and the effect of it a piece rolled, by the effect's group and its index in the group. */
@@ -33,6 +35,10 @@ data class GameAttribute(val word: String, val hundredths: Boolean, val percenta
 /** A piece's set, as the lab's gear sets name it, and its slot's word; a set the game names in no English has none. */
 @Serializable
 data class GamePiece(val set: String?, val slot: String)
+
+/** A set as the lab's gear sets name it, none where the game names it in no English, and its place in the order the game lists sets. */
+@Serializable
+data class GameSet(val set: String?, val sort: Int)
 
 /** A hero's name, rarity (4 epic, 5 legendary), the skills after the ultimate in the lab's order, and the factions it counts under, as the game prints them. */
 @Serializable
