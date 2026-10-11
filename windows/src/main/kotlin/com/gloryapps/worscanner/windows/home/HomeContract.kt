@@ -19,6 +19,8 @@ internal data class HomeState(
     val send: Send = Send.Idle,
     /** What the scan sends of the gear and artifacts. */
     val choices: ScanChoices = ScanChoices(),
+    /** What the last snapshot came to: being taken, the file it was kept in, or why it failed. */
+    val snapshot: String? = null,
 )
 
 /** An account scanned: the scans made of it, which are what is sent, and how many cards of each they hold. */
@@ -56,6 +58,9 @@ internal sealed interface HomeEvent {
     data class Toggle(val band: Enhancement) : HomeEvent
 
     data class ChooseArtifacts(val artifacts: ArtifactsToScan) : HomeEvent
+
+    /** Keeps every table in the game's memory for a diagnosis, asked by a key no screen shows. */
+    data object Snapshot : HomeEvent
 }
 
 internal sealed interface HomeEffect {

@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 
 /** Lua 5.3's strings and tables in the game's memory, as a 64-bit build lays them out (`lobject.h`). */
 class LuaHeap(private val memory: Memory) {
@@ -22,9 +23,7 @@ class LuaHeap(private val memory: Memory) {
         val holders = ConcurrentHashMap<String, MutableSet<Long>>()
         sweep { at, bytes, looked ->
             for (offset in 0 until minOf(looked, bytes.limit() - TABLE_SIZE) step ALIGNMENT) {
-                if (bytes.get(offset + TAG) != TABLE) continue
-                val log = bytes.get(offset + NODE_LOG).toInt() and 0xFF
-                if (log > MAX_NODE_LOG) continue
+                val log = bytes.nodeLog(offset) ?: continue
                 val first = bytes.getLong(offset + NODES)
                 val end = first + (NODE_SIZE.toLong() shl log)
                 var hit = nodes.binarySearch(first).let { if (it < 0) -it - 1 else it }
@@ -40,25 +39,52 @@ class LuaHeap(private val memory: Memory) {
         return holders
     }
 
-    /** The table's fields, its array part's under 1, 2, 3…; null where `address` holds no table. */
-    fun fields(address: Long): Map<LuaValue, LuaValue>? {
-        val head = memory.read(address, TABLE_SIZE)?.let(::littleEndian) ?: return null
-        val log = head.get(NODE_LOG).toInt() and 0xFF
-        val length = head.getInt(ARRAY_LENGTH).toUInt().toLong()
-        if (head.get(TAG) != TABLE || log > MAX_NODE_LOG || length > MAX_ARRAY) return null
-
-        val fields = LinkedHashMap<LuaValue, LuaValue>()
-        if (length > 0) memory.read(head.getLong(ARRAY), length.toInt() * VALUE_SIZE)?.let(::littleEndian)?.let { array ->
-            for (index in 0 until length.toInt()) valueAt(array, index * VALUE_SIZE)?.let { fields[LuaValue.Integer(index + 1L)] = it }
+    /** Every table in the game's memory, by its address, lowest first: a head whose last free node lies outside its own nodes is no table's. */
+    suspend fun tables(): LongArray {
+        val found = ConcurrentLinkedQueue<LongArray>()
+        sweep { at, bytes, looked ->
+            val here = mutableListOf<Long>()
+            for (offset in 0 until minOf(looked, bytes.limit() - TABLE_SIZE) step ALIGNMENT) {
+                val log = bytes.nodeLog(offset) ?: continue
+                val nodes = bytes.getLong(offset + NODES)
+                val free = bytes.getLong(offset + LAST_FREE)
+                /* Lua 5.3 marks a table with no hash part by no last free node, its nodes the one dummy node. */
+                val held = if (free == 0L) log == 0 else free - nodes in 0..(NODE_SIZE.toLong() shl log) && (free - nodes) % NODE_SIZE == 0L
+                if (held && nodes != 0L) here += at + offset
+            }
+            found += here.toLongArray()
         }
+
+        return found.flatMap { it.asList() }.toLongArray().apply { sort() }
+    }
+
+    /** The table's fields, its array part's under 1, 2, 3…; null where `address` holds no table. */
+    fun fields(address: Long): Map<LuaValue, LuaValue>? = table(address)?.let { table ->
+        buildMap {
+            table.array.forEachIndexed { index, value -> if (value != null) put(LuaValue.Integer(index + 1L), value) }
+            putAll(table.hash)
+        }
+    }
+
+    /** The table at `address` as it lies, each part read to its first `most` values; null where `address` holds no table. */
+    fun table(address: Long, most: Int = Int.MAX_VALUE): LuaTable? {
+        val head = memory.read(address, TABLE_SIZE)?.let(::littleEndian) ?: return null
+        val log = head.nodeLog(0)
+        val length = head.getInt(ARRAY_LENGTH).toUInt().toLong()
+        if (log == null || length > MAX_ARRAY) return null
+
+        val read = minOf(length.toInt(), most)
+        val array = if (read == 0) null else memory.read(head.getLong(ARRAY), read * VALUE_SIZE)?.let(::littleEndian)?.let { array -> List(read) { valueAt(array, it * VALUE_SIZE) } }
+        val hash = LinkedHashMap<LuaValue, LuaValue>()
         memory.read(head.getLong(NODES), NODE_SIZE shl log)?.let(::littleEndian)?.let { nodes ->
             for (node in 0 until (1 shl log)) {
+                if (hash.size == most) break
                 val key = valueAt(nodes, node * NODE_SIZE + KEY)?.takeIf { it is LuaValue.Text || it is LuaValue.Integer } ?: continue
-                fields[key] = valueAt(nodes, node * NODE_SIZE) ?: continue
+                hash[key] = valueAt(nodes, node * NODE_SIZE) ?: continue
             }
         }
 
-        return fields
+        return LuaTable(length.toInt(), array.orEmpty(), hash)
     }
 
     fun field(address: Long, name: String): LuaValue? = fields(address)?.get(LuaValue.Text(name))
@@ -141,6 +167,10 @@ class LuaHeap(private val memory: Memory) {
 
 private fun littleEndian(bytes: ByteArray): ByteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
 
+/** The hash part's size, as a power of two, of a table whose head lies at `offset`; null where no table's head can. */
+private fun ByteBuffer.nodeLog(offset: Int): Int? =
+    (get(offset + NODE_LOG).toInt() and 0xFF).takeIf { get(offset + TAG) == TABLE && it <= MAX_NODE_LOG }
+
 /* Where an object's fields sit, from its start. */
 private const val TAG = 8
 private const val SHORT_LENGTH = 11
@@ -150,6 +180,7 @@ private const val NODE_LOG = 11
 private const val ARRAY_LENGTH = 12
 private const val ARRAY = 16
 private const val NODES = 24
+private const val LAST_FREE = 32
 private const val KEY = 16
 private const val TABLE_SIZE = 56
 private const val VALUE_SIZE = 16

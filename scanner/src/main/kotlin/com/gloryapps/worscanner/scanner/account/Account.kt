@@ -2,6 +2,7 @@ package com.gloryapps.worscanner.scanner.account
 
 import com.gloryapps.worscanner.scanner.lua.LuaHeap
 import com.gloryapps.worscanner.scanner.lua.LuaValue
+import com.gloryapps.worscanner.scanner.lua.name
 import com.gloryapps.worscanner.scanner.senses.Memory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -79,6 +80,6 @@ private fun LuaHeap.json(fields: Map<LuaValue, LuaValue>, depth: Int): JsonEleme
     return if (indices.toSet() == (1L..values.size).toSet()) {
         JsonArray(values.sortedBy { (key, _) -> (key as LuaValue.Integer).value }.map { it.second })
     } else {
-        JsonObject(values.associate { (key, field) -> ((key as? LuaValue.Text)?.value ?: (key as LuaValue.Integer).value.toString()) to field })
+        JsonObject(values.associate { (key, field) -> key.name to field })
     }
 }

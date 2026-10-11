@@ -124,6 +124,9 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   artifacts only those the player chose to send (`ScanChoices`). A kind with no cards has no scan: the lab takes a
   scan as the whole of its kind. Those scans are what the Windows app sends the lab and opens for
   the player.
+- A snapshot is every table in the game's memory at one moment, for a diagnosis: a gzipped file of
+  JSON lines under `snapshots/`, the first saying when, the game window's size and how many tables.
+  The Windows app takes one on Ctrl+Shift+D, a key no screen shows.
 - Preferences in DataStore. Room enters only if scan history inside the app is ever wanted, and
   brings the no-destructive-migration rule with it.
 

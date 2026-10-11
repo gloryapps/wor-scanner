@@ -5,6 +5,7 @@ import com.gloryapps.worscanner.scanner.azhor.Link
 import com.gloryapps.worscanner.scanner.azhor.Sender
 import com.gloryapps.worscanner.scanner.runs.Accounts
 import com.gloryapps.worscanner.scanner.runs.Reports
+import com.gloryapps.worscanner.scanner.runs.Snapshots
 import com.gloryapps.worscanner.ui.Built
 import com.gloryapps.worscanner.windows.azhor.FileTokenStore
 import com.gloryapps.worscanner.windows.game.GameWatch
@@ -23,8 +24,9 @@ internal val windowsModule = module {
     single { GameWatch(CoroutineScope(SupervisorJob())) }
     single<Reports> { LogReports(File(folder, "wor-scanner.log")) }
     single { Accounts(folder) }
+    single { Snapshots(folder) }
     single { FileScanChoices(File(folder, "scan-choices.json")) }
     single { Link(HttpAzhorApi(Built.AZHOR_URL), FileTokenStore(File(folder, "link"))) }
     factory { Sender(get()) }
-    viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
 }

@@ -10,20 +10,23 @@ internal class LaidOutHeap(private val start: Long = 0x1_2340_0000L) : Memory {
     private val bytes = ByteBuffer.allocate(SIZE).order(ByteOrder.LITTLE_ENDIAN)
     private val interned = mutableMapOf<String, Long>()
     private var next = 64
+    /** The one node every table with no hash part points at, as Lua's `dummynode`, laid out by the first such table. */
+    private val dummy by lazy { place(NODE) {} }
 
-    /** A table whose array part holds `array` and whose nodes hold `fields`; a String value or key is a Lua string, an Int or Long an integer, a [Ref] a table. */
+    /** A table whose array part holds `array` and whose nodes hold `fields`; a String value or key is a Lua string, an Int or Long an integer, a [Ref] a table, a [LuaValue.Other] what its tag says. */
     fun table(vararg fields: Pair<Any, Any?>, array: List<Any?> = emptyList()): Ref {
         val log = generateSequence(0) { it + 1 }.first { (1 shl it) >= fields.size }
         val values = array.map(::value)
         val keyed = fields.map { (key, field) -> value(key) to value(field) }
         val arrayAt = place(values.size * VALUE) { at -> values.forEachIndexed { index, it -> write(at + index * VALUE, it) } }
-        val nodesAt = place(NODE shl log) { at -> keyed.forEachIndexed { index, (key, field) -> write(at + index * NODE, field); write(at + index * NODE + VALUE, key) } }
+        val nodesAt = if (keyed.isEmpty()) dummy else place(NODE shl log) { at -> keyed.forEachIndexed { index, (key, field) -> write(at + index * NODE, field); write(at + index * NODE + VALUE, key) } }
         val table = place(TABLE) { at ->
             bytes.put(at + 8, 0x05)
             bytes.put(at + 11, log.toByte())
             bytes.putInt(at + 12, values.size)
             bytes.putLong(at + 16, start + arrayAt)
             bytes.putLong(at + 24, start + nodesAt)
+            bytes.putLong(at + 32, if (keyed.isEmpty()) 0L else start + nodesAt + (NODE shl log))
         }
 
         return Ref(start + table)
@@ -68,6 +71,7 @@ internal class LaidOutHeap(private val start: Long = 0x1_2340_0000L) : Memory {
         is Double -> of.toRawBits() to 0x03
         is String -> string(of) to 0x44
         is Ref -> of.address to 0x45
+        is LuaValue.Other -> 0L to of.tag
         else -> error("no Lua value for $of")
     }
 

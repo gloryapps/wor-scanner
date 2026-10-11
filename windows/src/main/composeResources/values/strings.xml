@@ -18,4 +18,7 @@
     <string name="scan_again">Scan it again</string>
     <string name="account_failed">The account could not be read: %1$s</string>
     <string name="open_folder">Open folder</string>
+    <string name="snapshot_taking">Taking a snapshot of the game's memory…</string>
+    <string name="snapshot_kept">Snapshot kept in %1$s</string>
+    <string name="snapshot_failed">The snapshot could not be taken: %1$s</string>
 </resources>

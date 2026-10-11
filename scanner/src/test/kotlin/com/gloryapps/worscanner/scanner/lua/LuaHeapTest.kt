@@ -60,4 +60,32 @@ class LuaHeapTest {
 
         assertEquals(emptyMap(), heap.holders(setOf("m_vArtifacts")))
     }
+
+    @Test
+    fun `every table is found by its address, lowest first, one with no hash part too, and no string between them`() = runTest {
+        val attribute = memory.table("iAttrId" to 7)
+        memory.string("equips")
+        memory.gap(4096)
+        val list = memory.table(array = listOf(attribute, attribute))
+        val piece = memory.table("vAttr" to attribute, "iLevel" to 16)
+
+        assertEquals(listOf(attribute, list, piece).map { it.address }, heap.tables().toList())
+    }
+
+    @Test
+    fun `an integer whose low byte reads as a table's tag heads no table, its last free node not among its nodes`() = runTest {
+        val numbers = memory.table(array = listOf(5, 6, 7))
+
+        assertEquals(listOf(numbers.address), heap.tables().toList())
+    }
+
+    @Test
+    fun `a table read to its first values keeps its array part's whole size, and a nil in it`() {
+        val table = memory.table("sName" to "Sigil", "iLevel" to 16, "bLocked" to true, array = listOf(4, null, 6))
+
+        assertEquals(
+            LuaTable(3, listOf(LuaValue.Integer(4), null), mapOf(LuaValue.Text("sName") to LuaValue.Text("Sigil"), LuaValue.Text("iLevel") to LuaValue.Integer(16))),
+            heap.table(table.address, most = 2),
+        )
+    }
 }
