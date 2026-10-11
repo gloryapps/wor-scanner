@@ -3,7 +3,9 @@ package com.gloryapps.worscanner.windows.memory
 import com.gloryapps.worscanner.scanner.account.readAccount
 import com.gloryapps.worscanner.windows.game.Desktop
 import com.sun.jna.Pointer
+import com.sun.jna.platform.win32.Advapi32Util
 import kotlinx.coroutines.runBlocking
+import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -36,9 +38,23 @@ class GameMemoryTest {
     }
 
     @Test
+    fun `a process above the scanner's rights is refused as one running as administrator`() {
+        assumeFalse("the tests run as administrator", Advapi32Util.isCurrentProcessElevated())
+
+        val refused = GameMemory.ofProcess(SYSTEM).exceptionOrNull()
+
+        assertTrue(refused is GameMemory.Elevated, "refused with $refused")
+    }
+
+    @Test
     fun `a process holding no Lua reads as an account with nothing in it`() = runBlocking {
         val account = GameMemory.ofProcess(self).getOrThrow().use { readAccount(it, startedAt = "20261010-120000") }
 
         assertEquals(0, account.heroes.size + account.gear.size + account.artifacts.size)
+    }
+
+    private companion object {
+        /** Windows' own System process, which only an administrator's tools may open. */
+        const val SYSTEM = 4
     }
 }

@@ -23,6 +23,7 @@ import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.ui.Accented
 import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
+import com.gloryapps.worscanner.ui.Edged
 import com.gloryapps.worscanner.ui.Lead
 import com.gloryapps.worscanner.ui.Lettering
 import com.gloryapps.worscanner.ui.Link
@@ -52,6 +53,7 @@ import com.gloryapps.worscanner.windows.resources.arrival_replace_said
 import com.gloryapps.worscanner.windows.resources.game_open
 import com.gloryapps.worscanner.windows.resources.gear_to_scan
 import com.gloryapps.worscanner.windows.resources.open_folder
+import com.gloryapps.worscanner.windows.resources.restart_as_administrator
 import com.gloryapps.worscanner.windows.resources.scan_account
 import com.gloryapps.worscanner.windows.resources.scan_again
 import com.gloryapps.worscanner.windows.resources.scanning_account
@@ -63,13 +65,14 @@ import java.awt.Desktop
 import com.gloryapps.worscanner.ui.resources.Res as Shared
 
 @Composable
-internal fun HomeScreen(modifier: Modifier = Modifier, viewModel: HomeViewModel = koinViewModel()) {
+internal fun HomeScreen(onQuit: () -> Unit, modifier: Modifier = Modifier, viewModel: HomeViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is HomeEffect.Open -> Desktop.getDesktop().open(effect.folder)
+                HomeEffect.Quit -> onQuit()
             }
         }
     }
@@ -104,6 +107,7 @@ private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier:
             onClick = { onEvent(HomeEvent.Scan) },
         )
         state.said?.let { Text(it, style = Lettering.data, color = Colors.muted) }
+        if (state.elevate) Edged(stringResource(Res.string.restart_as_administrator)) { onEvent(HomeEvent.RestartAsAdministrator) }
         Sending(state.account, state.linked, state.send, onEvent)
         if (state.kept != null) Link(stringResource(Res.string.open_folder)) { onEvent(HomeEvent.OpenKept) }
     }
