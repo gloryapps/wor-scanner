@@ -10,8 +10,11 @@ val built by tasks.registering {
     val source = layout.buildDirectory.dir("generated/built")
     val appName = providers.gradleProperty("worscanner.name")
     val lab = providers.gradleProperty("azhor.url")
+    /* A dev build is named apart, so it keeps its own window, folder and link beside the released app. */
+    val dev = providers.gradleProperty("worscanner.dev").map(String::toBoolean).orElse(false)
     inputs.property("name", appName)
     inputs.property("lab", lab)
+    inputs.property("dev", dev)
     outputs.dir(source)
     doLast {
         source.get().file("com/gloryapps/worscanner/ui/Built.kt").asFile.apply {
@@ -22,7 +25,7 @@ val built by tasks.registering {
                 |
                 |/** Written by the build from `gradle.properties`. */
                 |object Built {
-                |    const val NAME = "${appName.get()}"
+                |    const val NAME = "${appName.get()}${if (dev.get()) " Dev" else ""}"
                 |    const val AZHOR_URL = "${lab.get()}"
                 |}
                 |""".trimMargin(),

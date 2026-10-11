@@ -124,9 +124,10 @@ Written after heroes and followed for artifacts. The compiler enforces step 5.
   artifacts only those the player chose to send, and each with the `arrival` he chose: `replace`, the
   lab's list of its kind becomes the scan's, or `add`, the scan is laid over it (`ScanChoices`). A
   scan of the screen says `add`. The heroes scan's `collection` is how many heroes of each faction
-  the account has collected, by the game's own list of every hero it has held. A kind with no cards
-  has no scan: in place of the lab's list it would empty it. Those scans are what the Windows app
-  sends the lab and opens for the player.
+  the account has collected, by the game's own list of every hero it has held. One more scan is of
+  the game's plan, `kind` `plan`, a card per recommendation rule: no screen shows the plan as a grid,
+  so it is no `Kind`. A kind with no cards has no scan: in place of the lab's list it would empty it.
+  Those scans are what the Windows app sends the lab and opens for the player.
 - Preferences in DataStore. Room enters only if scan history inside the app is ever wanted, and
   brings the no-destructive-migration rule with it.
 

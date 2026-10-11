@@ -16,6 +16,10 @@ anywhere else. They run on a Windows desktop by hand, on any branch, `gh workflo
 --ref <branch>`, which keeps the test report as the run's `windows-test` artifact, and the app itself as
 `wor-scanner-windows`: a folder holding its own Java runtime and `WoR Scanner.exe`, run as it is.
 
+A dev build of the Windows app, `-Pworscanner.dev=true`, is named WoR Scanner Dev: its window, its
+folder in `%LOCALAPPDATA%` and its link to the lab are its own, beside the released app's. With
+`-Pazhor.url=http://<the Mac's address>:<port>` it reaches the lab running on the Mac.
+
 ## Release
 
 `dev` is always on the version it is building: `worscanner.version` in `gradle.properties`, which debug

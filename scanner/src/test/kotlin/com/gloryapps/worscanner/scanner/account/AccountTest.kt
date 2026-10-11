@@ -23,6 +23,23 @@ class AccountTest {
         "bLocked" to false,
     )
 
+    /** A rule as the game's code lays one out once read, each list and map of it holding the client's rows. */
+    private fun rule(id: Int, side: Int, sets: List<Long>, main: List<Int>, secondaries: List<Int>, essential: List<Int>) = memory.table(
+        "ID" to id,
+        "Name" to "Rule $id",
+        "IsSystem" to false,
+        "SuitType" to side,
+        "SuitList" to memory.table(array = sets.map { ROW }),
+        "SuitMap" to memory.table(*sets.map { it to ROW }.toTypedArray()),
+        "MainAttrList" to memory.table(array = main.map { ROW }),
+        "MainAttrMap" to memory.table(*main.map { it to ROW }.toTypedArray()),
+        "SubAttrList" to memory.table(array = secondaries.map { ROW }),
+        "SubAttrMap" to memory.table(*secondaries.map { it to ROW }.toTypedArray()),
+        "MustAttrList" to memory.table(array = essential.map { ROW }),
+        "MustAttrMap" to memory.table(*essential.map { it to ROW }.toTypedArray()),
+        "SubAttrSatisfied" to 2,
+    )
+
     private fun json(text: String): JsonElement = Json.parseToJsonElement(text)
 
     @Test
@@ -67,12 +84,33 @@ class AccountTest {
     }
 
     @Test
+    fun `the plan's rules are read off both sides' lists, each map of the client's rows kept as the ids it is keyed by`() = runTest {
+        memory.table(
+            "suitId2EquipIdExt" to memory.table(),
+            "m_EquipRecommendRulesMap" to memory.table(
+                1 to memory.table(array = listOf(rule(4, side = 1, sets = listOf(711400L), main = emptyList(), secondaries = listOf(19, 14), essential = emptyList()))),
+                2 to memory.table(array = listOf(rule(3, side = 2, sets = listOf(721300L, 720400L), main = listOf(25), secondaries = listOf(1, 13, 24), essential = listOf(24)))),
+            ),
+        )
+
+        val account = readAccount(memory, STARTED)
+
+        assertEquals(
+            setOf(
+                json("""{"ID":4,"Name":"Rule 4","IsSystem":false,"SuitType":1,"SubAttrSatisfied":2,"SuitMap":[711400],"MainAttrMap":[],"SubAttrMap":[14,19],"MustAttrMap":[]}"""),
+                json("""{"ID":3,"Name":"Rule 3","IsSystem":false,"SuitType":2,"SubAttrSatisfied":2,"SuitMap":[720400,721300],"MainAttrMap":[25],"SubAttrMap":[1,13,24],"MustAttrMap":[24]}"""),
+            ),
+            account.rules.toSet(),
+        )
+    }
+
+    @Test
     fun `a game holding none of the lists yet reads as an account with nothing in it`() = runTest {
         memory.table("iLimit" to 200)
 
         val account = readAccount(memory, STARTED)
 
-        assertEquals(listOf(emptyList<JsonElement>()), listOf(account.heroes, account.gear, account.artifacts).distinct())
+        assertEquals(listOf(emptyList<JsonElement>()), listOf(account.heroes, account.gear, account.artifacts, account.rules).distinct())
         assertEquals(emptyList(), account.collected)
     }
 
@@ -83,12 +121,13 @@ class AccountTest {
         val written = json(Json.encodeToString(Account.serializer(), readAccount(memory, STARTED).copy(seconds = 1.0)))
 
         assertEquals(
-            json("""{"kind":"account","startedAt":"$STARTED","heroes":[],"gear":[],"artifacts":[{"iLevel":20}],"collected":[],"found":{"heroes":[],"gear":[],"artifacts":[1]},"seconds":1.0}"""),
+            json("""{"kind":"account","startedAt":"$STARTED","heroes":[],"gear":[],"artifacts":[{"iLevel":20}],"collected":[],"rules":[],"found":{"heroes":[],"gear":[],"artifacts":[1],"rules":[]},"seconds":1.0}"""),
             written,
         )
     }
 
     private companion object {
         const val STARTED = "20261010-122135"
+        val ROW = LaidOutHeap.Userdata(0x7FF6_1234_5678L)
     }
 }

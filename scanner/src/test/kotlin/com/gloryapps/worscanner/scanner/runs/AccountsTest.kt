@@ -3,6 +3,7 @@ package com.gloryapps.worscanner.scanner.runs
 import com.gloryapps.worscanner.scanner.account.Account
 import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.account.ScanChoices
+import com.gloryapps.worscanner.scanner.account.ScannedRule
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
 import com.gloryapps.worscanner.scanner.kinds.hero.ScannedHero
 import com.gloryapps.worscanner.scanner.lua.LaidOutHeap
@@ -48,5 +49,35 @@ class AccountsTest {
         assertEquals(listOf(Arrival.ADD, Arrival.ADD), listOf(heroes.arrival, artifacts.arrival))
         assertEquals(listOf(1, 1, 1, 0), listOf("The Supreme Arbiters", "The Star Piercers", "The Watchguard", "The North Throne").map(heroes.collection.orEmpty()::getValue))
         assertEquals(null, artifacts.collection)
+    }
+
+    @Test
+    fun `the game's plan is kept as a scan of its own, each rule a card in the game's words`() = runTest {
+        val memory = LaidOutHeap().apply {
+            val rule = table(
+                "Name" to "Crit DPS",
+                "SuitType" to 2,
+                "SuitMap" to table(721300L to true, 720400L to true),
+                "MainAttrMap" to table(25 to true),
+                "SubAttrMap" to table(1 to true, 24 to true),
+                "MustAttrMap" to table(24 to true),
+                "SubAttrSatisfied" to 2,
+            )
+            table("m_EquipRecommendRulesMap" to table(2 to table(array = listOf(rule))))
+        }
+
+        val kept = Accounts(root).read(memory, ScanChoices.EVERYTHING)
+
+        val plan = File(root, "accounts/${kept.account.startedAt}/plan.json")
+        assertEquals(listOf(plan), kept.scans)
+        val scan = Json.decodeFromString(ScanFile.serializer(ScannedRule.serializer()), plan.readText())
+        assertEquals(Triple("plan", kept.account.startedAt, Arrival.REPLACE), Triple(scan.kind, scan.startedAt, scan.arrival))
+        assertEquals(
+            Json.parseToJsonElement(
+                """{"name":"Crit DPS","side":"bangles-amulets-rings","sets":["fatality","the-doom"],"main":["Crit. DMG"],""" +
+                    """"secondaries":{"ATK":"pool","Crit. Rate":"essential"},"match":2}""",
+            ),
+            Json.encodeToJsonElement(ScannedRule.serializer(), scan.entries.single().card),
+        )
     }
 }
