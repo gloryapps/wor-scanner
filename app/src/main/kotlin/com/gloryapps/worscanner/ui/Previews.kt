@@ -78,7 +78,7 @@ private fun ControlsPreview() {
                 Accented("Next: permissions", trailing = Icons.AutoMirrored.Outlined.ArrowForward) { }
                 Accented("Update now", reach = Reach.SMALL) { }
             }
-            Accented("Send to Azhor’s Master Smithy", Modifier.fillMaxWidth(), icon = Icons.AutoMirrored.Outlined.Send) { }
+            Accented("Send to WoR Armory", Modifier.fillMaxWidth(), icon = Icons.AutoMirrored.Outlined.Send) { }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Edged("Save → LDPlayer", Modifier.weight(1f), icon = Icons.Outlined.Folder) { }
                 Edged("Share…", icon = Icons.Outlined.Share) { }

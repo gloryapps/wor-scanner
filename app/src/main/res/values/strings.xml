@@ -48,7 +48,7 @@
     <string name="permission_on">On</string>
     <string name="permission_why">Why it is asked</string>
 
-    <string name="firstrun_title">Read your gear, heroes and artifacts straight off the game, into Azhor’s Master Smithy.</string>
+    <string name="firstrun_title">Read your gear, heroes and artifacts straight off the game, into WoR Armory.</string>
     <string name="firstrun_lead">The scanner taps through the game for you. Here’s how it works:</string>
     <string name="firstrun_move_open">Open what to scan</string>
     <string name="firstrun_move_open_said">Gear, Heroes or Artifacts, sorted, the first tile selected.</string>
@@ -115,7 +115,7 @@
     <string name="export_send_unlinked">The site no longer knows this scanner: it was unlinked there, or another was linked. Send a scan from the home screen to link it again.</string>
     <string name="export_send_refused">The site did not read this file as a scan.</string>
     <string name="export_send_too_large">This scan is larger than the site keeps. Save it and import the file instead.</string>
-    <string name="export_note">This is the file you open in Import a scan in Azhor’s Master Smithy.</string>
+    <string name="export_note">This is the file you open in Import a scan in WoR Armory.</string>
 
     <string name="reading_data">Data</string>
     <string name="reading_json">JSON</string>

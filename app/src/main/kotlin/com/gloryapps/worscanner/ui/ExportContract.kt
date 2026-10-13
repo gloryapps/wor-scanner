@@ -29,7 +29,7 @@ sealed interface ExportEvent {
 
     data object Share : ExportEvent
 
-    /** The scans sent to Azhor's Master Smithy, where the account's Import a scan holds them. */
+    /** The scans sent to WoR Armory, where the account's Import a scan holds them. */
     data object Send : ExportEvent
 
     data object Close : ExportEvent

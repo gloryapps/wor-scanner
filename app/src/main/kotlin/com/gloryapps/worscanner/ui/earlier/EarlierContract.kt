@@ -7,7 +7,7 @@ internal data class EarlierUiState(
     val readings: List<Kept>? = null,
     /** The readings whose deletion is being asked about, one or every one; empty while none is. */
     val deleting: List<Kept> = emptyList(),
-    /** Whether the scanner holds a token from Azhor's Master Smithy, which only a send from Home gives it. */
+    /** Whether the scanner holds a token from WoR Armory, which only a send from Home gives it. */
     val linked: Boolean = false,
 )
 
