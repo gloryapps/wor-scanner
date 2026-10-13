@@ -1,7 +1,7 @@
 # WoR Scanner
 
 Reads your Watcher of Realms account, its epic and legendary heroes, its gear and its artifacts, and
-sends it to [Azhor’s Master Smithy](https://azhor-wor.netlify.app).
+sends it to [WoR Armory](https://wor-armory.netlify.app).
 
 It runs on Windows, beside the game's own PC client. The Android app is deprecated for now.
 
@@ -32,7 +32,7 @@ Deprecated for now.
 ## Privacy
 
 Scans stay on the PC until you send them, and are not backed up. **Send** uploads a scan's JSON to
-Azhor’s Master Smithy, into the account the scanner is linked to. Nothing else leaves the PC; the
+WoR Armory, into the account the scanner is linked to. Nothing else leaves the PC; the
 log stays in the app's folder.
 
 ## Building

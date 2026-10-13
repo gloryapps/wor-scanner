@@ -29,7 +29,7 @@ compose.desktop {
 
         nativeDistributions {
             packageName = providers.gradleProperty("worscanner.name").get()
-            packageVersion = providers.gradleProperty("worscanner.version").get()
+            packageVersion = providers.gradleProperty("worscanner.released").get()
             /* What `suggestRuntimeModules` found the app needs beyond Compose's own. */
             modules("java.instrument", "jdk.unsupported")
             /* The Android launcher icon drawn for Windows, as `composeResources/drawable/icon.xml` draws it in the window. */

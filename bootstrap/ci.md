@@ -5,63 +5,46 @@ merged with a merge commit. A merge is a release when `CHANGELOG.md` has notes u
 `## [Unreleased]`; one without, such as a README or a past version's notes, reaches `main` building
 and publishing nothing.
 
+The steps themselves are in `.github/workflows/`: `release.yml` checks and builds a release on its pull
+request and publishes that build on the merge, and `windows.yml` is run by hand.
+
 ## Verification
 
-Tests run locally, `./gradlew test`, before a push; nothing runs on a push to `dev`. A pull request to
-`main` runs them again with the signed build it would publish, so a release never ships over a red
-test or a key that does not sign, and Actions minutes are spent only there.
+Tests run locally, `./gradlew test`, before a push; nothing runs on a push to `dev`. The release's pull
+request runs them again, so a red test stops a release before anything is published, and Actions
+minutes are spent only there.
 
-The Windows app's reading of the game's window and memory only runs on Windows: those tests skip
-anywhere else. They run on a Windows desktop by hand, on any branch, `gh workflow run windows.yml
---ref <branch>`, which keeps the test report as the run's `windows-test` artifact, and the app itself as
-`wor-scanner-windows`: a folder holding its own Java runtime and `WoR Scanner.exe`, run as it is.
+The tests that read a real Windows desktop, the game's window and memory, skip anywhere else. On any
+branch, `gh workflow run windows.yml --ref <branch>` runs them on a Windows runner and keeps the
+report and the built app as the run's artifacts.
 
 A dev build of the Windows app, `-Pworscanner.dev=true`, is named WoR Scanner Dev: its window, its
 folder in `%LOCALAPPDATA%` and its link to the lab are its own, beside the released app's. With
 `-Pazhor.url=http://<the Mac's address>:<port>` it reaches the lab running on the Mac.
 
-## Release
-
-`dev` is always on the version it is building: `worscanner.version` in `gradle.properties`, which debug
-builds show with a `-dev` suffix. `versionCode` derives from it (`0.1.0` → `100`).
+## Versions and notes
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), written for whoever
 scans: a change lands with its line under `## [Unreleased]`, and a release's notes are that section.
 
-A release is a pull request from `dev` to `main` (`gh pr create --base main --head dev`), and
-`.github/workflows/release.yml` runs on both ends of it: as the pull request's check, and on the
-merge. One run per ref at a time; the runner sets up Java 17 for the build and 25 for the Gradle
-daemon.
+`worscanner.released` in `gradle.properties` is the version last released, and every build is
+versioned as it, a debug build with a `-dev` suffix. A release takes the next version from its notes:
+a minor where they hold `### Added` or `### Removed`, a patch where they only change or fix. Once
+published, the workflow commits that version and the notes' date to `dev`, so pull `dev` before
+working on. No notes choose a major; the first one adds how.
 
-Since 0.4.0 (2026-10-11) a release ships the Windows app alone: the Android app is paused at 0.3.0.
-Its tests still run, but no APK is built, signed or released, and an installed Android app finds no
-newer `wor-scanner.apk` to offer. Bringing Android back puts the keystore step, `:app:assembleRelease`
-and the APK and mapping assets back into `release.yml`, as they stand in 0.3.0's.
+## Releasing
 
-On the pull request:
+Open a pull request from `dev` to `main`, `gh pr create --base main --head dev`, and merge it once
+its check passes. The merge publishes a GitHub release holding `wor-scanner-windows.zip`, whose name
+carries no version, so `releases/latest/download/wor-scanner-windows.zip` always downloads the newest.
 
-1. Fails one from any branch but `dev`.
-2. Reads the notes under `## [Unreleased]`. With none, the pull request is no release: it passes
-   building nothing, and its merge publishes nothing.
-3. Reads the version and fails if the tag `v<version>` already exists.
-4. Runs the tests, and keeps the notes and the version as the run's `release` artifact.
-5. On a Windows runner, tests the Windows app on its desktop and builds it, a folder holding its own
-   Java runtime, zipped as `wor-scanner-windows.zip` and kept as the run's `release-windows` artifact.
+If GitHub never starts the merge's run, `gh workflow run release.yml --ref main` publishes it by hand,
+for as long as the pull request's build is kept: 90 days.
 
-On the merge, which is a merge commit so that `dev`'s commits reach `main` as they are:
-
-1. Builds nothing: takes that artifact from the pull request's run that built the merge commit's
-   second parent, and stops there when that run built none.
-2. Creates the tag on the merge commit and a GitHub release holding `wor-scanner-windows.zip`, with
-   the notes. Its name carries no version, so `releases/latest/download/wor-scanner-windows.zip`
-   always downloads the newest.
-3. Commits `Start <next minor>` to `dev`, which also heads those notes `## [<version>] - <date>` under
-   an empty `## [Unreleased]` and adds the version's compare link: pull `dev` before working on. A
-   patch or a major is set in `worscanner.version` on `dev` by hand, before its pull request.
-
-A merge whose run GitHub never started is released by running the workflow on `main` by hand,
-which does what the merge does while the pull request's artifact is kept, 90 days:
-`gh workflow run release.yml --ref main`.
+Since 0.4.0 a release ships the Windows app alone: the Android app is paused at 0.3.0, and an installed
+one finds no newer `wor-scanner.apk` to offer. Bringing it back puts the keystore step,
+`:app:assembleRelease` and the APK and mapping assets back into `release.yml`, as 0.3.0's has them.
 
 ## Repository rules
 
@@ -75,12 +58,11 @@ Rulesets, available once the repository is public:
 
 Nobody bypasses them. Pull requests are for collaborators only.
 
-Crashes reported against a release are retraced with that release's `mapping-<version>.txt.gz`, unzipped.
-
 ## Signing
 
-`app/build.gradle.kts` reads the release keystore from the environment and builds unsigned when
-`KEYSTORE_FILE` is absent, which is the case locally. The workflow sets it from repository secrets:
+Only the Android app is signed. `app/build.gradle.kts` reads the release keystore from the environment
+and builds unsigned when `KEYSTORE_FILE` is absent, which is the case locally. The workflow sets it
+from repository secrets:
 
 | Secret | Content |
 | --- | --- |
@@ -103,9 +85,10 @@ gh secret set KEY_PASSWORD
 
 ## Crashes
 
-Release builds report crashes to Firebase Crashlytics; debug builds do not (`appModule` builds `CrashReports` collecting only
-where the build is not debug). The Firebase project is `wor-scanner-9914f`, with two Android apps registered, package
-`com.gloryapps.worscanner` and `com.gloryapps.worscanner.debug`, since the Google services plugin
-refuses a build whose application id the file does not name. Its `app/google-services.json` is
-committed: the keys in it are client keys, restricted by package. On `assembleRelease` the
-Crashlytics plugin uploads the R8 `mapping.txt`, so crashes arrive already retraced.
+Android release builds report crashes to Firebase Crashlytics; debug builds do not (`appModule` builds
+`CrashReports` collecting only where the build is not debug). The Firebase project is
+`wor-scanner-9914f`, with two Android apps registered, package `com.gloryapps.worscanner` and
+`com.gloryapps.worscanner.debug`, since the Google services plugin refuses a build whose application id
+the file does not name. Its `app/google-services.json` is committed: the keys in it are client keys,
+restricted by package. On `assembleRelease` the Crashlytics plugin uploads the R8 `mapping.txt`, so
+crashes arrive already retraced.
