@@ -48,7 +48,7 @@ on a store.
 | `lua/` | Lua 5.3's strings and tables in the game's memory, as a 64-bit build lays them out | senses |
 | `il2cpp/` | IL2CPP's classes, fields and objects in the game's memory, as Unity 2019.4 lays them out on 64 bits: found by the class names in the read-only metadata | senses |
 | `account/` | the account as the running game holds it: the table each list lives in, found by a field only that table has; and its lists as the cards each kind's scan writes | lua, senses, game, kinds |
-| `runs/` | a scan run and kept on disk, as the lab reads it; a fight captured for a diagnosis (Ctrl+Shift+B, `battles/`) | everything above |
+| `runs/` | a scan run and kept on disk, as the lab reads it; a fight captured for a diagnosis (the Capture fight button, `battles/`) | everything above |
 | `azhor/` | the lab's client | nothing |
 
 - Arrows point down only. `scan/` knows no kind.

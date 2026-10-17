@@ -66,10 +66,11 @@ private fun Il2CppClass.json(fields: List<Il2CppField>, head: String?) = JsonObj
     ),
 )
 
-/** One moment: its milliseconds from the capture's start, each class's static fields, and each object's instance fields. */
+/** One moment: its milliseconds from the capture's start, the fight it is in, each class's static fields, and each object's instance fields. */
 private fun Il2CppHeap.line(at: Long, classes: List<Il2CppClass>, layouts: Map<Long, List<Il2CppField>>, objects: Map<Long, List<Long>>) = JsonObject(
     mapOf(
         "t" to JsonPrimitive(at),
+        "fight" to (fight(classes, layouts)?.let(::JsonPrimitive) ?: JsonNull),
         "statics" to JsonObject(
             classes.filter { it.statics != 0L }.associate { klass ->
                 "${klass.name}@${klass.address}" to fieldsJson(klass.statics, klass.fields.filter { it.static && it.stored })
@@ -85,6 +86,15 @@ private fun Il2CppHeap.line(at: Long, classes: List<Il2CppClass>, layouts: Map<L
         ),
     ),
 )
+
+/** The simulation `BattleManager.instance` runs now: a new one each time the fight starts again. */
+private fun Il2CppHeap.fight(classes: List<Il2CppClass>, layouts: Map<Long, List<Il2CppField>>): Long? {
+    val manager = classes.firstOrNull { it.name == "BattleManager" && it.statics != 0L } ?: return null
+    val instance = manager.fields.firstOrNull { it.name == "instance" && it.static }?.let { read(manager.statics + it.offset, 8)?.getLong(0) }?.takeIf { it != 0L } ?: return null
+    val simulation = layouts.getValue(manager.address).firstOrNull { it.name == "m_simulation" && !it.static } ?: return null
+
+    return read(instance + simulation.offset, 8)?.getLong(0)
+}
 
 /** Each field's value at `base`, a struct's bytes as far as the next field. */
 private fun Il2CppHeap.fieldsJson(base: Long, fields: List<Il2CppField>): JsonObject {
@@ -154,6 +164,7 @@ val BATTLE_CLASSES = setOf(
     "EntityWorld", "SubjectEntity", "AttributeComponent", "BattleAttributeData", "SpecialAttributeComponent", "BuffComponent",
     "BattleBuff", "BuffRuntime", "AngerComponent", "SkillComponent", "SkillCDData", "HPChangeComponent",
     "DamageStatistics", "DamageStatisticsData", "DamageStepStatisticsData", "DpsData", "BattleDpsView", "BattleManager", "BattleFrame",
+    "BattleAttributeAddition", "BattleAttributeSole", "BattleAttributeListAddtion",
 )
 
 /* Il2CppTypeEnum's codes. */
@@ -187,6 +198,6 @@ private const val CLASS_HEAD = 0x140
 private const val EVERY_MS = 500L
 private const val FIND_EVERY = 10
 private const val MOST_OBJECTS = 3_000
-private const val MOST_STRUCT = 32
+private const val MOST_STRUCT = 1_024
 private const val MOST_ITEMS = 64
 private const val MOST_COUNT = 1_000_000L

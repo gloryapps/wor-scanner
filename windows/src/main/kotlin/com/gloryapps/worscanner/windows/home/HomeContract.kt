@@ -26,6 +26,7 @@ internal data class HomeState(
     val choices: ScanChoices = ScanChoices(),
     /** What the last fight capture came to: under way, the file it was kept in, or why it failed. */
     val capture: String? = null,
+    val capturing: Boolean = false,
 )
 
 /** An account scanned: the scans made of it, which are what is sent, and how many cards of each they hold. */
@@ -68,7 +69,7 @@ internal sealed interface HomeEvent {
     /** Starts the scanner again as administrator, closing this one once Windows has. */
     data object RestartAsAdministrator : HomeEvent
 
-    /** Keeps a fight's state off the game's memory for a diagnosis, asked by a key no screen shows. */
+    /** Starts keeping a fight's state off the game's memory for a diagnosis, or stops one under way. */
     data object CaptureFight : HomeEvent
 }
 
