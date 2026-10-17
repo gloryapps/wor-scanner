@@ -73,16 +73,19 @@ internal class HomeViewModel(
         }
     }
 
-    private var capturing = false
+    @Volatile private var capturing = false
 
-    /* One capture at a time, while the game is open: about 30 s of a fight read every half second. */
+    /* The key starts a capture of the fight, read every half second, and stops it when pressed again; six minutes at most. */
     private fun capture() {
+        if (capturing) {
+            capturing = false
+            return
+        }
         val game = watch.game.value ?: return
-        if (capturing) return
         capturing = true
         viewModelScope.launch {
             local.update { it.copy(capture = getString(Res.string.capture_taking)) }
-            val taken = resultOf { GameMemory.of(game.handle).getOrThrow().use { captures.take(it) } }
+            val taken = resultOf { GameMemory.of(game.handle).getOrThrow().use { captures.take(it, going = { capturing }) } }
             taken.onFailure { reports.failed("capturing a fight", it) }
             val said = taken.fold({ getString(Res.string.capture_kept, it.path) }, { getString(Res.string.capture_failed, it.message ?: it.toString()) })
             local.update { it.copy(capture = said) }

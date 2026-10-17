@@ -19,10 +19,17 @@ import java.util.zip.GZIPOutputStream
 /** A fight's state read off the game's memory for a diagnosis: a gzipped file of JSON lines in `battles`, named by the stamp it started at. */
 class BattleCaptures(private val root: File) {
     /**
-     * Captures `memory` for `seconds`: a first line naming each battle class found and its fields, then a line every
-     * `everyMs` with each object of those classes and its fields' values, the objects found again every [FIND_EVERY] lines.
+     * Captures `memory` while `going` says so, `seconds` at most: a first line naming each battle class found and its
+     * fields, then a line every `everyMs` with each object of those classes and its fields' values, the objects found
+     * again every [FIND_EVERY] lines.
      */
-    suspend fun take(memory: Memory, seconds: Int = SECONDS, everyMs: Long = EVERY_MS, names: Set<String> = BATTLE_CLASSES): File = withContext(Dispatchers.IO) {
+    suspend fun take(
+        memory: Memory,
+        going: () -> Boolean = { true },
+        seconds: Int = SECONDS,
+        everyMs: Long = EVERY_MS,
+        names: Set<String> = BATTLE_CLASSES,
+    ): File = withContext(Dispatchers.IO) {
         val startedAt = LocalDateTime.now().format(STAMP)
         val heap = Il2CppHeap(memory)
         val classes = heap.classes(names)
@@ -35,6 +42,7 @@ class BattleCaptures(private val root: File) {
             val start = System.nanoTime()
             var objects = emptyMap<Long, List<Long>>()
             for (tick in 0 until (seconds * 1000 / everyMs).toInt()) {
+                if (!going()) break
                 if (tick % FIND_EVERY == 0) objects = heap.instances(classes, MOST_OBJECTS)
                 val at = (System.nanoTime() - start) / 1_000_000
                 out.appendLine(heap.line(at, classes, layouts, objects).toString())
@@ -174,7 +182,7 @@ private const val ARRAY_ITEMS = 0x20L
 private const val LIST_ITEMS = 0x10L
 private const val LIST_SIZE = 0x18L
 
-private const val SECONDS = 30
+private const val SECONDS = 360
 private const val CLASS_HEAD = 0x140
 private const val EVERY_MS = 500L
 private const val FIND_EVERY = 10
