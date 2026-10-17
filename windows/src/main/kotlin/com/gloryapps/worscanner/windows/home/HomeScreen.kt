@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,6 +63,9 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.koin.compose.viewmodel.koinViewModel
 import java.awt.Desktop
+import java.awt.KeyEventDispatcher
+import java.awt.KeyboardFocusManager
+import java.awt.event.KeyEvent
 import com.gloryapps.worscanner.ui.resources.Res as Shared
 
 @Composable
@@ -75,6 +79,16 @@ internal fun HomeScreen(onQuit: () -> Unit, modifier: Modifier = Modifier, viewM
                 HomeEffect.Quit -> onQuit()
             }
         }
+    }
+
+    /* Ctrl+Shift+B captures a fight: a key no screen shows, heard wherever the window's focus lies. */
+    DisposableEffect(viewModel) {
+        val keys = KeyboardFocusManager.getCurrentKeyboardFocusManager()
+        val capture = KeyEventDispatcher { key ->
+            (key.id == KeyEvent.KEY_PRESSED && key.keyCode == KeyEvent.VK_B && key.isControlDown && key.isShiftDown).also { if (it) viewModel.on(HomeEvent.CaptureFight) }
+        }
+        keys.addKeyEventDispatcher(capture)
+        onDispose { keys.removeKeyEventDispatcher(capture) }
     }
 
     HomeScreen(state, viewModel::on, modifier)
@@ -106,7 +120,7 @@ private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier:
             enabled = !state.scanning && state.game is Game.Open,
             onClick = { onEvent(HomeEvent.Scan) },
         )
-        state.said?.let { Text(it, style = Lettering.data, color = Colors.muted) }
+        listOfNotNull(state.said, state.capture).forEach { Text(it, style = Lettering.data, color = Colors.muted) }
         if (state.elevate) Edged(stringResource(Res.string.restart_as_administrator)) { onEvent(HomeEvent.RestartAsAdministrator) }
         Sending(state.account, state.linked, state.send, onEvent)
         if (state.kept != null) Link(stringResource(Res.string.open_folder)) { onEvent(HomeEvent.OpenKept) }

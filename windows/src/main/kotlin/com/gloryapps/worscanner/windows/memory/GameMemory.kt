@@ -15,13 +15,18 @@ import com.sun.jna.Memory as Buffer
 
 /** The memory of the game's process, opened only to be read; closed once read. */
 internal class GameMemory private constructor(private val process: WinNT.HANDLE) : Memory, AutoCloseable {
-    override fun spans(): List<Span> = buildList {
+    override fun spans(): List<Span> = regions(WRITABLE)
+
+    override fun readOnly(): List<Span> = regions(READ_ONLY)
+
+    /** Every committed region whose protection is one of `protections`, up to [MAX_SPAN] each. */
+    private fun regions(protections: Set<Int>): List<Span> = buildList {
         val info = WinNT.MEMORY_BASIC_INFORMATION()
         var at = 0L
         while (at < TOP && Kernel32.INSTANCE.VirtualQueryEx(process, Pointer(at), info, SIZE_T(info.size().toLong())).toLong() != 0L) {
             val start = Pointer.nativeValue(info.baseAddress)
             val size = info.regionSize.toLong()
-            if (info.state.toInt() == WinNT.MEM_COMMIT && info.protect.toInt() in WRITABLE && size <= MAX_SPAN) add(Span(start, size))
+            if (info.state.toInt() == WinNT.MEM_COMMIT && info.protect.toInt() in protections && size <= MAX_SPAN) add(Span(start, size))
             if (start + size <= at) break
             at = start + size
         }
@@ -69,5 +74,6 @@ internal class GameMemory private constructor(private val process: WinNT.HANDLE)
         private const val TOP = 0x7FFF_FFFF_FFFFL
         private const val MAX_SPAN = 1L shl 30
         private val WRITABLE = setOf(WinNT.PAGE_READWRITE, WinNT.PAGE_EXECUTE_READWRITE)
+        private val READ_ONLY = setOf(WinNT.PAGE_READONLY, WinNT.PAGE_WRITECOPY)
     }
 }

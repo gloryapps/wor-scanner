@@ -1,13 +1,9 @@
 package com.gloryapps.worscanner.scanner.lua
 
 import com.gloryapps.worscanner.scanner.senses.Memory
-import com.gloryapps.worscanner.scanner.senses.Span
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
+import com.gloryapps.worscanner.scanner.senses.littleEndian
+import com.gloryapps.worscanner.scanner.senses.sweep
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.concurrent.ConcurrentHashMap
 
 /** Lua 5.3's strings and tables in the game's memory, as a 64-bit build lays them out (`lobject.h`). */
@@ -20,7 +16,7 @@ class LuaHeap(private val memory: Memory) {
         val keys = keys(strings.keys)
         val nodes = keys.keys.sorted().toLongArray()
         val holders = ConcurrentHashMap<String, MutableSet<Long>>()
-        sweep { at, bytes, looked ->
+        memory.sweep { at, bytes, looked ->
             for (offset in 0 until minOf(looked, bytes.limit() - TABLE_SIZE) step ALIGNMENT) {
                 if (bytes.get(offset + TAG) != TABLE) continue
                 val log = bytes.get(offset + NODE_LOG).toInt() and 0xFF
@@ -95,7 +91,7 @@ class LuaHeap(private val memory: Memory) {
     private suspend fun strings(names: Set<String>): Map<Long, String> {
         val wanted = names.map { it.encodeToByteArray() }.filter { it.size <= MAX_SHORT }.groupBy { it.size }
         val found = ConcurrentHashMap<Long, String>()
-        sweep { at, bytes, looked ->
+        memory.sweep { at, bytes, looked ->
             for (offset in 0 until minOf(looked, bytes.limit() - STRING_HEAD) step ALIGNMENT) {
                 if (bytes.get(offset + TAG) != SHORT_STRING) continue
                 val length = bytes.get(offset + SHORT_LENGTH).toInt() and 0xFF
@@ -112,7 +108,7 @@ class LuaHeap(private val memory: Memory) {
     /** The nodes keyed by one of `strings`, each to its string. */
     private suspend fun keys(strings: Set<Long>): Map<Long, Long> {
         val found = ConcurrentHashMap<Long, Long>()
-        sweep { at, bytes, looked ->
+        memory.sweep { at, bytes, looked ->
             for (offset in 0 until minOf(looked, bytes.limit() - VALUE_SIZE) step ALIGNMENT) {
                 if (bytes.getInt(offset + TAG) != SHORT_STRING_VALUE) continue
                 val string = bytes.getLong(offset)
@@ -122,24 +118,8 @@ class LuaHeap(private val memory: Memory) {
 
         return found
     }
-
-    /** Hands each chunk of the game's memory to `look`, side by side: its address, its bytes, and how many it starts objects in, the rest only read past. */
-    private suspend fun sweep(look: (at: Long, bytes: ByteBuffer, looked: Int) -> Unit) = coroutineScope {
-        memory.spans().flatMap(::chunks).map { chunk ->
-            launch(Dispatchers.Default) { memory.read(chunk.at, chunk.size)?.let { look(chunk.at, littleEndian(it), chunk.looked) } }
-        }.joinAll()
-    }
-
-    private fun chunks(span: Span): List<Chunk> = (0 until span.size step CHUNK.toLong()).map { from ->
-        val left = span.size - from
-
-        Chunk(span.start + from, looked = minOf(CHUNK.toLong(), left).toInt(), size = minOf(CHUNK.toLong() + PAST, left).toInt())
-    }
-
-    private data class Chunk(val at: Long, val looked: Int, val size: Int)
 }
 
-private fun littleEndian(bytes: ByteArray): ByteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
 
 /* Where an object's fields sit, from its start. */
 private const val TAG = 8
@@ -173,6 +153,3 @@ private const val MAX_SHORT = 40
 private const val MAX_TEXT = 65_536L
 private const val MAX_NODE_LOG = 20
 private const val MAX_ARRAY = 1_000_000L
-/** How much of the game's memory a sweep reads at once. */
-internal const val CHUNK = 8 shl 20
-private const val PAST = 128

@@ -1,5 +1,6 @@
 package com.gloryapps.worscanner.scanner.lua
 
+import com.gloryapps.worscanner.scanner.senses.CHUNK
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -7,6 +7,9 @@ data class Span(val start: Long, val size: Long)
 interface Memory {
     fun spans(): List<Span>
 
+    /** Where it keeps data it only reads, besides [spans]: the metadata that names the game's classes. */
+    fun readOnly(): List<Span> = emptyList()
+
     /** `size` bytes from `address`; null where any of them cannot be read. */
     fun read(address: Long, size: Int): ByteArray?
 }

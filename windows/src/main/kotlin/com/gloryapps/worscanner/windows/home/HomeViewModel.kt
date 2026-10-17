@@ -7,6 +7,7 @@ import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.scanner.azhor.Sender
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.runs.Accounts
+import com.gloryapps.worscanner.scanner.runs.BattleCaptures
 import com.gloryapps.worscanner.scanner.runs.Reports
 import com.gloryapps.worscanner.windows.app.Administrator
 import com.gloryapps.worscanner.windows.app.FileScanChoices
@@ -18,6 +19,9 @@ import com.gloryapps.worscanner.windows.resources.account_elevated
 import com.gloryapps.worscanner.windows.resources.account_empty
 import com.gloryapps.worscanner.windows.resources.account_failed
 import com.gloryapps.worscanner.windows.resources.account_refused
+import com.gloryapps.worscanner.windows.resources.capture_failed
+import com.gloryapps.worscanner.windows.resources.capture_kept
+import com.gloryapps.worscanner.windows.resources.capture_taking
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +42,7 @@ internal class HomeViewModel(
     private val sender: Sender,
     private val reports: Reports,
     private val choices: FileScanChoices,
+    private val captures: BattleCaptures,
 ) : ViewModel() {
     private val game = if (Desktop.present) watch.game.map { window -> if (window != null) Game.Open else Game.Closed } else flowOf(Game.NotWindows)
     private val local = MutableStateFlow(HomeState())
@@ -64,6 +69,24 @@ internal class HomeViewModel(
             is HomeEvent.ChooseArtifacts -> choose { it.copy(artifacts = event.artifacts) }
             is HomeEvent.ChooseArrival -> choose { it.copy(arrival = event.arrival) }
             HomeEvent.RestartAsAdministrator -> viewModelScope.launch { if (Administrator.restart()) _effects.send(HomeEffect.Quit) }
+            HomeEvent.CaptureFight -> capture()
+        }
+    }
+
+    private var capturing = false
+
+    /* One capture at a time, while the game is open: about 30 s of a fight read every half second. */
+    private fun capture() {
+        val game = watch.game.value ?: return
+        if (capturing) return
+        capturing = true
+        viewModelScope.launch {
+            local.update { it.copy(capture = getString(Res.string.capture_taking)) }
+            val taken = resultOf { GameMemory.of(game.handle).getOrThrow().use { captures.take(it) } }
+            taken.onFailure { reports.failed("capturing a fight", it) }
+            val said = taken.fold({ getString(Res.string.capture_kept, it.path) }, { getString(Res.string.capture_failed, it.message ?: it.toString()) })
+            local.update { it.copy(capture = said) }
+            capturing = false
         }
     }
 

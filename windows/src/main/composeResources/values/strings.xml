@@ -25,4 +25,7 @@
     <string name="scan_again">Scan it again</string>
     <string name="account_failed">The account could not be read: %1$s</string>
     <string name="open_folder">Open folder</string>
+    <string name="capture_taking">Capturing the fight for 30 seconds…</string>
+    <string name="capture_kept">Fight capture kept in %1$s</string>
+    <string name="capture_failed">The fight could not be captured: %1$s</string>
 </resources>
