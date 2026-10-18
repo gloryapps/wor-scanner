@@ -51,7 +51,7 @@ class BattleCaptures(private val root: File) {
                 if (!going()) break
                 if (tick % FIND_EVERY == 0) {
                     val finding = System.nanoTime()
-                    val scanned = heap.instances(classes, MOST_OBJECTS)
+                    val scanned = heap.instances(classes.filter { it.name !in REACHED_ONLY && !it.name.startsWith(TABLE_ROW) }, MOST_OBJECTS)
                     val roots = listOfNotNull(heap.fight(classes, layouts)) + classes.filter { it.name in REACH_ROOTS }.flatMap { scanned[it.address].orEmpty() }
                     val found = heap.reached(roots, classes)
                     reached = found.values.flatten().toSet()
@@ -125,7 +125,8 @@ private fun Il2CppHeap.fight(classes: List<Il2CppClass>, layouts: Map<Long, List
 /**
  * Objects of `classes` reached from `roots` through their references, any object, array or collection in between, [REACH_DEPTH]
  * hops at most: what the heap scan misses or cannot tell from a look-alike, as the statistics a component keeps in dictionaries.
- * A game table's row is kept but not gone through, as it leads to the whole table.
+ * A game table's row is kept but not gone through, as it leads to the whole table; neither are the game's caches and data managers,
+ * nor the pools that keep a finished fight's objects for reuse.
  */
 private fun Il2CppHeap.reached(roots: Collection<Long>, classes: List<Il2CppClass>): Map<Long, List<Long>> {
     val wanted = classes.map { it.address }.toSet()
@@ -139,7 +140,7 @@ private fun Il2CppHeap.reached(roots: Collection<Long>, classes: List<Il2CppClas
             val klassAddress = read(address, 8)?.getLong(0) ?: continue
             val klass = klass(klassAddress) ?: continue
             if (klassAddress in wanted) found.getOrPut(klassAddress) { mutableSetOf() } += address
-            if (klass.name.startsWith(TABLE_ROW) || klass.name == "String") continue
+            if (klass.name.startsWith(TABLE_ROW) || klass.name in NOT_WALKED) continue
             pointersOf(address, klass).filterTo(next) { it !in seen }
         }
         layer = next
@@ -254,6 +255,15 @@ val BATTLE_CLASSES = setOf(
 
 /** The objects the statistics hang from, whose references are followed to the records they keep. */
 private val REACH_ROOTS = setOf("StatisticsComponent", "DamageStatistics")
+
+/** Classes captured only as reached from the fight: the heap holds many look-alikes and other fights' copies of them. */
+private val REACHED_ONLY = setOf("TDGameSimulation", "Entity", "UseSkill")
+
+/** What the walk from the fight does not go through: text, the game's tables, caches and data managers, and the pools of reused objects. */
+private val NOT_WALKED = setOf(
+    "String", "GameDataManager", "StateScriptCache", "BattleBuffCache", "AIRuntimeCache", "BattleUtilityCache", "AgentsManager",
+    "NotifyMgr", "Stack`1", "Queue`1",
+)
 
 /* Il2CppTypeEnum's codes. */
 private const val BOOLEAN = 0x02
