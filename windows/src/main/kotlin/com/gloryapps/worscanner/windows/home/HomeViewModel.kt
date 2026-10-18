@@ -70,6 +70,7 @@ internal class HomeViewModel(
             is HomeEvent.ChooseArrival -> choose { it.copy(arrival = event.arrival) }
             HomeEvent.RestartAsAdministrator -> viewModelScope.launch { if (Administrator.restart()) _effects.send(HomeEffect.Quit) }
             HomeEvent.CaptureFight -> capture()
+            HomeEvent.OpenCaptured -> local.value.captured?.let { folder -> viewModelScope.launch { _effects.send(HomeEffect.Open(folder)) } }
         }
     }
 
@@ -85,12 +86,12 @@ internal class HomeViewModel(
         val game = watch.game.value ?: return
         capturing = true
         viewModelScope.launch {
-            local.update { it.copy(capturing = true, capture = getString(Res.string.capture_taking)) }
+            local.update { it.copy(capturing = true, capture = getString(Res.string.capture_taking), captured = null) }
             val taken = resultOf { GameMemory.of(game.handle).getOrThrow().use { captures.take(it, going = { capturing }) } }
             taken.onFailure { reports.failed("capturing a fight", it) }
             val said = taken.fold({ getString(Res.string.capture_kept, it.path) }, { getString(Res.string.capture_failed, it.message ?: it.toString()) })
             capturing = false
-            local.update { it.copy(capturing = false, capture = said) }
+            local.update { it.copy(capturing = false, capture = said, captured = taken.getOrNull()?.parentFile) }
         }
     }
 

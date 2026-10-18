@@ -26,6 +26,8 @@ internal data class HomeState(
     val choices: ScanChoices = ScanChoices(),
     /** What the last fight capture came to: under way, the file it was kept in, or why it failed. */
     val capture: String? = null,
+    /** The folder the last capture was kept in, opened from its message. */
+    val captured: File? = null,
     val capturing: Boolean = false,
 )
 
@@ -71,6 +73,8 @@ internal sealed interface HomeEvent {
 
     /** Starts keeping a fight's state off the game's memory for a diagnosis, or stops one under way. */
     data object CaptureFight : HomeEvent
+
+    data object OpenCaptured : HomeEvent
 }
 
 internal sealed interface HomeEffect {

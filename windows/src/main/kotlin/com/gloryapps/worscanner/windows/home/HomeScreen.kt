@@ -108,7 +108,8 @@ private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier:
             enabled = !state.scanning && state.game is Game.Open,
             onClick = { onEvent(HomeEvent.Scan) },
         )
-        listOfNotNull(state.said, state.capture).forEach { Text(it, style = Lettering.data, color = Colors.muted) }
+        state.said?.let { Text(it, style = Lettering.data, color = Colors.muted) }
+        state.capture?.let { if (state.captured != null) Link(it) { onEvent(HomeEvent.OpenCaptured) } else Text(it, style = Lettering.data, color = Colors.muted) }
         if (state.game is Game.Open) Edged(stringResource(if (state.capturing) Res.string.capture_stop else Res.string.capture_fight)) { onEvent(HomeEvent.CaptureFight) }
         if (state.elevate) Edged(stringResource(Res.string.restart_as_administrator)) { onEvent(HomeEvent.RestartAsAdministrator) }
         Sending(state.account, state.linked, state.send, onEvent)
