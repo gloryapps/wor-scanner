@@ -1,5 +1,7 @@
 package com.gloryapps.worscanner.scanner.runs
 
+import com.gloryapps.worscanner.scanner.account.Account
+import com.gloryapps.worscanner.scanner.account.readAccount
 import com.gloryapps.worscanner.scanner.il2cpp.Il2CppClass
 import com.gloryapps.worscanner.scanner.il2cpp.Il2CppField
 import com.gloryapps.worscanner.scanner.il2cpp.Il2CppHeap
@@ -7,6 +9,7 @@ import com.gloryapps.worscanner.scanner.senses.Memory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -20,8 +23,8 @@ import java.util.zip.GZIPOutputStream
 class BattleCaptures(private val root: File) {
     /**
      * Captures `memory` while `going` says so, `seconds` at most: a first line naming each battle class found and its
-     * fields, then a line every `everyMs` with each object of those classes and its fields' values, the objects found
-     * again every [FIND_EVERY] lines.
+     * fields, with the account as it stands (each piece naming the hero who wears it), then a line every `everyMs` with each
+     * object of those classes and its fields' values, the objects found again every [FIND_EVERY] lines.
      */
     suspend fun take(
         memory: Memory,
@@ -31,6 +34,7 @@ class BattleCaptures(private val root: File) {
         names: Set<String> = BATTLE_CLASSES,
     ): File = withContext(Dispatchers.IO) {
         val startedAt = LocalDateTime.now().format(STAMP)
+        val account = runCatching { Json.encodeToJsonElement(Account.serializer(), readAccount(memory, startedAt)) }.getOrElse { JsonNull }
         val heap = Il2CppHeap(memory)
         val classes = heap.classes(names)
         val layouts = classes.associate { it.address to heap.fieldsOf(it) }
@@ -38,7 +42,7 @@ class BattleCaptures(private val root: File) {
 
         GZIPOutputStream(file.outputStream()).bufferedWriter().use { out ->
             val heads = classes.map { klass -> heap.read(klass.address, CLASS_HEAD)?.let { buffer -> ByteArray(CLASS_HEAD).also { buffer.get(0, it) }.joinToString("") { "%02x".format(it) } } }
-            out.appendLine(JsonObject(mapOf("startedAt" to JsonPrimitive(startedAt), "classes" to JsonArray(classes.mapIndexed { index, it -> it.json(layouts.getValue(it.address), heads[index]) }))).toString())
+            out.appendLine(JsonObject(mapOf("startedAt" to JsonPrimitive(startedAt), "account" to account, "classes" to JsonArray(classes.mapIndexed { index, it -> it.json(layouts.getValue(it.address), heads[index]) }))).toString())
             val start = System.nanoTime()
             var objects = emptyMap<Long, List<Long>>()
             var reached = emptySet<Long>()
