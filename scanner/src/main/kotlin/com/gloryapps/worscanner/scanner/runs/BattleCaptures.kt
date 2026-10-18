@@ -41,11 +41,18 @@ class BattleCaptures(private val root: File) {
             out.appendLine(JsonObject(mapOf("startedAt" to JsonPrimitive(startedAt), "classes" to JsonArray(classes.mapIndexed { index, it -> it.json(layouts.getValue(it.address), heads[index]) }))).toString())
             val start = System.nanoTime()
             var objects = emptyMap<Long, List<Long>>()
+            var reached = emptySet<Long>()
             for (tick in 0 until (seconds * 1000 / everyMs).toInt()) {
                 if (!going()) break
-                if (tick % FIND_EVERY == 0) objects = heap.instances(classes, MOST_OBJECTS)
+                if (tick % FIND_EVERY == 0) {
+                    val scanned = heap.instances(classes, MOST_OBJECTS)
+                    val roots = classes.filter { it.name in REACH_ROOTS }.flatMap { scanned[it.address].orEmpty() }
+                    val found = heap.reached(roots, classes)
+                    reached = found.values.flatten().toSet()
+                    objects = (scanned.keys + found.keys).associateWith { (scanned[it].orEmpty() + found[it].orEmpty()).distinct().sorted() }
+                }
                 val at = (System.nanoTime() - start) / 1_000_000
-                out.appendLine(heap.line(at, classes, layouts, objects).toString())
+                out.appendLine(heap.line(at, classes, layouts, objects, reached).toString())
                 delay((everyMs * (tick + 1) - (System.nanoTime() - start) / 1_000_000).coerceAtLeast(0))
             }
         }
@@ -66,8 +73,11 @@ private fun Il2CppClass.json(fields: List<Il2CppField>, head: String?) = JsonObj
     ),
 )
 
-/** One moment: its milliseconds from the capture's start, the fight it is in, each class's static fields, and each object's instance fields. */
-private fun Il2CppHeap.line(at: Long, classes: List<Il2CppClass>, layouts: Map<Long, List<Il2CppField>>, objects: Map<Long, List<Long>>) = JsonObject(
+/**
+ * One moment: its milliseconds from the capture's start, the fight it is in, each class's static fields, and each object's instance
+ * fields; `r` marks an object reached from a [REACH_ROOTS] object, which the heap scan's look-alikes never are.
+ */
+private fun Il2CppHeap.line(at: Long, classes: List<Il2CppClass>, layouts: Map<Long, List<Il2CppField>>, objects: Map<Long, List<Long>>, reached: Set<Long>) = JsonObject(
     mapOf(
         "t" to JsonPrimitive(at),
         "fight" to (fight(classes, layouts)?.let(::JsonPrimitive) ?: JsonNull),
@@ -80,7 +90,14 @@ private fun Il2CppHeap.line(at: Long, classes: List<Il2CppClass>, layouts: Map<L
             classes.flatMap { klass ->
                 val fields = layouts.getValue(klass.address).filter { !it.static && it.stored }
                 objects[klass.address].orEmpty().map { address ->
-                    JsonObject(mapOf("c" to JsonPrimitive(klass.name), "at" to JsonPrimitive(address), "f" to fieldsJson(address, fields)))
+                    JsonObject(
+                        buildMap {
+                            put("c", JsonPrimitive(klass.name))
+                            put("at", JsonPrimitive(address))
+                            if (address in reached) put("r", JsonPrimitive(true))
+                            put("f", fieldsJson(address, fields))
+                        },
+                    )
                 }
             },
         ),
@@ -94,6 +111,43 @@ private fun Il2CppHeap.fight(classes: List<Il2CppClass>, layouts: Map<Long, List
     val simulation = layouts.getValue(manager.address).firstOrNull { it.name == "m_simulation" && !it.static } ?: return null
 
     return read(instance + simulation.offset, 8)?.getLong(0)
+}
+
+/**
+ * Objects of `classes` reached from `roots` through their references, any object, array or collection in between, [REACH_DEPTH]
+ * hops at most: what the heap scan misses or cannot tell from a look-alike, as the statistics a component keeps in dictionaries.
+ */
+private fun Il2CppHeap.reached(roots: Collection<Long>, classes: List<Il2CppClass>): Map<Long, List<Long>> {
+    val wanted = classes.map { it.address }.toSet()
+    val found = mutableMapOf<Long, MutableSet<Long>>()
+    val seen = HashSet<Long>()
+    var layer = roots.toList()
+    repeat(REACH_DEPTH) {
+        val next = mutableListOf<Long>()
+        for (address in layer) {
+            if (seen.size >= MOST_REACHED || !seen.add(address)) continue
+            val klassAddress = read(address, 8)?.getLong(0) ?: continue
+            val klass = klass(klassAddress) ?: continue
+            if (klassAddress in wanted) found.getOrPut(klassAddress) { mutableSetOf() } += address
+            next += pointersOf(address, klass)
+        }
+        layer = next
+    }
+
+    return found.mapValues { (_, objects) -> objects.sorted() }
+}
+
+/** The words an object points through: its reference fields, or an array's items, every word of them, as a struct item holds its references among other values. */
+private fun Il2CppHeap.pointersOf(address: Long, klass: Il2CppClass): List<Long> {
+    if (!klass.name.endsWith("[]")) {
+        return fieldsOf(klass).filter { !it.static && it.stored && it.type in REFERENCES }
+            .mapNotNull { read(address + it.offset, 8)?.getLong(0) }
+            .filter { it != 0L }
+    }
+    val count = read(address + ARRAY_LENGTH, 8)?.getLong(0)?.takeIf { it in 0..MOST_COUNT } ?: return emptyList()
+    val words = read(address + ARRAY_ITEMS, (minOf(count * WORDS_PER_ITEM, MOST_WORDS.toLong()) * 8).toInt()) ?: return emptyList()
+
+    return (0 until words.limit() / 8).map { words.getLong(it * 8) }.filter { it >= LOWEST_POINTER && it % 8 == 0L }
 }
 
 /** Each field's value at `base`, a struct's bytes as far as the next field. */
@@ -159,13 +213,22 @@ private fun Il2CppHeap.reference(address: Long): JsonElement {
     )
 }
 
-/** The battle's classes, by the names the client gives them: entities and their components, buffs, and the damage statistics the Stats screen shows. */
+/**
+ * The battle's classes, by the names the client gives them: entities and their components, buffs, the damage statistics the Stats
+ * screen shows (each hero's damage dealt and taken and healing, each skill's damage, kills), the player's operations (Ultimate
+ * presses), the dead's records, and where each unit stands (its cell, for ranges such as an Inspiration's).
+ */
 val BATTLE_CLASSES = setOf(
     "EntityWorld", "SubjectEntity", "AttributeComponent", "BattleAttributeData", "SpecialAttributeComponent", "BuffComponent",
-    "BattleBuff", "BuffRuntime", "AngerComponent", "SkillComponent", "SkillCDData", "HPChangeComponent",
-    "DamageStatistics", "DamageStatisticsData", "DamageStepStatisticsData", "DpsData", "BattleDpsView", "BattleManager", "BattleFrame",
-    "BattleAttributeAddition", "BattleAttributeSole", "BattleAttributeListAddtion",
+    "BattleBuff", "BuffRuntime", "AngerComponent", "SkillComponent", "SkillCDData", "HPChangeComponent", "CounterComponent",
+    "StatisticsComponent", "DamageStatistics", "DamageStatisticsData", "DamageStepStatisticsData", "SkillDamageStatisticsData",
+    "DpsData", "BattleDpsView", "BattleManager", "BattleFrame", "BattleOperData", "PlayerOperData", "DeadSystemData",
+    "DeadAttackHpData", "PositionComponent", "TowerSignComponent", "BattleAttributeAddition", "BattleAttributeSole",
+    "BattleAttributeListAddtion",
 )
+
+/** The objects the statistics hang from, whose references are followed to the records they keep. */
+private val REACH_ROOTS = setOf("StatisticsComponent", "DamageStatistics")
 
 /* Il2CppTypeEnum's codes. */
 private const val BOOLEAN = 0x02
@@ -201,3 +264,8 @@ private const val MOST_OBJECTS = 3_000
 private const val MOST_STRUCT = 1_024
 private const val MOST_ITEMS = 64
 private const val MOST_COUNT = 1_000_000L
+private const val REACH_DEPTH = 6
+private const val MOST_REACHED = 50_000
+private const val WORDS_PER_ITEM = 4
+private const val MOST_WORDS = 8_192
+private const val LOWEST_POINTER = 0x10000L
