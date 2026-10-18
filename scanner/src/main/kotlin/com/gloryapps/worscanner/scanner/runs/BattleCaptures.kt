@@ -61,7 +61,7 @@ class BattleCaptures(private val root: File) {
                     val roots = listOfNotNull(heap.fight(classes, layouts)) + classes.filter { it.name in REACH_ROOTS }.flatMap { scanned[it.address].orEmpty() }
                     val found = heap.reached(roots, classes)
                     reached = found.values.flatten().toSet()
-                    for ((klass, id) in named) found[klass.address].orEmpty().mapNotNullTo(units) { heap.read(it + id.offset, 4)?.getInt(0)?.toLong() }
+                    for ((klass, id) in named) found[klass.address].orEmpty().mapNotNullTo(units) { heap.read(it + id.offset, 4)?.getInt(0)?.toLong()?.takeIf { unit -> unit > 0 } }
                     objects = (scanned.keys + found.keys).associateWith { (scanned[it].orEmpty() + found[it].orEmpty()).distinct().sorted() }
                     findMs = (System.nanoTime() - finding) / 1_000_000
                 }
@@ -327,7 +327,7 @@ private const val MOST_OBJECTS = 3_000
 private const val MOST_STRUCT = 1_024
 private const val MOST_ITEMS = 64
 private const val MOST_COUNT = 1_000_000L
-private const val REACH_DEPTH = 10
+private const val REACH_DEPTH = 16
 private const val MOST_REACHED = 300_000
 private const val TABLE_ROW = "CData_"
 private const val WORDS_PER_ITEM = 4
