@@ -14,6 +14,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.scanner.account.ArtifactsToScan
@@ -109,7 +115,7 @@ private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier:
             onClick = { onEvent(HomeEvent.Scan) },
         )
         state.said?.let { Text(it, style = Lettering.data, color = Colors.muted) }
-        state.capture?.let { if (state.captured != null) Link(it) { onEvent(HomeEvent.OpenCaptured) } else Text(it, style = Lettering.data, color = Colors.muted) }
+        state.capture?.let { Text(linked(it, state.captured?.path) { onEvent(HomeEvent.OpenCaptured) }, style = Lettering.data, color = Colors.muted) }
         if (state.game is Game.Open) Edged(stringResource(if (state.capturing) Res.string.capture_stop else Res.string.capture_fight)) { onEvent(HomeEvent.CaptureFight) }
         if (state.elevate) Edged(stringResource(Res.string.restart_as_administrator)) { onEvent(HomeEvent.RestartAsAdministrator) }
         Sending(state.account, state.linked, state.send, onEvent)
@@ -124,6 +130,17 @@ private fun Choice(title: String, said: String? = null, pills: @Composable () ->
         Section(title)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { pills() }
         said?.let { Text(it, style = Lettering.caption, color = Colors.muted) }
+    }
+}
+
+/** `said` with `path` in it a link that runs `onOpen`, and plain where it holds no path. */
+private fun linked(said: String, path: String?, onOpen: () -> Unit): AnnotatedString {
+    val at = path?.let { said.indexOf(it) } ?: -1
+    if (path == null || at < 0) return AnnotatedString(said)
+    return buildAnnotatedString {
+        append(said.take(at))
+        withLink(LinkAnnotation.Clickable("path", TextLinkStyles(SpanStyle(color = Colors.accent))) { onOpen() }) { append(path) }
+        append(said.drop(at + path.length))
     }
 }
 

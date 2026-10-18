@@ -26,7 +26,7 @@ internal data class HomeState(
     val choices: ScanChoices = ScanChoices(),
     /** What the last fight capture came to: under way, the file it was kept in, or why it failed. */
     val capture: String? = null,
-    /** The folder the last capture was kept in, opened from its message. */
+    /** The file the last capture was kept in; its path in the message opens its folder. */
     val captured: File? = null,
     val capturing: Boolean = false,
 )
