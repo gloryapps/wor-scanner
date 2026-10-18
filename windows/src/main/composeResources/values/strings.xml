@@ -28,6 +28,7 @@
     <string name="capture_fight">Capture fight</string>
     <string name="capture_stop">Stop capture</string>
     <string name="capture_taking">Capturing the fight… press Stop capture when it ends; it stops by itself after 6 minutes.</string>
+    <string name="capture_saving">Saving the capture… the fight's heroes and their pieces are read before it is kept.</string>
     <string name="capture_kept">Fight capture kept in %1$s</string>
     <string name="capture_failed">The fight could not be captured: %1$s</string>
 </resources>

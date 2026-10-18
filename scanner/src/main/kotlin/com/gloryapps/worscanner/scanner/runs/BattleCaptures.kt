@@ -7,6 +7,7 @@ import com.gloryapps.worscanner.scanner.il2cpp.Il2CppField
 import com.gloryapps.worscanner.scanner.il2cpp.Il2CppHeap
 import com.gloryapps.worscanner.scanner.senses.Memory
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
@@ -25,7 +26,8 @@ class BattleCaptures(private val root: File) {
     /**
      * Captures `memory` while `going` says so, `seconds` at most: a first line naming each battle class found and its
      * fields, then a line every `everyMs` with each object of those classes and its fields' values, the objects found again
-     * every [FIND_EVERY] lines, and a last line with the account's entries for the heroes the fight held: each hero, the
+     * each time the last finding ends, each line also holding the fight's frame and every unit's Rage read every [FAST_MS] since the
+     * line before (`rage`), and a last line with the account's entries for the heroes the fight held: each hero, the
      * pieces and the artifact it wears, read as the fight ends.
      */
     suspend fun take(
@@ -45,36 +47,81 @@ class BattleCaptures(private val root: File) {
             val heads = classes.map { klass -> heap.read(klass.address, CLASS_HEAD)?.let { buffer -> ByteArray(CLASS_HEAD).also { buffer.get(0, it) }.joinToString("") { "%02x".format(it) } } }
             out.appendLine(JsonObject(mapOf("startedAt" to JsonPrimitive(startedAt), "classes" to JsonArray(classes.mapIndexed { index, it -> it.json(layouts.getValue(it.address), heads[index]) }))).toString())
             val start = System.nanoTime()
-            var objects = emptyMap<Long, List<Long>>()
-            var reached = emptySet<Long>()
-            var findMs = 0L
             val units = mutableSetOf<Long>()
-            /* The heroes the fight held: the units it fields, and the ones its statistics name, as a Lord on the bench. */
-            val named = listOf(UNIT_ROW to "m_ID", STATISTICS_ROW to "iBaseID").mapNotNull { (name, id) ->
-                classes.firstOrNull { it.name == name }?.let { klass -> layouts.getValue(klass.address).firstOrNull { it.name == id }?.let { klass to it } }
+            /* Finding the objects takes seconds, so it runs beside the lines, each line taking the last objects found. */
+            var found = heap.find(classes, layouts).also { units += it.units }
+            var finding = async { heap.find(classes, layouts) }
+            /* Between lines, every FAST_MS, the fight's frame and each unit's Rage alone: when an Ultimate empties the bar. */
+            val rage = java.util.concurrent.ConcurrentLinkedQueue<JsonArray>()
+            val fast = async {
+                while (true) {
+                    heap.rage(classes, layouts, found)?.let(rage::add)
+                    delay(FAST_MS)
+                }
             }
             for (tick in 0 until (seconds * 1000 / everyMs).toInt()) {
                 if (!going()) break
-                if (tick % FIND_EVERY == 0) {
-                    val finding = System.nanoTime()
-                    val scanned = heap.instances(classes.filter { it.name !in REACHED_ONLY && !it.name.startsWith(TABLE_ROW) }, MOST_OBJECTS)
-                    val roots = listOfNotNull(heap.fight(classes, layouts)) + classes.filter { it.name in REACH_ROOTS }.flatMap { scanned[it.address].orEmpty() }
-                    val found = heap.reached(roots, classes)
-                    reached = found.values.flatten().toSet()
-                    for ((klass, id) in named) found[klass.address].orEmpty().mapNotNullTo(units) { heap.read(it + id.offset, 4)?.getInt(0)?.toLong()?.takeIf { unit -> unit > 0 } }
-                    objects = (scanned.keys + found.keys).associateWith { (scanned[it].orEmpty() + found[it].orEmpty()).distinct().sorted() }
-                    findMs = (System.nanoTime() - finding) / 1_000_000
+                if (finding.isCompleted) {
+                    found = finding.await().also { units += it.units }
+                    finding = async { heap.find(classes, layouts) }
                 }
                 val at = (System.nanoTime() - start) / 1_000_000
-                out.appendLine(heap.line(at, classes, layouts, objects, reached, findMs).toString())
+                val fastLines = generateSequence { rage.poll() }.toList()
+                out.appendLine(JsonObject(heap.line(at, classes, layouts, found.objects, found.reached, found.ms) + ("rage" to JsonArray(fastLines))).toString())
                 delay((everyMs * (tick + 1) - (System.nanoTime() - start) / 1_000_000).coerceAtLeast(0))
             }
+            finding.cancel()
+            fast.cancel()
             val account = runCatching { readAccount(memory, startedAt).ofHeroes(units) }.getOrElse { JsonNull }
             out.appendLine(JsonObject(mapOf("account" to account)).toString())
         }
 
         file
     }
+}
+
+/** The fight's frame then each reached unit's entity and Rage (Fix64), read on their own; null before the fight is found. */
+private fun Il2CppHeap.rage(classes: List<Il2CppClass>, layouts: Map<Long, List<Il2CppField>>, found: Found): JsonArray? {
+    fun offset(name: String, field: String) = classes.firstOrNull { it.name == name }?.let { klass -> klass to layouts.getValue(klass.address).firstOrNull { it.name == field } }
+    val (simulation, frame) = offset("TDGameSimulation", "<CurrentFrameIdx>k__BackingField") ?: return null
+    val (anger, value) = offset("AngerComponent", "fAnger") ?: return null
+    val (_, entity) = offset("AngerComponent", "<_entity>k__BackingField") ?: return null
+    if (frame == null || value == null || entity == null) return null
+    val at = found.objects[simulation.address].orEmpty().firstOrNull { it in found.reached } ?: return null
+    val now = read(at + frame.offset, 4)?.getInt(0) ?: return null
+
+    return JsonArray(
+        listOf(JsonPrimitive(now)) + found.objects[anger.address].orEmpty().filter { it in found.reached }.mapNotNull { address ->
+            val owner = read(address + entity.offset, 8)?.getLong(0) ?: return@mapNotNull null
+            val bar = read(address + value.offset, 8)?.getLong(0) ?: return@mapNotNull null
+            JsonArray(listOf(JsonPrimitive(owner), JsonPrimitive(bar)))
+        },
+    )
+}
+
+/** The objects found in one pass, those reached from the fight, the heroes the fight holds, and how long the pass took. */
+private class Found(val objects: Map<Long, List<Long>>, val reached: Set<Long>, val units: Set<Long>, val ms: Long)
+
+/**
+ * Every object of `classes` the heap scan finds, with those reached from the fight and its statistics; and the heroes the fight
+ * holds: the units it fields, and the ones its statistics name, as a Lord on the bench.
+ */
+private suspend fun Il2CppHeap.find(classes: List<Il2CppClass>, layouts: Map<Long, List<Il2CppField>>): Found {
+    val started = System.nanoTime()
+    val scanned = instances(classes.filter { it.name !in REACHED_ONLY && !it.name.startsWith(TABLE_ROW) }, MOST_OBJECTS)
+    val roots = listOfNotNull(fight(classes, layouts)) + classes.filter { it.name in REACH_ROOTS }.flatMap { scanned[it.address].orEmpty() }
+    val found = reached(roots, classes)
+    val named = listOf(UNIT_ROW to "m_ID", STATISTICS_ROW to "iBaseID").mapNotNull { (name, id) ->
+        classes.firstOrNull { it.name == name }?.let { klass -> layouts.getValue(klass.address).firstOrNull { it.name == id }?.let { klass to it } }
+    }
+    val units = named.flatMap { (klass, id) -> found[klass.address].orEmpty().mapNotNull { read(it + id.offset, 4)?.getInt(0)?.toLong()?.takeIf { unit -> unit > 0 } } }.toSet()
+
+    return Found(
+        objects = (scanned.keys + found.keys).associateWith { (scanned[it].orEmpty() + found[it].orEmpty()).distinct().sorted() },
+        reached = found.values.flatten().toSet(),
+        units = units,
+        ms = (System.nanoTime() - started) / 1_000_000,
+    )
 }
 
 /** The account's entries for the heroes among `units`: each hero, and the pieces and artifacts naming it as their wearer (`iHeroId`, its id × [HERO_ID_SCALE]). */
@@ -344,7 +391,7 @@ private const val LIST_SIZE = 0x18L
 private const val SECONDS = 360
 private const val CLASS_HEAD = 0x140
 private const val EVERY_MS = 500L
-private const val FIND_EVERY = 10
+private const val FAST_MS = 100L
 private const val MOST_OBJECTS = 3_000
 private const val MOST_STRUCT = 1_024
 private const val MOST_ITEMS = 256

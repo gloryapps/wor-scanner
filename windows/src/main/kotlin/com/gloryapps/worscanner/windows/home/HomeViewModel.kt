@@ -21,6 +21,7 @@ import com.gloryapps.worscanner.windows.resources.account_failed
 import com.gloryapps.worscanner.windows.resources.account_refused
 import com.gloryapps.worscanner.windows.resources.capture_failed
 import com.gloryapps.worscanner.windows.resources.capture_kept
+import com.gloryapps.worscanner.windows.resources.capture_saving
 import com.gloryapps.worscanner.windows.resources.capture_taking
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -80,18 +81,19 @@ internal class HomeViewModel(
     private fun capture() {
         if (capturing) {
             capturing = false
-            local.update { it.copy(capturing = false) }
+            viewModelScope.launch { local.update { it.copy(capturing = false, capture = getString(Res.string.capture_saving)) } }
             return
         }
+        if (local.value.saving) return
         val game = watch.game.value ?: return
         capturing = true
         viewModelScope.launch {
-            local.update { it.copy(capturing = true, capture = getString(Res.string.capture_taking), captured = null) }
+            local.update { it.copy(capturing = true, saving = true, capture = getString(Res.string.capture_taking), captured = null) }
             val taken = resultOf { GameMemory.of(game.handle).getOrThrow().use { captures.take(it, going = { capturing }) } }
             taken.onFailure { reports.failed("capturing a fight", it) }
             val said = taken.fold({ getString(Res.string.capture_kept, it.path) }, { getString(Res.string.capture_failed, it.message ?: it.toString()) })
             capturing = false
-            local.update { it.copy(capturing = false, capture = said, captured = taken.getOrNull()) }
+            local.update { it.copy(capturing = false, saving = false, capture = said, captured = taken.getOrNull()) }
         }
     }
 

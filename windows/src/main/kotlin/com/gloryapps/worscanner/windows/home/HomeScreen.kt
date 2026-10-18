@@ -116,7 +116,7 @@ private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier:
         )
         state.said?.let { Text(it, style = Lettering.data, color = Colors.muted) }
         state.capture?.let { Text(linked(it, state.captured?.path) { onEvent(HomeEvent.OpenCaptured) }, style = Lettering.data, color = Colors.muted) }
-        if (state.game is Game.Open) Edged(stringResource(if (state.capturing) Res.string.capture_stop else Res.string.capture_fight)) { onEvent(HomeEvent.CaptureFight) }
+        if (state.game is Game.Open && (state.capturing || !state.saving)) Edged(stringResource(if (state.capturing) Res.string.capture_stop else Res.string.capture_fight)) { onEvent(HomeEvent.CaptureFight) }
         if (state.elevate) Edged(stringResource(Res.string.restart_as_administrator)) { onEvent(HomeEvent.RestartAsAdministrator) }
         Sending(state.account, state.linked, state.send, onEvent)
         if (state.kept != null) Link(stringResource(Res.string.open_folder)) { onEvent(HomeEvent.OpenKept) }

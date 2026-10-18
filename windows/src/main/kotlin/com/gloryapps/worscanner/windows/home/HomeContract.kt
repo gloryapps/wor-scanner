@@ -29,6 +29,8 @@ internal data class HomeState(
     /** The file the last capture was kept in; its path in the message opens its folder. */
     val captured: File? = null,
     val capturing: Boolean = false,
+    /** A capture is under way or still being saved once stopped: the button waits for it. */
+    val saving: Boolean = false,
 )
 
 /** An account scanned: the scans made of it, which are what is sent, and how many cards of each they hold. */
