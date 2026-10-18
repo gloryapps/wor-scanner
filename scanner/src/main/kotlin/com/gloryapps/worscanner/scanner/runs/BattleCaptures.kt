@@ -247,17 +247,39 @@ private fun Il2CppHeap.reference(address: Long): JsonElement {
         else -> null to null
     }
     val words = if (count != null && items != null && count in 0..MOST_COUNT) read(items, (minOf(count, MOST_ITEMS.toLong()) * 8).toInt()) else null
+    val entries = if (name == "Dictionary`2") entries(address) else null
 
     return JsonObject(
         buildMap {
             put("at", JsonPrimitive(address))
             put("class", JsonPrimitive(name))
             count?.let { put("count", JsonPrimitive(it)) }
+            entries?.let { (used, length, raw) ->
+                put("count", JsonPrimitive(used))
+                put("length", JsonPrimitive(length))
+                put("entries", JsonPrimitive(raw))
+            }
             words?.let { buffer ->
                 put("items", JsonArray((0 until buffer.limit() / 8).map { index -> buffer.getLong(index * 8).let { word -> JsonArray(listOf(JsonPrimitive(word), classOf(word)?.let(::JsonPrimitive) ?: JsonNull)) } }))
             }
         },
     )
+}
+
+/**
+ * A dictionary's entries as the bytes of its entries array (each a hash, a next index, its key and its value, laid out as the
+ * types make them), with how many are in use and the array's length, so a reader cuts them: the room of the entries in use at
+ * [MOST_ENTRY] bytes each, [MOST_ENTRY_BYTES] at most.
+ */
+private fun Il2CppHeap.entries(address: Long): Triple<Int, Long, String>? {
+    val klass = read(address, 8)?.getLong(0)?.let(::klass) ?: return null
+    val fields = fieldsOf(klass).filter { !it.static }
+    val array = fields.firstOrNull { it.name in ENTRIES }?.let { read(address + it.offset, 8)?.getLong(0) }?.takeIf { it != 0L } ?: return null
+    val used = fields.firstOrNull { it.name in COUNT }?.let { read(address + it.offset, 4)?.getInt(0) } ?: return null
+    val length = read(array + ARRAY_LENGTH, 8)?.getLong(0)?.takeIf { it in 0..MOST_COUNT } ?: return null
+    val bytes = read(array + ARRAY_ITEMS, minOf(minOf(used.toLong(), length) * MOST_ENTRY, MOST_ENTRY_BYTES.toLong()).toInt()) ?: return null
+
+    return Triple(used, length, ByteArray(bytes.limit()).also { bytes.get(0, it) }.joinToString("") { "%02x".format(it) })
 }
 
 /**
@@ -325,7 +347,12 @@ private const val EVERY_MS = 500L
 private const val FIND_EVERY = 10
 private const val MOST_OBJECTS = 3_000
 private const val MOST_STRUCT = 1_024
-private const val MOST_ITEMS = 64
+private const val MOST_ITEMS = 256
+private const val MOST_ENTRY_BYTES = 8_192
+private const val MOST_ENTRY = 32L
+/* A dictionary's entries array and its count, by the names the runtime's versions give them. */
+private val ENTRIES = setOf("entries", "_entries")
+private val COUNT = setOf("count", "_count")
 private const val MOST_COUNT = 1_000_000L
 private const val REACH_DEPTH = 16
 private const val MOST_REACHED = 300_000
