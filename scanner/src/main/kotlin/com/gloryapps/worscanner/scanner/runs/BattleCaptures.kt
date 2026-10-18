@@ -9,12 +9,13 @@ import com.gloryapps.worscanner.scanner.senses.Memory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import java.io.File
 import java.time.LocalDateTime
 import java.util.zip.GZIPOutputStream
@@ -23,8 +24,9 @@ import java.util.zip.GZIPOutputStream
 class BattleCaptures(private val root: File) {
     /**
      * Captures `memory` while `going` says so, `seconds` at most: a first line naming each battle class found and its
-     * fields, with the account as it stands (each piece naming the hero who wears it), then a line every `everyMs` with each
-     * object of those classes and its fields' values, the objects found again every [FIND_EVERY] lines.
+     * fields, then a line every `everyMs` with each object of those classes and its fields' values, the objects found again
+     * every [FIND_EVERY] lines, and a last line with the account's entries for the heroes the fight held: each hero, the
+     * pieces and the artifact it wears, read as the fight ends.
      */
     suspend fun take(
         memory: Memory,
@@ -34,7 +36,6 @@ class BattleCaptures(private val root: File) {
         names: Set<String> = BATTLE_CLASSES,
     ): File = withContext(Dispatchers.IO) {
         val startedAt = LocalDateTime.now().format(STAMP)
-        val account = runCatching { Json.encodeToJsonElement(Account.serializer(), readAccount(memory, startedAt)) }.getOrElse { JsonNull }
         val heap = Il2CppHeap(memory)
         val classes = heap.classes(names)
         val layouts = classes.associate { it.address to heap.fieldsOf(it) }
@@ -42,11 +43,16 @@ class BattleCaptures(private val root: File) {
 
         GZIPOutputStream(file.outputStream()).bufferedWriter().use { out ->
             val heads = classes.map { klass -> heap.read(klass.address, CLASS_HEAD)?.let { buffer -> ByteArray(CLASS_HEAD).also { buffer.get(0, it) }.joinToString("") { "%02x".format(it) } } }
-            out.appendLine(JsonObject(mapOf("startedAt" to JsonPrimitive(startedAt), "account" to account, "classes" to JsonArray(classes.mapIndexed { index, it -> it.json(layouts.getValue(it.address), heads[index]) }))).toString())
+            out.appendLine(JsonObject(mapOf("startedAt" to JsonPrimitive(startedAt), "classes" to JsonArray(classes.mapIndexed { index, it -> it.json(layouts.getValue(it.address), heads[index]) }))).toString())
             val start = System.nanoTime()
             var objects = emptyMap<Long, List<Long>>()
             var reached = emptySet<Long>()
             var findMs = 0L
+            val units = mutableSetOf<Long>()
+            /* The heroes the fight held: the units it fields, and the ones its statistics name, as a Lord on the bench. */
+            val named = listOf(UNIT_ROW to "m_ID", STATISTICS_ROW to "iBaseID").mapNotNull { (name, id) ->
+                classes.firstOrNull { it.name == name }?.let { klass -> layouts.getValue(klass.address).firstOrNull { it.name == id }?.let { klass to it } }
+            }
             for (tick in 0 until (seconds * 1000 / everyMs).toInt()) {
                 if (!going()) break
                 if (tick % FIND_EVERY == 0) {
@@ -55,6 +61,7 @@ class BattleCaptures(private val root: File) {
                     val roots = listOfNotNull(heap.fight(classes, layouts)) + classes.filter { it.name in REACH_ROOTS }.flatMap { scanned[it.address].orEmpty() }
                     val found = heap.reached(roots, classes)
                     reached = found.values.flatten().toSet()
+                    for ((klass, id) in named) found[klass.address].orEmpty().mapNotNullTo(units) { heap.read(it + id.offset, 4)?.getInt(0)?.toLong() }
                     objects = (scanned.keys + found.keys).associateWith { (scanned[it].orEmpty() + found[it].orEmpty()).distinct().sorted() }
                     findMs = (System.nanoTime() - finding) / 1_000_000
                 }
@@ -62,10 +69,26 @@ class BattleCaptures(private val root: File) {
                 out.appendLine(heap.line(at, classes, layouts, objects, reached, findMs).toString())
                 delay((everyMs * (tick + 1) - (System.nanoTime() - start) / 1_000_000).coerceAtLeast(0))
             }
+            val account = runCatching { readAccount(memory, startedAt).ofHeroes(units) }.getOrElse { JsonNull }
+            out.appendLine(JsonObject(mapOf("account" to account)).toString())
         }
 
         file
     }
+}
+
+/** The account's entries for the heroes among `units`: each hero, and the pieces and artifacts naming it as their wearer (`iHeroId`, its id × [HERO_ID_SCALE]). */
+private fun Account.ofHeroes(units: Set<Long>): JsonObject {
+    fun field(entry: JsonElement, name: String) = (entry as? JsonObject)?.get(name)?.jsonPrimitive?.longOrNull
+    fun worn(entry: JsonElement) = field(entry, "iHeroId")?.let { it / HERO_ID_SCALE in units } == true
+
+    return JsonObject(
+        mapOf(
+            "heroes" to JsonArray(heroes.filter { field(it, "iBaseId") in units }),
+            "gear" to JsonArray(gear.filter(::worn)),
+            "artifacts" to JsonArray(artifacts.filter(::worn)),
+        ),
+    )
 }
 
 /** A class as the first line names it: where, its names, its runtime head's bytes to check the layout read, and each field's name, offset, type code and whether it is static. */
@@ -255,6 +278,11 @@ val BATTLE_CLASSES = setOf(
 
 /** The objects the statistics hang from, whose references are followed to the records they keep. */
 private val REACH_ROOTS = setOf("StatisticsComponent", "DamageStatistics")
+
+/** The table row naming a unit and the statistics naming a hero, whose ids tell which heroes the fight held. */
+private const val UNIT_ROW = "CData_Unit_Element"
+private const val STATISTICS_ROW = "DamageStatisticsData"
+private const val HERO_ID_SCALE = 100_000L
 
 /** Classes captured only as reached from the fight: the heap holds many look-alikes and other fights' copies of them. */
 private val REACHED_ONLY = setOf("TDGameSimulation", "Entity", "UseSkill")
