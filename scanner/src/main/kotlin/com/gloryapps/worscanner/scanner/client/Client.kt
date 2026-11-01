@@ -46,8 +46,9 @@ class InstalledClient private constructor(private val units: GameTable, private 
                     ?: assetIn(bundle(DOCUMENT).readBytes(), name)
                 fun texts(name: String) = bundle("$name.unity3d").takeIf(File::exists)?.let { assetIn(it.readBytes(), name) }
 
+                /* Every row is read here, where a table its class no longer reads costs the scan only its heroes. */
                 InstalledClient(
-                    GameTable(table(UNITS), fields),
+                    GameTable(table(UNITS), fields).also { units -> units.keys().forEach(units::row) },
                     GameTexts(*listOfNotNull(texts(ENGLISH) ?: error("the client holds no English"), texts(EXTRA)).toTypedArray()),
                 )
             }

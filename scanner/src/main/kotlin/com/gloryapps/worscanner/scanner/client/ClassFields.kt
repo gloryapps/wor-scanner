@@ -25,10 +25,11 @@ suspend fun classFields(memory: Memory, anchor: String): List<ClassField> {
             if (named.indices.all { bytes.get(offset + it) == named[it] }) names += at + offset + 1
         }
     }
+    val wanted = names.sorted().toLongArray()
     val records = ConcurrentHashMap.newKeySet<Long>()
     memory.sweep(memory.spans()) { at, bytes, looked ->
         for (offset in 0 until minOf(looked, bytes.limit() - Long.SIZE_BYTES) step Long.SIZE_BYTES) {
-            if (bytes.getLong(offset) in names) records += at + offset
+            if (wanted.binarySearch(bytes.getLong(offset)) >= 0) records += at + offset
         }
     }
     val record = records.minOrNull() ?: return emptyList()
