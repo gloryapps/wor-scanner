@@ -1,5 +1,6 @@
 package com.gloryapps.worscanner.scanner.account
 
+import com.gloryapps.worscanner.scanner.client.Client
 import com.gloryapps.worscanner.scanner.game.Attribute
 import com.gloryapps.worscanner.scanner.game.ReadAttribute
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
@@ -18,8 +19,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 
-/** The account's lists as the cards a scan of each kind writes, its heroes' collection and its plan's rules, in `game`'s words; its gear and artifacts only those `choices` keeps. */
-class Cards(private val game: Game, private val account: Account, private val choices: ScanChoices) {
+/** The account's lists as the cards a scan of each kind writes, its heroes' collection and its plan's rules, in `game`'s words and its heroes in `client`'s; its gear and artifacts only those `choices` keeps. */
+class Cards(private val game: Game, private val account: Account, private val choices: ScanChoices, private val client: Client? = null) {
     val gear: List<ScannedGear> by lazy {
         account.gear.filter { entry -> entry.int("iIntensifyLvl")?.let(Enhancement::of) in choices.enhancements }.mapNotNull(::piece)
     }
@@ -27,7 +28,7 @@ class Cards(private val game: Game, private val account: Account, private val ch
     /** The epic and legendary heroes, the furthest raised copy where the account holds two. */
     val heroes: List<ScannedHero> by lazy {
         account.heroes
-            .filter { (it.long("iBaseId")?.let(game.heroes::get)?.rarity ?: 0) >= EPIC }
+            .filter { (it.long("iBaseId")?.let(roster::get)?.rarity ?: 0) >= EPIC }
             .groupBy { it.long("iBaseId") }.values
             .map { copies -> copies.maxWith(compareBy({ it.int("iStarLevel") }, { it.int("iSublimLevel") }, { it.int("iLevel") })) }
             .mapNotNull(::hero)
@@ -35,9 +36,15 @@ class Cards(private val game: Game, private val account: Account, private val ch
 
     /** How many heroes of each faction the account has collected, as the game's Collection Progress counts them: of any rarity, one of two factions in both. */
     val collection: Map<String, Int> by lazy {
-        val collected = account.collected.distinct().mapNotNull(game.heroes::get)
+        /* A hero who rises in rarity is a unit a form, each printed by his one name, and the game counts him once. */
+        val collected = account.collected.distinct().mapNotNull(roster::get).distinctBy { it.name }
 
-        game.heroes.values.flatMap { it.factions }.distinct().associateWith { faction -> collected.count { faction in it.factions } }
+        roster.values.flatMap { it.factions }.distinct().associateWith { faction -> collected.count { faction in it.factions } }
+    }
+
+    /** Every hero the client holds, by base id. */
+    private val roster: Map<Long, GameHero> by lazy {
+        client?.let { client -> client.units().mapNotNull { id -> client.hero(id)?.let { id to it } }.toMap() }.orEmpty()
     }
 
     val artifacts: List<ScannedArtifact> by lazy {
@@ -66,7 +73,7 @@ class Cards(private val game: Game, private val account: Account, private val ch
 
     /* A skill the account holds no level for is at 1, or at 0 while a promotion still locks it. */
     private fun hero(entry: JsonElement): ScannedHero? {
-        val known = entry.long("iBaseId")?.let(game.heroes::get) ?: return null
+        val known = entry.long("iBaseId")?.let(roster::get) ?: return null
         val levels = entry.levels()
         val promotion = entry.int("iSublimLevel") ?: 0
 
@@ -141,6 +148,35 @@ class Cards(private val game: Game, private val account: Account, private val ch
     }
 }
 
+/** A unit's type where the client makes it a hero. */
+private const val HERO = 1
+/** The promotion unlock that adds a skill to a hero's row, by the number the game keeps its kind as. */
+private const val UNLOCKS_SKILL = 1L
+
+/** A hero's name, rarity (4 epic, 5 legendary), the skills after the ultimate in the lab's order, and the factions it counts under, as the game prints them. */
+private data class GameHero(val name: String, val rarity: Int, val row: List<GameSkill>, val factions: List<String>)
+
+/** Where a skill's level sits in the account's levels, none where it is never raised, and the promotion that unlocks it. */
+private data class GameSkill(val at: Int?, val from: Int)
+
+/* A unit is a hero where the client types it one and it raises skills: the first it leaves unraised is its basic attack, the ones promotions unlock follow, the first it raises is its ultimate. */
+private fun Client.hero(id: Long): GameHero? {
+    val row = unit(id)?.takeIf { it.int("m_Type") == HERO } ?: return null
+    val raised = row.numbers("m_HeroSkillLevelupList").takeIf { it.isNotEmpty() } ?: return null
+    val basic = row.numbers("m_HeroSkillNotLevelupList").firstOrNull()?.let { GameSkill(at = raised.indexOf(it).takeIf { at -> at >= 0 }, from = 0) }
+    val unlocked = row.text("m_AdvancedUnlock").orEmpty().split(';').mapNotNull { unlock ->
+        val (from, kind, skill) = unlock.split(',').mapNotNull { it.trim().toLongOrNull() }.takeIf { it.size >= 3 } ?: return@mapNotNull null
+        if (kind != UNLOCKS_SKILL || skill !in raised || skill == raised.first()) null else GameSkill(at = raised.indexOf(skill), from = from.toInt())
+    }
+
+    return GameHero(
+        name = text("Unit_mName_$id") ?: return null,
+        rarity = row.int("m_Quality") ?: return null,
+        row = listOfNotNull(basic) + unlocked.sortedBy { it.at },
+        factions = row.numbers("m_OnShowFactionMember").mapNotNull { text("HeroFaction_mFactionName_$it") },
+    )
+}
+
 private fun GameAttribute.printed(kept: Long): Double = if (hundredths) kept / 100.0 else kept.toDouble()
 
 private val GameAttribute.named: Attribute? get() = Attribute.entries.firstOrNull { it.word == word }
@@ -153,6 +189,9 @@ private fun JsonElement.long(name: String): Long? = (field(name) as? JsonPrimiti
 private fun JsonElement.int(name: String): Int? = long(name)?.toInt()
 
 private fun JsonElement.text(name: String): String? = (field(name) as? JsonPrimitive)?.takeIf { it.isString }?.content
+
+/** The numbers a Lua sequence holds, in its order. */
+private fun JsonElement.numbers(name: String): List<Long> = list(name).mapNotNull { (it as? JsonPrimitive)?.longOrNull }
 
 /** The ids a field keyed by them was read as. */
 private fun JsonElement.ids(name: String): List<Long> = (field(name) as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.longOrNull }.orEmpty()

@@ -8,6 +8,7 @@ import com.gloryapps.worscanner.scanner.account.Game
 import com.gloryapps.worscanner.scanner.account.PLAN
 import com.gloryapps.worscanner.scanner.account.ScannedRule
 import com.gloryapps.worscanner.scanner.account.readAccount
+import com.gloryapps.worscanner.scanner.client.Client
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
 import com.gloryapps.worscanner.scanner.kinds.gear.ScannedGear
@@ -30,12 +31,12 @@ class Accounts(root: File, private val game: Game = Game.shipped) {
     private val scans = File(root, "accounts")
     private val reads = File(root, "reads")
 
-    /** Reads the account off `memory`; its gear and artifacts scans hold only what `choices` keeps, and every scan arrives as `choices` says. */
-    suspend fun read(memory: Memory, choices: ScanChoices): KeptAccount {
+    /** Reads the account off `memory`, its heroes as `client` holds them; its gear and artifacts scans hold only what `choices` keeps, and every scan arrives as `choices` says. */
+    suspend fun read(memory: Memory, choices: ScanChoices, client: Client? = null): KeptAccount {
         val account = readAccount(memory, startedAt = LocalDateTime.now().format(STAMP))
 
         return withContext(Dispatchers.IO) {
-            keep(account, Cards(game, account, choices), choices.arrival).also { listOf(scans, reads).forEach(::newestOnly) }
+            keep(account, Cards(game, account, choices, client), choices.arrival).also { listOf(scans, reads).forEach(::newestOnly) }
         }
     }
 
