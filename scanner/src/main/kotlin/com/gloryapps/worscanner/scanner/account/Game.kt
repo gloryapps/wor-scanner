@@ -15,7 +15,6 @@ data class Game(
     val exclusives: Map<Long, String>,
     /** A variant and the effect of it a piece rolled, by the effect's group and its index in the group. */
     val variants: Map<Long, Map<Long, GameVariant>>,
-    val heroes: Map<Long, GameHero>,
     val artifacts: Map<Long, GameArtifact>,
     /** HP and ATK by level, first level first, by an artifact's `levels`. */
     val artifactLevels: Map<Int, List<List<Int>>>,
@@ -39,14 +38,6 @@ data class GamePiece(val set: String?, val slot: String)
 /** A set as the lab's gear sets name it, none where the game names it in no English, and its place in the order the game lists sets. */
 @Serializable
 data class GameSet(val set: String?, val sort: Int)
-
-/** A hero's name, rarity (4 epic, 5 legendary), the skills after the ultimate in the lab's order, and the factions it counts under, as the game prints them. */
-@Serializable
-data class GameHero(val name: String, val rarity: Int, val row: List<GameSkill>, val factions: List<String>)
-
-/** Where a skill's level sits in the account's levels, none where it is never raised, and the promotion that unlocks it. */
-@Serializable
-data class GameSkill(val at: Int?, val from: Int)
 
 /** A variant's slug, and the one of its effects a piece rolled, both as wor-api's gear variants word them; what that effect adds where it is attributes, each the client's type and kept value. */
 @Serializable

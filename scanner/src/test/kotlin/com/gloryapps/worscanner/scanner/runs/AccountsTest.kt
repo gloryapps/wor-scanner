@@ -2,6 +2,7 @@ package com.gloryapps.worscanner.scanner.runs
 
 import com.gloryapps.worscanner.scanner.account.Account
 import com.gloryapps.worscanner.scanner.account.Arrival
+import com.gloryapps.worscanner.scanner.account.CLIENT
 import com.gloryapps.worscanner.scanner.account.EVERYTHING
 import com.gloryapps.worscanner.scanner.account.ScannedRule
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
@@ -42,12 +43,12 @@ class AccountsTest {
             table("m_vArtifacts" to table(array = listOf(table("iItemId" to 219201, "iLevel" to 25, "iStageLvl" to 5))))
         }
 
-        val kept = Accounts(root).read(memory, EVERYTHING.copy(arrival = Arrival.ADD))
+        val kept = Accounts(root).read(memory, EVERYTHING.copy(arrival = Arrival.ADD), CLIENT)
 
         val heroes = Json.decodeFromString(ScanFile.serializer(ScannedHero.serializer()), kept.scans.first().readText())
         val artifacts = Json.decodeFromString(ScanFile.serializer(ScannedArtifact.serializer()), kept.scans.last().readText())
         assertEquals(listOf(Arrival.ADD, Arrival.ADD), listOf(heroes.arrival, artifacts.arrival))
-        assertEquals(listOf(1, 1, 1, 0), listOf("The Supreme Arbiters", "The Star Piercers", "The Watchguard", "The North Throne").map(heroes.collection.orEmpty()::getValue))
+        assertEquals(listOf(1, 1, 1, 0), listOf("The Supreme Arbiters", "The Star Piercers", "The Watchguard", "The Nightmare Council").map(heroes.collection.orEmpty()::getValue))
         assertEquals(null, artifacts.collection)
     }
 

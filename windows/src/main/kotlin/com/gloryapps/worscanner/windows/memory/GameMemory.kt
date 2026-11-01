@@ -6,22 +6,31 @@ import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.Advapi32Util
 import com.sun.jna.platform.win32.BaseTSD.SIZE_T
 import com.sun.jna.platform.win32.Kernel32
+import com.sun.jna.platform.win32.Kernel32Util
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef.HWND
 import com.sun.jna.platform.win32.WinError
 import com.sun.jna.platform.win32.WinNT
 import com.sun.jna.ptr.IntByReference
+import java.io.File
 import com.sun.jna.Memory as Buffer
 
 /** The memory of the game's process, opened only to be read; closed once read. */
 internal class GameMemory private constructor(private val process: WinNT.HANDLE) : Memory, AutoCloseable {
-    override fun spans(): List<Span> = buildList {
+    override fun spans(): List<Span> = regions { it.protect.toInt() in WRITABLE }
+
+    override fun mapped(): List<Span> = regions { it.type.toInt() == WinNT.MEM_MAPPED && it.protect.toInt() == WinNT.PAGE_READONLY }
+
+    /** The game's exe, beside which its install keeps the rest. */
+    val exe: File get() = File(Kernel32Util.QueryFullProcessImageName(process, 0))
+
+    private fun regions(keep: (WinNT.MEMORY_BASIC_INFORMATION) -> Boolean): List<Span> = buildList {
         val info = WinNT.MEMORY_BASIC_INFORMATION()
         var at = 0L
         while (at < TOP && Kernel32.INSTANCE.VirtualQueryEx(process, Pointer(at), info, SIZE_T(info.size().toLong())).toLong() != 0L) {
             val start = Pointer.nativeValue(info.baseAddress)
             val size = info.regionSize.toLong()
-            if (info.state.toInt() == WinNT.MEM_COMMIT && info.protect.toInt() in WRITABLE && size <= MAX_SPAN) add(Span(start, size))
+            if (info.state.toInt() == WinNT.MEM_COMMIT && keep(info) && size <= MAX_SPAN) add(Span(start, size))
             if (start + size <= at) break
             at = start + size
         }

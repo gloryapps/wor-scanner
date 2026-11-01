@@ -1,11 +1,7 @@
 package com.gloryapps.worscanner.scanner.lua
 
 import com.gloryapps.worscanner.scanner.senses.Memory
-import com.gloryapps.worscanner.scanner.senses.Span
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
+import com.gloryapps.worscanner.scanner.senses.sweep
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.ConcurrentHashMap
@@ -123,20 +119,8 @@ class LuaHeap(private val memory: Memory) {
         return found
     }
 
-    /** Hands each chunk of the game's memory to `look`, side by side: its address, its bytes, and how many it starts objects in, the rest only read past. */
-    private suspend fun sweep(look: (at: Long, bytes: ByteBuffer, looked: Int) -> Unit) = coroutineScope {
-        memory.spans().flatMap(::chunks).map { chunk ->
-            launch(Dispatchers.Default) { memory.read(chunk.at, chunk.size)?.let { look(chunk.at, littleEndian(it), chunk.looked) } }
-        }.joinAll()
-    }
-
-    private fun chunks(span: Span): List<Chunk> = (0 until span.size step CHUNK.toLong()).map { from ->
-        val left = span.size - from
-
-        Chunk(span.start + from, looked = minOf(CHUNK.toLong(), left).toInt(), size = minOf(CHUNK.toLong() + PAST, left).toInt())
-    }
-
-    private data class Chunk(val at: Long, val looked: Int, val size: Int)
+    /** Hands each chunk of the game's memory to `look`, side by side. */
+    private suspend fun sweep(look: (at: Long, bytes: ByteBuffer, looked: Int) -> Unit) = memory.sweep(memory.spans(), look)
 }
 
 private fun littleEndian(bytes: ByteArray): ByteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
@@ -173,6 +157,3 @@ private const val MAX_SHORT = 40
 private const val MAX_TEXT = 65_536L
 private const val MAX_NODE_LOG = 20
 private const val MAX_ARRAY = 1_000_000L
-/** How much of the game's memory a sweep reads at once. */
-internal const val CHUNK = 8 shl 20
-private const val PAST = 128

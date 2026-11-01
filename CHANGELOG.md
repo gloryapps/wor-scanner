@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A hero newer than the scanner, such as Clavicus, is scanned: the scanner reads every hero off the
+  game itself, named as the game names him in English, and no longer waits for a release to know one.
+
 ## [0.6.2] - 2026-10-13
 
 ### Changed
