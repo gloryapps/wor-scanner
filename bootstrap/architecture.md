@@ -31,9 +31,12 @@ on a store.
   one the game adds.
 - If the app's transcription and the lab's drift, the option is a third project both read; not now.
 - An account read off the game's memory names everything by the client's ids. `account/`'s `Cards`
-  turns them into the same cards a scan writes with `resources/game.json`, which wor-extract's
-  `tools/export_scanner.py` writes from one version of the client: a hero, set or artifact the game
-  adds reaches the lab once it is written again and shipped.
+  turns them into the same cards a scan writes. Its heroes it reads off the running game's own
+  client (`client/`): the table of units the client ships, or the last hotfix of it the game
+  downloaded, read with the fields the game's memory gives the class it reads that table into, and
+  named in the English the install ships whatever language the game is played in. The rest it reads
+  with `resources/game.json`, which wor-extract's `tools/export_scanner.py` writes from one version
+  of the client: a set or artifact the game adds reaches the lab once it is written again and shipped.
 
 ## Inside `scanner`
 
@@ -46,7 +49,8 @@ on a store.
 | `kinds/<kind>/` | one kind: its record, where its screen puts things, how its panel reads | scan, game, senses, text |
 | `kinds/` | `Kind`, and `Kind.scan()` | every kind |
 | `lua/` | Lua 5.3's strings and tables in the game's memory, as a 64-bit build lays them out | senses |
-| `account/` | the account as the running game holds it: the table each list lives in, found by a field only that table has; and its lists as the cards each kind's scan writes | lua, senses, game, kinds |
+| `client/` | the game's client as the player's PC holds it: its C# classes' fields in its memory, as il2cpp keeps them, and its tables and English texts in its install and in what it downloaded since | senses |
+| `account/` | the account as the running game holds it: the table each list lives in, found by a field only that table has; and its lists as the cards each kind's scan writes | lua, client, senses, game, kinds |
 | `runs/` | a scan run and kept on disk, as the lab reads it | everything above |
 | `azhor/` | the lab's client | nothing |
 

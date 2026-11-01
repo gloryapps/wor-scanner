@@ -1,5 +1,6 @@
 package com.gloryapps.worscanner.scanner.account
 
+import com.gloryapps.worscanner.scanner.client.Client
 import com.gloryapps.worscanner.scanner.game.Attribute
 import com.gloryapps.worscanner.scanner.game.ReadAttribute
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
@@ -14,7 +15,7 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Entries as Pedro's account held them on 2026-10-10, and rules as the game's code lays them out, read in the shipped game's words. */
+/** Entries as Pedro's account held them on 2026-10-10, and rules as the game's code lays them out, read in the shipped game's words and heroes in the client's. */
 class CardsTest {
     private fun cards(
         heroes: List<String> = emptyList(),
@@ -23,11 +24,13 @@ class CardsTest {
         collected: List<Long> = emptyList(),
         rules: List<String> = emptyList(),
         choices: ScanChoices = EVERYTHING,
+        client: Client? = CLIENT,
     ) = Cards(
         Game.shipped,
         Account(startedAt = "20261010-122135", heroes = heroes.map(Json::parseToJsonElement), gear = gear.map(Json::parseToJsonElement),
             artifacts = artifacts.map(Json::parseToJsonElement), collected = collected, rules = rules.map(Json::parseToJsonElement), found = emptyMap(), seconds = 0.0),
         choices,
+        client,
     )
 
     private fun percent(name: Attribute, value: Double) = ReadAttribute(name, value, ValueUnit.PERCENTAGE, null)
@@ -141,7 +144,32 @@ class CardsTest {
 
     @Test
     fun `a hero below epic is no card`() {
-        assertEquals(emptyList(), cards(heroes = listOf(PELAGIOS.replace(""""iBaseId":2224""", """"iBaseId":${Game.shipped.heroes.entries.first { it.value.rarity < 4 }.key}"""))).heroes)
+        assertEquals(emptyList(), cards(heroes = listOf(PELAGIOS.replace(""""iBaseId":2224""", """"iBaseId":2001"""))).heroes)
+    }
+
+    @Test
+    fun `a hero newer than the shipped game is read off the client like any other`() {
+        assertEquals(
+            listOf(
+                ScannedHero(
+                    name = "Clavicus",
+                    level = 60,
+                    stars = 6,
+                    promotion = 6,
+                    awakening = 0,
+                    skills = HeroSkills(ultimate = SkillLevel.Of(4), row = listOf(SkillLevel.Of(1), SkillLevel.Of(3), SkillLevel.Of(2))),
+                ),
+            ),
+            cards(heroes = listOf(CLAVICUS)).heroes,
+        )
+    }
+
+    @Test
+    fun `without the client the account's heroes are no cards and its collection counts none`() {
+        val cards = cards(heroes = listOf(PELAGIOS), collected = listOf(2224L), client = null)
+
+        assertEquals(emptyList(), cards.heroes)
+        assertEquals(emptyMap(), cards.collection)
     }
 
     @Test
@@ -150,12 +178,17 @@ class CardsTest {
 
         val collection = cards(collected = listOf(rex, brienne, brienne, nunea)).collection
 
-        assertEquals(listOf(2, 1, 0), listOf("The Watchguard", "The Star Piercers", "The Unnamable").map(collection::getValue))
-        assertEquals(FACTIONS, collection.keys)
+        assertEquals(listOf(2, 1, 0), listOf("The Watchguard", "The Star Piercers", "The Nightmare Council").map(collection::getValue))
+        assertEquals(setOf("The Watchguard", "The Star Piercers", "The Nightmare Council", "The Supreme Arbiters"), collection.keys)
     }
 
     @Test
-    fun `a hero the shipped game does not know counts under no faction`() {
+    fun `a hero who rose through his forms counts once, as the game counts him`() {
+        assertEquals(1, cards(collected = listOf(2901L, 2902L, 2903L)).collection.getValue("The Nightmare Council"))
+    }
+
+    @Test
+    fun `a hero the client does not hold counts under no faction`() {
         assertEquals(setOf(0), cards(collected = listOf(1L)).collection.values.toSet())
     }
 
@@ -203,11 +236,6 @@ class CardsTest {
     }
 
     private companion object {
-        val FACTIONS = setOf(
-            "The Watchguard", "The North Throne", "The Nightmare Council", "The Cursed Cult", "The Infernal Blast", "The Star Piercers",
-            "The Esoteria Order", "The Chaos Dominion", "The Supreme Arbiters", "The Grey Blades", "The Unnamable",
-        )
-
         const val VIERNAS_BANGLE = """{"iItemUid":27420,"iItemId":3218803,"iStarLvl":13,"iIntensifyLvl":16,"vMasterAttrList":[{"iId":304,"iAttrId":13,"iValue":6600}],""" +
             """"vViceAttrList":[{"iId":303,"iAttrId":1,"iValue":469},{"iId":309,"iAttrId":24,"iValue":1350},{"iId":302,"iAttrId":19,"iValue":1700},{"iId":306,"iAttrId":14,"iValue":2550}],""" +
             """"iExtraMasterAttrValue":0,"iExclusiveEffectId":38684770435543,"iVaryEffectId":4312147165305,"iHeroId":0,"bLocked":false}"""
@@ -219,5 +247,7 @@ class CardsTest {
         const val TANKS = """{"ID":4,"Name":"Tanks","IsSystem":false,"SuitType":1,"SuitMap":[711400],"MainAttrMap":[],""" +
             """"SubAttrMap":[19,14,7],"MustAttrMap":[],"SubAttrSatisfied":3,"iLastUpdateTime":1760090000}"""
         const val PELAGIOS = """{"iHeroId":222400000,"iBaseId":2224,"iLevel":60,"iStarLevel":6,"iSublimLevel":6,"iAwakeningFlag":0,"mSkillLevel":{"1":2,"2":2,"3":3,"0":3}}"""
+        /** Clavicus, newer than the shipped game, as the account held him on 2026-11-01, his skill levels told apart. */
+        const val CLAVICUS = """{"iHeroId":290200000,"iBaseId":2903,"iLevel":60,"iStarLevel":6,"iSublimLevel":6,"iAwakeningFlag":0,"mSkillLevel":{"1":3,"2":2,"3":1,"0":4}}"""
     }
 }

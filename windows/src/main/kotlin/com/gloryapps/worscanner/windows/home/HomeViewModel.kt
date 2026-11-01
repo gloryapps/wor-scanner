@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.gloryapps.worscanner.scanner.account.ScanChoices
 import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.scanner.azhor.Sender
+import com.gloryapps.worscanner.scanner.client.Client
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.runs.Accounts
 import com.gloryapps.worscanner.scanner.runs.Reports
@@ -13,6 +14,7 @@ import com.gloryapps.worscanner.windows.app.FileScanChoices
 import com.gloryapps.worscanner.windows.game.Desktop
 import com.gloryapps.worscanner.windows.game.GameWatch
 import com.gloryapps.worscanner.windows.memory.GameMemory
+import com.gloryapps.worscanner.windows.memory.client
 import com.gloryapps.worscanner.windows.resources.Res
 import com.gloryapps.worscanner.windows.resources.account_elevated
 import com.gloryapps.worscanner.windows.resources.account_empty
@@ -84,7 +86,7 @@ internal class HomeViewModel(
         if (local.value.scanning) return
         local.update { it.copy(scanning = true) }
         viewModelScope.launch {
-            val read = resultOf { GameMemory.of(game.handle).getOrThrow().use { accounts.read(it, choices.chosen.value) } }.map(::AccountRead)
+            val read = resultOf { GameMemory.of(game.handle).getOrThrow().use { accounts.read(it, choices.chosen.value, readClient(it)) } }.map(::AccountRead)
             read.onFailure { reports.failed("scanning the account", it) }
             val account = read.getOrNull()?.takeIf { it.heroes + it.gear + it.artifacts > 0 }
             val failure = read.exceptionOrNull()
@@ -92,6 +94,10 @@ internal class HomeViewModel(
             local.update { it.copy(scanning = false, said = said, elevate = failure is GameMemory.Elevated, kept = read.getOrNull()?.scans?.firstOrNull()?.parentFile ?: it.kept, account = account ?: it.account, send = Send.Idle) }
         }
     }
+
+    /* Without its client the account's heroes are no cards, and its gear and artifacts still are. */
+    private suspend fun readClient(memory: GameMemory): Client? =
+        resultOf { memory.client() }.onFailure { reports.failed("reading the game's client", it) }.getOrNull()
 
     private suspend fun Throwable.said(): String = when (this) {
         is GameMemory.Elevated -> getString(Res.string.account_elevated)
