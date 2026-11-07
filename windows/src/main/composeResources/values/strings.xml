@@ -26,6 +26,7 @@
     <string name="account_failed">The account could not be read: %1$s</string>
     <string name="open_folder">Open folder</string>
     <string name="debug_title">Debug</string>
+    <string name="squads_section">Squads</string>
     <string name="read_squads">Read the squads</string>
     <string name="reading_squads">Reading the squads…</string>
     <string name="squads_none">No squad screen is open: open a stage’s squads in the game, then read them again.</string>

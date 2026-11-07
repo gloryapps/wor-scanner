@@ -7,6 +7,7 @@ import com.gloryapps.worscanner.scanner.runs.Accounts
 import com.gloryapps.worscanner.scanner.runs.Reports
 import com.gloryapps.worscanner.ui.Built
 import com.gloryapps.worscanner.windows.azhor.FileTokenStore
+import com.gloryapps.worscanner.windows.debug.DebugViewModel
 import com.gloryapps.worscanner.windows.game.GameWatch
 import com.gloryapps.worscanner.windows.home.HomeViewModel
 import com.gloryapps.worscanner.windows.report.LogReports
@@ -27,4 +28,5 @@ internal val windowsModule = module {
     single { Link(HttpAzhorApi(Built.AZHOR_URL), FileTokenStore(File(folder, "link"))) }
     factory { Sender(get()) }
     viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
+    viewModel { DebugViewModel(get(), get(), get()) }
 }

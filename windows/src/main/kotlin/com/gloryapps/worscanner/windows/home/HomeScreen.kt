@@ -19,7 +19,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.scanner.account.ArtifactsToScan
 import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.account.Enhancement
-import com.gloryapps.worscanner.scanner.account.SquadHero
 import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.ui.Accented
 import com.gloryapps.worscanner.ui.Built
@@ -47,6 +46,7 @@ import com.gloryapps.worscanner.windows.resources.artifacts_all
 import com.gloryapps.worscanner.windows.resources.artifacts_worth_wearing
 import com.gloryapps.worscanner.windows.resources.artifacts_worth_wearing_said
 import com.gloryapps.worscanner.windows.resources.artifacts_to_scan
+import com.gloryapps.worscanner.windows.resources.debug_title
 import com.gloryapps.worscanner.windows.resources.arrival
 import com.gloryapps.worscanner.windows.resources.arrival_add
 import com.gloryapps.worscanner.windows.resources.arrival_add_said
@@ -59,17 +59,6 @@ import com.gloryapps.worscanner.windows.resources.restart_as_administrator
 import com.gloryapps.worscanner.windows.resources.scan_account
 import com.gloryapps.worscanner.windows.resources.scan_again
 import com.gloryapps.worscanner.windows.resources.scanning_account
-import com.gloryapps.worscanner.windows.resources.debug_title
-import com.gloryapps.worscanner.windows.resources.read_squads
-import com.gloryapps.worscanner.windows.resources.reading_squads
-import com.gloryapps.worscanner.windows.resources.squad_artifact
-import com.gloryapps.worscanner.windows.resources.squad_hero_no_artifact
-import com.gloryapps.worscanner.windows.resources.squad_hero_no_gear
-import com.gloryapps.worscanner.windows.resources.squad_hero_worn
-import com.gloryapps.worscanner.windows.resources.squad_title
-import com.gloryapps.worscanner.windows.resources.squad_lord
-import com.gloryapps.worscanner.windows.resources.squads_none
-import com.gloryapps.worscanner.windows.resources.squads_stage
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
@@ -77,8 +66,9 @@ import org.koin.compose.viewmodel.koinViewModel
 import java.awt.Desktop
 import com.gloryapps.worscanner.ui.resources.Res as Shared
 
+/** `onDebug` opens a dev build's Debug window. */
 @Composable
-internal fun HomeScreen(onQuit: () -> Unit, modifier: Modifier = Modifier, viewModel: HomeViewModel = koinViewModel()) {
+internal fun HomeScreen(onQuit: () -> Unit, onDebug: () -> Unit, modifier: Modifier = Modifier, viewModel: HomeViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(viewModel) {
@@ -90,11 +80,11 @@ internal fun HomeScreen(onQuit: () -> Unit, modifier: Modifier = Modifier, viewM
         }
     }
 
-    HomeScreen(state, viewModel::on, modifier)
+    HomeScreen(state, viewModel::on, onDebug, modifier)
 }
 
 @Composable
-private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier: Modifier = Modifier) {
+private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, onDebug: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().background(Colors.screen).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(said(state.game), style = Lettering.body, color = if (state.game is Game.Open) Colors.text else Colors.warning)
         Choice(stringResource(Res.string.gear_to_scan)) {
@@ -123,42 +113,8 @@ private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier:
         if (state.elevate) Edged(stringResource(Res.string.restart_as_administrator)) { onEvent(HomeEvent.RestartAsAdministrator) }
         Sending(state.account, state.linked, state.send, onEvent)
         if (state.kept != null) Link(stringResource(Res.string.open_folder)) { onEvent(HomeEvent.OpenKept) }
-        if (Built.DEV) Debug(state, onEvent)
+        if (Built.DEV) Link(stringResource(Res.string.debug_title), onClick = onDebug)
     }
-}
-
-/** A dev build's: the squads of the squad screen open in the game, read when asked, each squad's heroes in their slots' order with the sets and artifact each wears. */
-@Composable
-private fun Debug(state: HomeState, onEvent: (HomeEvent) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Section(stringResource(Res.string.debug_title))
-        Edged(stringResource(if (state.readingSquads) Res.string.reading_squads else Res.string.read_squads)) { onEvent(HomeEvent.ReadSquads) }
-        state.squadsSaid?.let { Text(it, style = Lettering.data, color = Colors.muted) }
-        if (state.squads?.isEmpty() == true) Text(stringResource(Res.string.squads_none), style = Lettering.caption, color = Colors.muted)
-        state.squads.orEmpty().forEach { screen ->
-            Text(stringResource(Res.string.squads_stage, screen.stageId), style = Lettering.stepName, color = Colors.text)
-            screen.squads.forEachIndexed { at, squad ->
-                Text(stringResource(Res.string.squad_title, at + 1), style = Lettering.data, color = Colors.text)
-                squad.forEach { Text(worn(it), style = Lettering.caption, color = Colors.muted) }
-            }
-        }
-    }
-}
-
-/** A hero with how many pieces of each set he wears, and his artifact. */
-@Composable
-private fun worn(hero: SquadHero): String {
-    val sets = hero.pieces.groupingBy { it.set ?: "?" }.eachCount().entries.joinToString { (set, count) -> "$count $set" }
-    val artifact = hero.artifact?.let { stringResource(Res.string.squad_artifact, it.name ?: "?", it.level ?: 0) }
-
-    return stringResource(Res.string.squad_hero_worn, shown(hero), sets.ifEmpty { stringResource(Res.string.squad_hero_no_gear) }, artifact ?: stringResource(Res.string.squad_hero_no_artifact))
-}
-
-@Composable
-private fun shown(hero: SquadHero): String {
-    val name = hero.name ?: "#${hero.heroId}"
-
-    return if (hero.lord) stringResource(Res.string.squad_lord, name) else name
 }
 
 /** A choice the scan takes: its pills under `title`, and what the one chosen does beneath them where it needs saying. */
