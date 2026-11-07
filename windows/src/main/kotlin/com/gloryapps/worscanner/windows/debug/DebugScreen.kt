@@ -108,7 +108,8 @@ private fun Squads(state: DebugState, onEvent: (DebugEvent) -> Unit) {
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Accented(stringResource(Res.string.save_squads), Modifier.fillMaxWidth(), enabled = !state.saved) { onEvent(DebugEvent.Save) }
+        /* Saving again only writes the same file again; only a read under way holds it, its squads not yet the ones shown. */
+        Accented(stringResource(Res.string.save_squads), Modifier.fillMaxWidth(), enabled = !state.reading) { onEvent(DebugEvent.Save) }
         state.kept?.let { kept ->
             Text(stringResource(if (state.saved) Res.string.squads_saved else Res.string.squads_kept, kept.name), style = Lettering.caption, color = Colors.muted)
             Link(stringResource(Res.string.open_folder)) { onEvent(DebugEvent.OpenKept) }
