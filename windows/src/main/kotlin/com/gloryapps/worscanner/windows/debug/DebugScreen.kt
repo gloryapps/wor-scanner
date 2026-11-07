@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -17,8 +18,10 @@ import com.gloryapps.worscanner.scanner.account.SquadHero
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Edged
 import com.gloryapps.worscanner.ui.Lettering
+import com.gloryapps.worscanner.ui.Link
 import com.gloryapps.worscanner.ui.Section
 import com.gloryapps.worscanner.windows.resources.Res
+import com.gloryapps.worscanner.windows.resources.open_folder
 import com.gloryapps.worscanner.windows.resources.read_squads
 import com.gloryapps.worscanner.windows.resources.reading_squads
 import com.gloryapps.worscanner.windows.resources.squad_artifact
@@ -27,16 +30,26 @@ import com.gloryapps.worscanner.windows.resources.squad_hero_no_gear
 import com.gloryapps.worscanner.windows.resources.squad_hero_worn
 import com.gloryapps.worscanner.windows.resources.squad_lord
 import com.gloryapps.worscanner.windows.resources.squad_title
+import com.gloryapps.worscanner.windows.resources.squads_kept
 import com.gloryapps.worscanner.windows.resources.squads_none
 import com.gloryapps.worscanner.windows.resources.squads_section
 import com.gloryapps.worscanner.windows.resources.squads_stage
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import java.awt.Desktop
 
 /** A dev build's Debug window: what only a developer needs, a section each. */
 @Composable
 internal fun DebugScreen(viewModel: DebugViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is DebugEffect.Open -> Desktop.getDesktop().open(effect.folder)
+            }
+        }
+    }
 
     DebugScreen(state, viewModel::on)
 }
@@ -48,7 +61,7 @@ private fun DebugScreen(state: DebugState, onEvent: (DebugEvent) -> Unit) {
     }
 }
 
-/** The squads of the squad screen open in the game, read when asked, each squad's heroes in their slots' order with the sets and artifact each wears. */
+/** The squads of the squad screen open in the game, read when asked, each squad's heroes in their slots' order with the sets and artifact each wears, and the file each read is kept in, every piece in full. */
 @Composable
 private fun Squads(state: DebugState, onEvent: (DebugEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -56,6 +69,10 @@ private fun Squads(state: DebugState, onEvent: (DebugEvent) -> Unit) {
         Edged(stringResource(if (state.reading) Res.string.reading_squads else Res.string.read_squads)) { onEvent(DebugEvent.ReadSquads) }
         state.said?.let { Text(it, style = Lettering.data, color = Colors.muted) }
         if (state.squads?.isEmpty() == true) Text(stringResource(Res.string.squads_none), style = Lettering.caption, color = Colors.muted)
+        state.kept?.let { kept ->
+            Text(stringResource(Res.string.squads_kept, kept.name), style = Lettering.caption, color = Colors.muted)
+            Link(stringResource(Res.string.open_folder)) { onEvent(DebugEvent.OpenKept) }
+        }
         state.squads.orEmpty().forEach { screen ->
             Text(stringResource(Res.string.squads_stage, screen.stageId), style = Lettering.stepName, color = Colors.text)
             screen.squads.forEachIndexed { at, squad ->

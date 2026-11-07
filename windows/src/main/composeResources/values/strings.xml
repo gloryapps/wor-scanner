@@ -31,6 +31,7 @@
     <string name="reading_squads">Reading the squads…</string>
     <string name="squads_none">No squad screen is open: open a stage’s squads in the game, then read them again.</string>
     <string name="squads_stage">Stage %1$s</string>
+    <string name="squads_kept">Kept with every piece in full as %1$s.</string>
     <string name="squad_title">Squad %1$s</string>
     <string name="squad_hero_worn">%1$s: %2$s · %3$s</string>
     <string name="squad_hero_no_gear">no gear</string>

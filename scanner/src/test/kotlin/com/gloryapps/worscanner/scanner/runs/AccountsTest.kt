@@ -5,10 +5,12 @@ import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.account.CLIENT
 import com.gloryapps.worscanner.scanner.account.EVERYTHING
 import com.gloryapps.worscanner.scanner.account.ScannedRule
+import com.gloryapps.worscanner.scanner.account.Squads
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
 import com.gloryapps.worscanner.scanner.kinds.hero.ScannedHero
 import com.gloryapps.worscanner.scanner.lua.LaidOutHeap
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.io.File
 import kotlin.io.path.createTempDirectory
@@ -31,6 +33,21 @@ class AccountsTest {
         val artifacts = Json.decodeFromString(ScanFile.serializer(ScannedArtifact.serializer()), kept.scans.single().readText())
         assertEquals("artifacts" to stamp, artifacts.kind to artifacts.startedAt)
         assertEquals(listOf("Spear of Leonidas" to 6), artifacts.entries.map { it.card.name to it.card.skill })
+    }
+
+    @Test
+    fun `the squads of an open squad screen are kept in a file of their own, named by the stamp the read began at, every piece in full`() = runTest {
+        val memory = LaidOutHeap().apply {
+            table("m_CharactorDatas" to table(1 to table("iHeroId" to 222400000L, "iBaseId" to 2224)))
+            table("m_vArtifacts" to table(array = listOf(table("iItemId" to 219201, "iLevel" to 25, "iStageLvl" to 5, "iHeroId" to 222400000L))))
+            table("m_BattleStageId" to 5001007, "m_TeamDataList" to table(1 to table(1 to table("m_iHeroID" to 222400000L, "m_IsLord" to 101))))
+        }
+
+        val kept = Accounts(root).squads(memory, CLIENT)
+
+        assertEquals(File(root, "squads"), kept.file.parentFile)
+        assertEquals(kept.squads, Json.decodeFromString(ListSerializer(Squads.serializer()), kept.file.readText()))
+        assertEquals(listOf("Pelagios" to "Spear of Leonidas"), kept.squads.single().squads.single().map { it.name to it.artifact?.name })
     }
 
     @Test

@@ -28,6 +28,9 @@ import java.time.LocalDateTime
 /** An account read and kept: the scans made of it, one of each kind and one of its plan, which are what the lab imports, with how many cards each kind's holds; a kind with none has no scan. */
 data class KeptAccount(val scans: List<File>, val cards: Map<Kind, Int>)
 
+/** The squads a squad screen held, and the file they are kept in. */
+data class KeptSquads(val file: File, val squads: List<Squads>)
+
 /** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, the squads a squad screen held in `squads`, each named by the stamp the read began at; the newest [KEPT] of each. */
 class Accounts(root: File, private val game: Game = Game.shipped) {
     private val scans = File(root, "accounts")
@@ -44,14 +47,14 @@ class Accounts(root: File, private val game: Game = Game.shipped) {
     }
 
     /** Reads the squads the game's open squad screen holds, each hero named by `client` and with what he wears, and keeps them. */
-    suspend fun squads(memory: Memory, client: Client? = null): List<Squads> {
+    suspend fun squads(memory: Memory, client: Client? = null): KeptSquads {
         val stamp = LocalDateTime.now().format(STAMP)
         val read = Cards(game, readAccount(memory, startedAt = stamp), ScanChoices(), client).squads
 
         return withContext(Dispatchers.IO) {
-            File(squads, "$stamp.json").apply { parentFile.mkdirs(); writeText(Json.encodeToString(ListSerializer(Squads.serializer()), read)) }
+            val file = File(squads, "$stamp.json").apply { parentFile.mkdirs(); writeText(Json.encodeToString(ListSerializer(Squads.serializer()), read)) }
             newestOnly(squads)
-            read
+            KeptSquads(file, read)
         }
     }
 
