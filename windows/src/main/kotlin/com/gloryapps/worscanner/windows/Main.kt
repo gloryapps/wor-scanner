@@ -55,7 +55,7 @@ fun main() = application {
         /* A dev build's own window, beside the scanner's, for what only a developer needs. */
         if (Built.DEV && debugging) {
             val title = "${Built.NAME} · ${stringResource(Res.string.debug_title)}"
-            Window(onCloseRequest = { debugging = false }, title = title, icon = painterResource(Res.drawable.icon), state = rememberWindowState(width = 480.dp, height = 640.dp)) {
+            Window(onCloseRequest = { debugging = false }, title = title, icon = painterResource(Res.drawable.icon), state = rememberWindowState(width = 1040.dp, height = 780.dp)) {
                 ScannerTheme { DebugScreen() }
             }
         }
