@@ -2,6 +2,7 @@ package com.gloryapps.worscanner.windows.debug
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gloryapps.worscanner.scanner.account.Placed
 import com.gloryapps.worscanner.scanner.account.Play
 import com.gloryapps.worscanner.scanner.account.called
 import com.gloryapps.worscanner.scanner.resultOf
@@ -42,6 +43,9 @@ internal class DebugViewModel(private val watch: GameWatch, private val accounts
             is DebugEvent.Stance -> play { it.copy(stances = it.stances + (event.hero to event.stance)) }
             is DebugEvent.Ultimate -> play { it.copy(ultimates = it.ultimates + (event.hero to event.way)) }
             is DebugEvent.Tick -> play { it.copy(ticks = it.ticks + (event.hero to it.ticks[event.hero].orEmpty().toggled(event.tick))) }
+            is DebugEvent.Place -> local.update { it.copy(placing = event.hero.takeIf { hero -> hero != it.placing }) }
+            is DebugEvent.PutOn -> putOn(event.cell)
+            is DebugEvent.Face -> play { play -> play.cells[event.hero]?.let { play.copy(cells = play.cells + (event.hero to it.copy(face = event.face))) } ?: play }
             DebugEvent.Save -> save()
             DebugEvent.OpenKept -> local.value.kept?.let { file -> viewModelScope.launch { _effects.send(DebugEffect.Open(file.parentFile)) } }
         }
@@ -75,6 +79,20 @@ internal class DebugViewModel(private val watch: GameWatch, private val accounts
 
     private fun play(change: (Play) -> Play) = local.update { it.copy(play = change(it.play), saved = false) }
 
+    /* A hero put where another stands takes his cell, and the other leaves the map; the next hero still off it is then the one placed. */
+    private fun putOn(cell: List<Double>) = local.update { state ->
+        val cells = state.play.cells
+        val there = cells.entries.firstOrNull { it.value.cell == cell }?.key
+        val hero = state.placing ?: return@update state.copy(placing = there)
+        val moved = if (there == hero) cells - hero else cells.filterKeys { it != there } + (hero to Placed(cell, cells[hero]?.face ?: Placed(cell).face))
+        val heroes = state.squads.orEmpty().flatMap { screen -> screen.squads.flatten().map { it.called } }
+        state.copy(
+            play = state.play.copy(cells = moved),
+            placing = if (there == hero) hero else heroes.firstOrNull { it !in moved } ?: hero,
+            saved = false,
+        )
+    }
+
     private fun save() {
         val state = local.value
         val file = state.kept ?: return
@@ -101,6 +119,7 @@ private fun Play.of(heroes: Set<String>) = Play(
     stances = stances.filterKeys { it in heroes },
     ultimates = ultimates.filterKeys { it in heroes },
     ticks = ticks.filterKeys { it in heroes },
+    cells = cells.filterKeys { it in heroes },
 )
 
 /* A hero whose Ultimate the simulator times stays at its first way until the player picks another, as the simulator plays him; the file says so. */

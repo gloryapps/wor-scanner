@@ -19,7 +19,16 @@ data class Play(
     val stances: Map<String, String> = emptyMap(),
     val ultimates: Map<String, String> = emptyMap(),
     val ticks: Map<String, List<String>> = emptyMap(),
+    /** Where the player puts each hero he fields on the stage's map, as the simulator numbers its cells; a Lord he leaves out leads from the bench. */
+    val cells: Map<String, Placed> = emptyMap(),
 )
+
+/** A hero's cell, `[x, y]` at its centre, and where he faces: 270 the boss, 0, 90 and 180 a quarter turn on each. */
+@Serializable
+data class Placed(val cell: List<Double>, val face: Int = FACING_BOSS)
+
+/** Where a hero put on the map faces unless turned: the boss, as the simulator numbers facings. */
+const val FACING_BOSS = 270
 
 /** A hero in a squad: `heroId` is the account's own (a read's `iHeroId`), `baseId` and `name` the client's, null where the account or the client lacks them; `pieces` and `artifact` are what he wears. */
 @Serializable

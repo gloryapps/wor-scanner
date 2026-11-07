@@ -1,23 +1,34 @@
 package com.gloryapps.worscanner.windows.debug
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gloryapps.worscanner.scanner.account.FACING_BOSS
+import com.gloryapps.worscanner.scanner.account.Placed
 import com.gloryapps.worscanner.scanner.account.Squads
 import com.gloryapps.worscanner.scanner.account.called
+import com.gloryapps.worscanner.scanner.simulator.Grid
 import com.gloryapps.worscanner.ui.Accented
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Edged
@@ -26,10 +37,14 @@ import com.gloryapps.worscanner.ui.Link
 import com.gloryapps.worscanner.ui.Pill
 import com.gloryapps.worscanner.ui.Section
 import com.gloryapps.worscanner.windows.resources.Res
+import com.gloryapps.worscanner.windows.resources.boss
 import com.gloryapps.worscanner.windows.resources.deploy_order
 import com.gloryapps.worscanner.windows.resources.deploy_order_said
+import com.gloryapps.worscanner.windows.resources.facing
 import com.gloryapps.worscanner.windows.resources.healers
 import com.gloryapps.worscanner.windows.resources.inspiration
+import com.gloryapps.worscanner.windows.resources.map_said
+import com.gloryapps.worscanner.windows.resources.map_title
 import com.gloryapps.worscanner.windows.resources.open_folder
 import com.gloryapps.worscanner.windows.resources.read_squads
 import com.gloryapps.worscanner.windows.resources.reading_squads
@@ -101,6 +116,7 @@ private fun Squads(state: DebugState, onEvent: (DebugEvent) -> Unit) {
                 play.deployOrder.indexOf(hero).takeIf { it >= 0 }?.let { "${it + 1} · $hero" } ?: hero
             }, chosen = { it in play.deployOrder }) { onEvent(DebugEvent.Deploy(it)) }
         }
+        state.squads.orEmpty().firstNotNullOfOrNull { rules.gridOf(it.stageId) }?.let { grid -> Placing(grid, heroes, play.cells, state.placing, onEvent) }
         Plays(heroes.filter { hero -> listOf(rules.stances, rules.ultimates, rules.ticks).any { !it[hero].isNullOrEmpty() } }) { hero ->
             Ways(stringResource(Res.string.stance), rules.stances[hero], chosen = { play.stances[hero] == it }) { onEvent(DebugEvent.Stance(hero, it)) }
             Ways(stringResource(Res.string.ultimate), rules.ultimates[hero], chosen = { play.ultimates[hero] == it }) { onEvent(DebugEvent.Ultimate(hero, it)) }
@@ -139,6 +155,69 @@ private fun Heroes(title: String, said: String?, heroes: List<String>, label: (S
         }
     }
 }
+
+/**
+ * Where each hero stands on the stage's map: a hero picked, a tap on a cell puts him there and picks the next still off it, and his facing
+ * beneath. Cells are drawn as the simulator numbers them, the boss at the top; ground cells are the melee ones.
+ */
+@Composable
+private fun Placing(grid: Grid, heroes: List<String>, cells: Map<String, Placed>, placing: String?, onEvent: (DebugEvent) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Section(stringResource(Res.string.map_title))
+        Text(stringResource(Res.string.map_said), style = Lettering.caption, color = Colors.muted)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            heroes.forEach { hero -> Pill(if (hero in cells) "$hero ${arrow(cells.getValue(hero).face)}" else hero, chosen = hero == placing) { onEvent(DebugEvent.Place(hero)) } }
+        }
+        Field(grid, cells, placing) { onEvent(DebugEvent.PutOn(it)) }
+        val placed = placing?.let(cells::get)
+        if (placing != null && placed != null) {
+            Text(stringResource(Res.string.facing, placing), style = Lettering.caption, color = Colors.muted)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FACES.forEach { face -> Pill(arrow(face), chosen = placed.face == face) { onEvent(DebugEvent.Face(placing, face)) } }
+            }
+        }
+    }
+}
+
+/** The map's cells, each with the hero on it, three letters and his facing; the boss's cell marked. */
+@Composable
+private fun Field(grid: Grid, cells: Map<String, Placed>, placing: String?, onTap: (List<Double>) -> Unit) {
+    val all = grid.melee.map { it to true } + grid.ranged.map { it to false }
+    val xs = all.map { it.first[0] } + grid.boss[0]
+    val ys = all.map { it.first[1] } + grid.boss[1]
+    val left = xs.min()
+    val top = ys.max()
+    val at = { cell: List<Double> -> Modifier.offset(CELL * (cell[0] - left).toFloat(), CELL * (top - cell[1]).toFloat()).size(CELL).padding(2.dp) }
+    Box(Modifier.size(CELL * (xs.max() - left + 1).toFloat(), CELL * (top - ys.min() + 1).toFloat())) {
+        Box(at(grid.boss).clip(SHAPE).background(Colors.failureEdge), contentAlignment = Alignment.Center) {
+            Text(stringResource(Res.string.boss), style = Lettering.dataSmall, color = Colors.text)
+        }
+        all.forEach { (cell, ground) ->
+            val there = cells.entries.firstOrNull { it.value.cell == cell }
+            Box(
+                at(cell).clip(SHAPE).background(if (ground) Colors.lifted else Colors.sunken)
+                    .border(1.dp, if (there != null && there.key == placing) Colors.accent else Colors.edge, SHAPE)
+                    .clickable { onTap(cell) },
+                contentAlignment = Alignment.Center,
+            ) {
+                there?.let { Text("${it.key.take(3)}${arrow(it.value.face)}", style = Lettering.dataSmall, color = Colors.text) }
+            }
+        }
+    }
+}
+
+/* The simulator's facings: 270 the boss, at the top; 0, 90 and 180 the turns its RotateDeltaByFaceType makes of a range, read as right, down and left. */
+private val FACES = listOf(FACING_BOSS, 0, 90, 180)
+
+private fun arrow(face: Int): String = when (face) {
+    0 -> "→"
+    90 -> "↓"
+    180 -> "←"
+    else -> "↑"
+}
+
+private val CELL = 44.dp
+private val SHAPE = RoundedCornerShape(6.dp)
 
 /** Each of `heroes` under his name, all his ways to play together; nothing where none has any. */
 @Composable
