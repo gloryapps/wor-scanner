@@ -49,6 +49,10 @@ is built and signed, in [`bootstrap/ci.md`](bootstrap/ci.md).
 A debug build has **Debug** in the home screen's header: it opens the first run, and Home with the
 newest scan as if it had just ended or with the permission ask open, each as it runs.
 
+A dev build of the Windows app has **Debug** at the foot of its window: **Read the squads** reads the
+squads of the squad screen open in the game, each hero named and the Lords marked, and keeps them under
+`squads` in its folder. The Guild Boss's squads are held only while that screen is open.
+
 ## Contributing
 
 Issues are welcome, for a tile read wrong or a scan that stops. Pull requests are read, and merged by

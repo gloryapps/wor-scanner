@@ -20,6 +20,7 @@ import com.gloryapps.worscanner.windows.resources.account_elevated
 import com.gloryapps.worscanner.windows.resources.account_empty
 import com.gloryapps.worscanner.windows.resources.account_failed
 import com.gloryapps.worscanner.windows.resources.account_refused
+import com.gloryapps.worscanner.windows.resources.squads_failed
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,6 +67,7 @@ internal class HomeViewModel(
             is HomeEvent.ChooseArtifacts -> choose { it.copy(artifacts = event.artifacts) }
             is HomeEvent.ChooseArrival -> choose { it.copy(arrival = event.arrival) }
             HomeEvent.RestartAsAdministrator -> viewModelScope.launch { if (Administrator.restart()) _effects.send(HomeEffect.Quit) }
+            HomeEvent.ReadSquads -> readSquads()
         }
     }
 
@@ -92,6 +94,18 @@ internal class HomeViewModel(
             val failure = read.exceptionOrNull()
             val said = if (account != null) null else failure?.said() ?: getString(Res.string.account_empty)
             local.update { it.copy(scanning = false, said = said, elevate = failure is GameMemory.Elevated, kept = read.getOrNull()?.scans?.firstOrNull()?.parentFile ?: it.kept, account = account ?: it.account, send = Send.Idle) }
+        }
+    }
+
+    private fun readSquads() {
+        val game = watch.game.value ?: return
+        if (local.value.readingSquads) return
+        local.update { it.copy(readingSquads = true) }
+        viewModelScope.launch {
+            val read = resultOf { GameMemory.of(game.handle).getOrThrow().use { accounts.squads(it, readClient(it)) } }
+            read.onFailure { reports.failed("reading the squads", it) }
+            val said = read.exceptionOrNull()?.let { if (it is GameMemory.Elevated || it is GameMemory.Refused) it.said() else getString(Res.string.squads_failed, it.message ?: it.toString()) }
+            local.update { it.copy(readingSquads = false, squads = read.getOrNull() ?: it.squads, squadsSaid = said) }
         }
     }
 

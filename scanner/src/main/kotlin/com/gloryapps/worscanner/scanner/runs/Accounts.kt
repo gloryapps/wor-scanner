@@ -7,7 +7,9 @@ import com.gloryapps.worscanner.scanner.account.ScanChoices
 import com.gloryapps.worscanner.scanner.account.Game
 import com.gloryapps.worscanner.scanner.account.PLAN
 import com.gloryapps.worscanner.scanner.account.ScannedRule
+import com.gloryapps.worscanner.scanner.account.Squads
 import com.gloryapps.worscanner.scanner.account.readAccount
+import com.gloryapps.worscanner.scanner.account.readSquads
 import com.gloryapps.worscanner.scanner.client.Client
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
@@ -19,6 +21,7 @@ import com.gloryapps.worscanner.scanner.senses.Memory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.time.LocalDateTime
@@ -26,10 +29,11 @@ import java.time.LocalDateTime
 /** An account read and kept: the scans made of it, one of each kind and one of its plan, which are what the lab imports, with how many cards each kind's holds; a kind with none has no scan. */
 data class KeptAccount(val scans: List<File>, val cards: Map<Kind, Int>)
 
-/** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, both named by the stamp the read began at; the newest [KEPT] of each. */
+/** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, the squads a squad screen held in `squads`, each named by the stamp the read began at; the newest [KEPT] of each. */
 class Accounts(root: File, private val game: Game = Game.shipped) {
     private val scans = File(root, "accounts")
     private val reads = File(root, "reads")
+    private val squads = File(root, "squads")
 
     /** Reads the account off `memory`, its heroes as `client` holds them; its gear and artifacts scans hold only what `choices` keeps, and every scan arrives as `choices` says. */
     suspend fun read(memory: Memory, choices: ScanChoices, client: Client? = null): KeptAccount {
@@ -37,6 +41,18 @@ class Accounts(root: File, private val game: Game = Game.shipped) {
 
         return withContext(Dispatchers.IO) {
             keep(account, Cards(game, account, choices, client), choices.arrival).also { listOf(scans, reads).forEach(::newestOnly) }
+        }
+    }
+
+    /** Reads the squads the game's open squad screen holds, each hero named by `client`, and keeps them. */
+    suspend fun squads(memory: Memory, client: Client? = null): List<Squads> {
+        val stamp = LocalDateTime.now().format(STAMP)
+        val read = readSquads(memory, client)
+
+        return withContext(Dispatchers.IO) {
+            File(squads, "$stamp.json").apply { parentFile.mkdirs(); writeText(Json.encodeToString(ListSerializer(Squads.serializer()), read)) }
+            newestOnly(squads)
+            read
         }
     }
 

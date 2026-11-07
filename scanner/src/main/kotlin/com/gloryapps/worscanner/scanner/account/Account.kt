@@ -74,11 +74,11 @@ suspend fun readAccount(memory: Memory, startedAt: String): Account = withContex
 private const val COLLECTED = "m_OwenHeroBaseId"
 
 /** The values of type `V` a table holds; none for what is no table. */
-private inline fun <reified V : LuaValue> LuaHeap.values(table: LuaValue?): List<V> =
+internal inline fun <reified V : LuaValue> LuaHeap.values(table: LuaValue?): List<V> =
     (table as? LuaValue.Table)?.let { fields(it.address) }?.values?.filterIsInstance<V>().orEmpty()
 
 /** The tables the field `list` of the table at `holder` holds, or the tables each of those holds where the holding is `grouped`. */
-private fun LuaHeap.entries(holder: Long, holding: Holding): List<LuaValue.Table> {
+internal fun LuaHeap.entries(holder: Long, holding: Holding): List<LuaValue.Table> {
     val held = values<LuaValue.Table>(field(holder, holding.list))
 
     return if (holding.grouped) held.flatMap { values<LuaValue.Table>(it) } else held

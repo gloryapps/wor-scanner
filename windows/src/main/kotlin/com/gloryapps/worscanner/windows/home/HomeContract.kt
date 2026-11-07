@@ -4,6 +4,7 @@ import com.gloryapps.worscanner.scanner.account.ArtifactsToScan
 import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.account.Enhancement
 import com.gloryapps.worscanner.scanner.account.ScanChoices
+import com.gloryapps.worscanner.scanner.account.Squads
 import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.runs.KeptAccount
@@ -24,6 +25,10 @@ internal data class HomeState(
     val send: Send = Send.Idle,
     /** What the scan sends of the gear and artifacts, and how the lab takes it. */
     val choices: ScanChoices = ScanChoices(),
+    /** A dev build's: the squads the game's open squad screen held when last read, and why that read failed. */
+    val squads: List<Squads>? = null,
+    val readingSquads: Boolean = false,
+    val squadsSaid: String? = null,
 )
 
 /** An account scanned: the scans made of it, which are what is sent, and how many cards of each they hold. */
@@ -65,6 +70,9 @@ internal sealed interface HomeEvent {
 
     /** Starts the scanner again as administrator, closing this one once Windows has. */
     data object RestartAsAdministrator : HomeEvent
+
+    /** A dev build's: reads the squads of the squad screen open in the game. */
+    data object ReadSquads : HomeEvent
 }
 
 internal sealed interface HomeEffect {

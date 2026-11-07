@@ -1,6 +1,7 @@
 package com.gloryapps.worscanner.scanner.account
 
 import com.gloryapps.worscanner.scanner.client.Client
+import com.gloryapps.worscanner.scanner.client.unitName
 import com.gloryapps.worscanner.scanner.game.Attribute
 import com.gloryapps.worscanner.scanner.game.ReadAttribute
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
@@ -170,7 +171,7 @@ private fun Client.hero(id: Long): GameHero? {
     }
 
     return GameHero(
-        name = text("Unit_mName_$id") ?: return null,
+        name = unitName(id) ?: return null,
         rarity = row.int("m_Quality") ?: return null,
         row = listOfNotNull(basic) + unlocked.sortedBy { it.at },
         factions = row.numbers("m_OnShowFactionMember").mapNotNull { text("HeroFaction_mFactionName_$it") },
