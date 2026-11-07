@@ -42,9 +42,10 @@ import com.gloryapps.worscanner.windows.resources.squads_none
 import com.gloryapps.worscanner.windows.resources.squads_saved
 import com.gloryapps.worscanner.windows.resources.squads_section
 import com.gloryapps.worscanner.windows.resources.squads_stage
-import com.gloryapps.worscanner.windows.resources.stances
-import com.gloryapps.worscanner.windows.resources.ticks
-import com.gloryapps.worscanner.windows.resources.ultimates
+import com.gloryapps.worscanner.windows.resources.plays
+import com.gloryapps.worscanner.windows.resources.stance
+import com.gloryapps.worscanner.windows.resources.ultimate
+import com.gloryapps.worscanner.windows.resources.where_he_stands
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import java.awt.Desktop
@@ -100,9 +101,11 @@ private fun Squads(state: DebugState, onEvent: (DebugEvent) -> Unit) {
                 play.deployOrder.indexOf(hero).takeIf { it >= 0 }?.let { "${it + 1} · $hero" } ?: hero
             }, chosen = { it in play.deployOrder }) { onEvent(DebugEvent.Deploy(it)) }
         }
-        Ways(stringResource(Res.string.stances), heroes, rules.stances, chosen = { hero, stance -> play.stances[hero] == stance }) { hero, stance -> onEvent(DebugEvent.Stance(hero, stance)) }
-        Ways(stringResource(Res.string.ultimates), heroes, rules.ultimates, chosen = { hero, way -> play.ultimates[hero] == way }) { hero, way -> onEvent(DebugEvent.Ultimate(hero, way)) }
-        Ways(stringResource(Res.string.ticks), heroes, rules.ticks, chosen = { hero, tick -> tick in play.ticks[hero].orEmpty() }) { hero, tick -> onEvent(DebugEvent.Tick(hero, tick)) }
+        Plays(heroes.filter { hero -> listOf(rules.stances, rules.ultimates, rules.ticks).any { !it[hero].isNullOrEmpty() } }) { hero ->
+            Ways(stringResource(Res.string.stance), rules.stances[hero], chosen = { play.stances[hero] == it }) { onEvent(DebugEvent.Stance(hero, it)) }
+            Ways(stringResource(Res.string.ultimate), rules.ultimates[hero], chosen = { play.ultimates[hero] == it }) { onEvent(DebugEvent.Ultimate(hero, it)) }
+            Ways(stringResource(Res.string.where_he_stands), rules.ticks[hero], chosen = { it in play.ticks[hero].orEmpty() }) { onEvent(DebugEvent.Tick(hero, it)) }
+        }
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Accented(stringResource(Res.string.save_squads), Modifier.fillMaxWidth(), enabled = !state.saved) { onEvent(DebugEvent.Save) }
@@ -136,18 +139,27 @@ private fun Heroes(title: String, said: String?, heroes: List<String>, label: (S
     }
 }
 
-/** Under `title`, each of `heroes` the simulator offers ways for, with his ways as pills; nothing where it offers none. */
+/** Each of `heroes` under his name, all his ways to play together; nothing where none has any. */
 @Composable
-private fun Ways(title: String, heroes: List<String>, ways: Map<String, List<String>>, chosen: (String, String) -> Boolean, onTap: (String, String) -> Unit) {
-    val offered = heroes.filter { !ways[it].isNullOrEmpty() }
-    if (offered.isEmpty()) return
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Section(title)
-        offered.forEach { hero ->
-            Text(hero, style = Lettering.stepName, color = Colors.text)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                ways.getValue(hero).forEach { way -> Pill(way, chosen = chosen(hero, way)) { onTap(hero, way) } }
+private fun Plays(heroes: List<String>, ways: @Composable (String) -> Unit) {
+    if (heroes.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Section(stringResource(Res.string.plays))
+        heroes.forEach { hero ->
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(hero, style = Lettering.stepName, color = Colors.text)
+                ways(hero)
             }
         }
+    }
+}
+
+/** One kind of a hero's ways, as pills under its name; nothing where the simulator offers him none. */
+@Composable
+private fun Ways(kind: String, ways: List<String>?, chosen: (String) -> Boolean, onTap: (String) -> Unit) {
+    if (ways.isNullOrEmpty()) return
+    Text(kind, style = Lettering.caption, color = Colors.muted)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        ways.forEach { way -> Pill(way, chosen = chosen(way)) { onTap(way) } }
     }
 }

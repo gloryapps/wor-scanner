@@ -38,9 +38,10 @@
     <string name="deploy_order_said">It only matters for inspiration: tap, in order, the heroes whose place counts, and leave out the rest.</string>
     <string name="healers">Healers</string>
     <string name="inspiration">Inspiration</string>
-    <string name="stances">Stances</string>
-    <string name="ultimates">Ultimates</string>
-    <string name="ticks">Where they stand</string>
+    <string name="plays">How each plays</string>
+    <string name="stance">Stance</string>
+    <string name="ultimate">Ultimate</string>
+    <string name="where_he_stands">Where he stands</string>
     <string name="simulator_missing">The Armory’s simulator is not running on this PC, so the ways to play are not offered: start it, then read the squads again.</string>
     <string name="save_squads">Save the comp</string>
     <string name="squad_lord">%1$s (Lord)</string>
