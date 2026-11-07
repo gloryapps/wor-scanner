@@ -49,6 +49,14 @@ is built and signed, in [`bootstrap/ci.md`](bootstrap/ci.md).
 A debug build has **Debug** in the home screen's header: it opens the first run, and Home with the
 newest scan as if it had just ended or with the permission ask open, each as it runs.
 
+A dev build of the Windows app has **Debug** at the foot of its window, which opens a window of its own.
+In it, **Read the squads** reads the squads of the squad screen open in the game, the Lords marked and
+each hero with the pieces and artifact he wears. It then asks what no screen holds, offering only the
+heroes and ways the Armory's simulator running on the PC offers: the healers and inspiration, the
+deploy order where inspiration makes it count, and each hero's stance, Ultimate timing and ticks. **Save the comp** keeps it all, every
+piece with its primary and secondary attributes, under `squads` in the app's folder. The Guild Boss's
+squads are held only while that screen is open.
+
 ## Contributing
 
 Issues are welcome, for a tile read wrong or a scan that stops. Pull requests are read, and merged by

@@ -7,6 +7,7 @@ import com.gloryapps.worscanner.scanner.account.ScanChoices
 import com.gloryapps.worscanner.scanner.account.Game
 import com.gloryapps.worscanner.scanner.account.PLAN
 import com.gloryapps.worscanner.scanner.account.ScannedRule
+import com.gloryapps.worscanner.scanner.account.Squads
 import com.gloryapps.worscanner.scanner.account.readAccount
 import com.gloryapps.worscanner.scanner.client.Client
 import com.gloryapps.worscanner.scanner.kinds.Kind
@@ -19,6 +20,7 @@ import com.gloryapps.worscanner.scanner.senses.Memory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.time.LocalDateTime
@@ -26,10 +28,14 @@ import java.time.LocalDateTime
 /** An account read and kept: the scans made of it, one of each kind and one of its plan, which are what the lab imports, with how many cards each kind's holds; a kind with none has no scan. */
 data class KeptAccount(val scans: List<File>, val cards: Map<Kind, Int>)
 
-/** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, both named by the stamp the read began at; the newest [KEPT] of each. */
+/** The squads a squad screen held, and the file they are kept in. */
+data class KeptSquads(val file: File, val squads: List<Squads>)
+
+/** Accounts read off the game's memory: a scan of each kind in a folder of `accounts`, the game's own file in `reads`, the squads a squad screen held in `squads`, each named by the stamp the read began at; the newest [KEPT] scans and reads, and every squads file, since the play the player completes in it is held nowhere else. */
 class Accounts(root: File, private val game: Game = Game.shipped) {
     private val scans = File(root, "accounts")
     private val reads = File(root, "reads")
+    private val squads = File(root, "squads")
 
     /** Reads the account off `memory`, its heroes as `client` holds them; its gear and artifacts scans hold only what `choices` keeps, and every scan arrives as `choices` says. */
     suspend fun read(memory: Memory, choices: ScanChoices, client: Client? = null): KeptAccount {
@@ -39,6 +45,22 @@ class Accounts(root: File, private val game: Game = Game.shipped) {
             keep(account, Cards(game, account, choices, client), choices.arrival).also { listOf(scans, reads).forEach(::newestOnly) }
         }
     }
+
+    /** Reads the squads the game's open squad screen holds, each hero named by `client` and with what he wears, and keeps them; null, and nothing kept, where no squad screen is open. */
+    suspend fun squads(memory: Memory, client: Client? = null): KeptSquads? {
+        val stamp = LocalDateTime.now().format(STAMP)
+        val read = Cards(game, readAccount(memory, startedAt = stamp), ScanChoices(), client).squads
+        if (read.isEmpty()) return null
+
+        return withContext(Dispatchers.IO) {
+            val file = File(squads, "$stamp.json").apply { parentFile.mkdirs() }
+            keep(file, read)
+            KeptSquads(file, read)
+        }
+    }
+
+    /** Keeps `read` in `file` again, as the player completed it: every field written, to be read by eye. */
+    suspend fun keep(file: File, read: List<Squads>) = withContext(Dispatchers.IO) { file.writeText(SQUADS_FILE.encodeToString(ListSerializer(Squads.serializer()), read)) }
 
     /* A scan in place of the lab's list of its kind would empty it where it holds no cards, so a kind with none sends none. */
     private fun keep(account: Account, cards: Cards, arrival: Arrival): KeptAccount {
@@ -88,5 +110,7 @@ class Accounts(root: File, private val game: Game = Game.shipped) {
 
     companion object {
         const val KEPT = 20
+
+        private val SQUADS_FILE = Json { encodeDefaults = true; prettyPrint = true }
     }
 }

@@ -27,6 +27,8 @@ val built by tasks.registering {
                 |object Built {
                 |    const val NAME = "${appName.get()}${if (dev.get()) " Dev" else ""}"
                 |    const val AZHOR_URL = "${lab.get()}"
+                |    /** A dev build, which shows what only a developer needs. */
+                |    const val DEV = ${dev.get()}
                 |}
                 |""".trimMargin(),
             )

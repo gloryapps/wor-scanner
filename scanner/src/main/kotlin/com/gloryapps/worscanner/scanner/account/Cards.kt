@@ -1,6 +1,7 @@
 package com.gloryapps.worscanner.scanner.account
 
 import com.gloryapps.worscanner.scanner.client.Client
+import com.gloryapps.worscanner.scanner.client.unitName
 import com.gloryapps.worscanner.scanner.game.Attribute
 import com.gloryapps.worscanner.scanner.game.ReadAttribute
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
@@ -15,6 +16,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
@@ -51,15 +53,54 @@ class Cards(private val game: Game, private val account: Account, private val ch
         account.artifacts.mapNotNull(::artifact).filter { choices.artifacts.keeps(it.level ?: 0, exclusive = it.exclusive != null) }
     }
 
+    /** The squads of every squad screen open in the game, each hero with the pieces and the artifact he wears, whatever `choices` keeps. */
+    val squads: List<Squads> by lazy {
+        val bases = account.heroes.mapNotNull { hero -> hero.long(HERO_ID)?.let { it to hero.long("iBaseId") } }.toMap()
+
+        account.squads.mapNotNull { screen ->
+            Squads(
+                stageId = screen.long(SQUAD_STAGE) ?: return@mapNotNull null,
+                squads = screen.list(SQUAD_TEAMS).map { squad ->
+                    squad.sequence().mapNotNull { slot ->
+                        val id = slot.long(SLOT_HERO)?.takeIf { it != EMPTY_SLOT } ?: return@mapNotNull null
+                        val base = bases[id]
+                        SquadHero(
+                            heroId = id,
+                            baseId = base,
+                            name = base?.let { client?.unitName(it) },
+                            lord = (slot.field(SLOT_LORD) as? JsonPrimitive)?.let { it.longOrNull != null || it.booleanOrNull == true } == true,
+                            pieces = account.gear.filter { it.long(HERO_ID) == id }.mapNotNull(::worn).sortedBy { it.slot?.ordinal },
+                            artifact = account.artifacts.firstOrNull { it.long(HERO_ID) == id }?.let(::artifact),
+                        )
+                    }
+                },
+            )
+        }
+    }
+
     /** The weapons and breastplates side's first, each side's in the order the game lists them. */
     val rules: List<ScannedRule> by lazy { account.rules.mapNotNull(::rule).sortedBy { it.side } }
 
-    private fun piece(entry: JsonElement): ScannedGear? {
+    private fun piece(entry: JsonElement): ScannedGear? = worn(entry)?.let {
+        ScannedGear(
+            set = it.set,
+            slot = it.slot,
+            ancient = it.ancient,
+            variant = it.variant,
+            variantEffect = it.variantEffect,
+            variantAttributes = it.variantAttributes,
+            exclusive = it.exclusive,
+            attributes = listOfNotNull(it.primary) + it.secondary,
+        )
+    }
+
+    /* A card lists the main attribute first, as the panel prints it; a squad's file names it apart. */
+    private fun worn(entry: JsonElement): SquadPiece? {
         val known = entry.long("iItemId")?.let(game.gear::get) ?: return null
         val variant = entry.long("iVaryEffectId")?.let { game.variants[it shr EFFECT_SHIFT]?.get(it and EFFECT_INDEX) }
         val main = entry.list("vMasterAttrList").firstOrNull()?.let { attribute(it.int("iAttrId"), it.long("iValue"), entry.long("iExtraMasterAttrValue")?.takeIf { bonus -> bonus != 0L }) }
 
-        return ScannedGear(
+        return SquadPiece(
             set = known.set,
             slot = Slot.entries.firstOrNull { it.word == known.slot },
             ancient = entry.int("iStarLvl")?.let { it in ANCIENT } == true,
@@ -67,7 +108,8 @@ class Cards(private val game: Game, private val account: Account, private val ch
             variantEffect = variant?.effect,
             variantAttributes = variant?.attributes.orEmpty().mapNotNull { (id, value) -> attribute(id.toInt(), value, null) },
             exclusive = entry.long("iExclusiveEffectId")?.let { game.exclusives[it shr EFFECT_SHIFT] },
-            attributes = (listOfNotNull(main) + entry.list("vViceAttrList").mapNotNull { attribute(it.int("iAttrId"), it.long("iValue"), null) }).distinctBy { it.name },
+            primary = main,
+            secondary = entry.list("vViceAttrList").mapNotNull { attribute(it.int("iAttrId"), it.long("iValue"), null) }.distinctBy { it.name }.filter { it.name != main?.name },
         )
     }
 
@@ -148,6 +190,9 @@ class Cards(private val game: Game, private val account: Account, private val ch
     }
 }
 
+/** A hero's own id, which the pieces and artifacts he wears hold too, 0 for those he does not. */
+private const val HERO_ID = "iHeroId"
+
 /** A unit's type where the client makes it a hero. */
 private const val HERO = 1
 /** The promotion unlock that adds a skill to a hero's row, by the number the game keeps its kind as. */
@@ -170,7 +215,7 @@ private fun Client.hero(id: Long): GameHero? {
     }
 
     return GameHero(
-        name = text("Unit_mName_$id") ?: return null,
+        name = unitName(id) ?: return null,
         rarity = row.int("m_Quality") ?: return null,
         row = listOfNotNull(basic) + unlocked.sortedBy { it.at },
         factions = row.numbers("m_OnShowFactionMember").mapNotNull { text("HeroFaction_mFactionName_$it") },
@@ -196,10 +241,12 @@ private fun JsonElement.numbers(name: String): List<Long> = list(name).mapNotNul
 /** The ids a field keyed by them was read as. */
 private fun JsonElement.ids(name: String): List<Long> = (field(name) as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.longOrNull }.orEmpty()
 
+private fun JsonElement.list(name: String): List<JsonElement> = field(name)?.sequence().orEmpty()
+
 /** A Lua sequence as the file holds it: an array, or an object keyed from 1. */
-private fun JsonElement.list(name: String): List<JsonElement> = when (val held = field(name)) {
-    is JsonArray -> held
-    is JsonObject -> held.entries.sortedBy { it.key.toIntOrNull() }.map { it.value }
+private fun JsonElement.sequence(): List<JsonElement> = when (this) {
+    is JsonArray -> this
+    is JsonObject -> entries.sortedBy { it.key.toIntOrNull() }.map { it.value }
     else -> emptyList()
 }
 

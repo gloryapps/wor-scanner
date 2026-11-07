@@ -21,6 +21,7 @@ import com.gloryapps.worscanner.scanner.account.Arrival
 import com.gloryapps.worscanner.scanner.account.Enhancement
 import com.gloryapps.worscanner.scanner.azhor.Send
 import com.gloryapps.worscanner.ui.Accented
+import com.gloryapps.worscanner.ui.Built
 import com.gloryapps.worscanner.ui.Card
 import com.gloryapps.worscanner.ui.Colors
 import com.gloryapps.worscanner.ui.Edged
@@ -45,6 +46,7 @@ import com.gloryapps.worscanner.windows.resources.artifacts_all
 import com.gloryapps.worscanner.windows.resources.artifacts_worth_wearing
 import com.gloryapps.worscanner.windows.resources.artifacts_worth_wearing_said
 import com.gloryapps.worscanner.windows.resources.artifacts_to_scan
+import com.gloryapps.worscanner.windows.resources.debug_title
 import com.gloryapps.worscanner.windows.resources.arrival
 import com.gloryapps.worscanner.windows.resources.arrival_add
 import com.gloryapps.worscanner.windows.resources.arrival_add_said
@@ -64,8 +66,9 @@ import org.koin.compose.viewmodel.koinViewModel
 import java.awt.Desktop
 import com.gloryapps.worscanner.ui.resources.Res as Shared
 
+/** `onDebug` opens a dev build's Debug window. */
 @Composable
-internal fun HomeScreen(onQuit: () -> Unit, modifier: Modifier = Modifier, viewModel: HomeViewModel = koinViewModel()) {
+internal fun HomeScreen(onQuit: () -> Unit, onDebug: () -> Unit, modifier: Modifier = Modifier, viewModel: HomeViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(viewModel) {
@@ -77,11 +80,11 @@ internal fun HomeScreen(onQuit: () -> Unit, modifier: Modifier = Modifier, viewM
         }
     }
 
-    HomeScreen(state, viewModel::on, modifier)
+    HomeScreen(state, viewModel::on, onDebug, modifier)
 }
 
 @Composable
-private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier: Modifier = Modifier) {
+private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, onDebug: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().background(Colors.screen).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(said(state.game), style = Lettering.body, color = if (state.game is Game.Open) Colors.text else Colors.warning)
         Choice(stringResource(Res.string.gear_to_scan)) {
@@ -110,6 +113,7 @@ private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier:
         if (state.elevate) Edged(stringResource(Res.string.restart_as_administrator)) { onEvent(HomeEvent.RestartAsAdministrator) }
         Sending(state.account, state.linked, state.send, onEvent)
         if (state.kept != null) Link(stringResource(Res.string.open_folder)) { onEvent(HomeEvent.OpenKept) }
+        if (Built.DEV) Link(stringResource(Res.string.debug_title), onClick = onDebug)
     }
 }
 

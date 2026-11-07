@@ -18,6 +18,9 @@ interface Client {
     fun text(key: String): String?
 }
 
+/** A unit's name, as the install prints it in English. */
+fun Client.unitName(id: Long): String? = text("Unit_mName_$id")
+
 /** The client as the player's PC holds it, read with the fields its running game gives its classes. */
 class InstalledClient private constructor(private val units: GameTable, private val texts: GameTexts) : Client {
     override fun unit(id: Long): JsonObject? = units.row(id)
