@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -157,8 +159,8 @@ private fun Heroes(title: String, said: String?, heroes: List<String>, label: (S
 }
 
 /**
- * Where each hero stands on the stage's map: a hero picked, a tap on a cell puts him there and picks the next still off it, and his facing
- * beneath. Cells are drawn as the simulator numbers them, the boss at the top; ground cells are the melee ones.
+ * Where each hero stands on the stage's map: a hero picked, a tap on a cell puts him there and picks the next still off it; beneath, every
+ * hero on the map with his facing. Cells are drawn as the simulator numbers them, the boss at the top; ground cells are the melee ones.
  */
 @Composable
 private fun Placing(grid: Grid, heroes: List<String>, cells: Map<String, Placed>, placing: String?, onEvent: (DebugEvent) -> Unit) {
@@ -169,15 +171,17 @@ private fun Placing(grid: Grid, heroes: List<String>, cells: Map<String, Placed>
             heroes.forEach { hero -> Pill(if (hero in cells) "$hero ${arrow(cells.getValue(hero).face)}" else hero, chosen = hero == placing) { onEvent(DebugEvent.Place(hero)) } }
         }
         Field(grid, cells, placing) { onEvent(DebugEvent.PutOn(it)) }
-        val placed = placing?.let(cells::get)
-        if (placing != null && placed != null) {
-            Text(stringResource(Res.string.facing, placing), style = Lettering.caption, color = Colors.muted)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FACES.forEach { face -> Pill(arrow(face), chosen = placed.face == face) { onEvent(DebugEvent.Face(placing, face)) } }
+        heroes.filter { it in cells }.forEach { hero ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(Res.string.facing, hero), style = Lettering.caption, color = Colors.muted, modifier = Modifier.width(FACING_LABEL))
+                FACES.forEach { face -> Pill(arrow(face), chosen = cells.getValue(hero).face == face) { onEvent(DebugEvent.Face(hero, face)) } }
             }
         }
     }
 }
+
+/** Wide enough for a hero's name and "faces", so every hero's arrows line up. */
+private val FACING_LABEL = 140.dp
 
 /** The map's cells, each with the hero on it, three letters and his facing; the boss's cell marked. */
 @Composable
