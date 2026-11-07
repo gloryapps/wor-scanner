@@ -7,6 +7,8 @@ import com.gloryapps.worscanner.scanner.account.called
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.runs.Accounts
 import com.gloryapps.worscanner.scanner.runs.Reports
+import com.gloryapps.worscanner.scanner.simulator.Rules
+import com.gloryapps.worscanner.scanner.simulator.rulesAt
 import com.gloryapps.worscanner.windows.game.GameWatch
 import com.gloryapps.worscanner.windows.memory.GameMemory
 import com.gloryapps.worscanner.windows.memory.clientOrNone
@@ -37,14 +39,15 @@ internal class DebugViewModel(private val watch: GameWatch, private val accounts
             is DebugEvent.Deploy -> play { it.copy(deployOrder = it.deployOrder.toggled(event.hero)) }
             is DebugEvent.Healer -> play { it.copy(healers = it.healers.toggled(event.hero)) }
             is DebugEvent.Inspiration -> play { it.copy(inspiration = it.inspiration.toggled(event.hero)) }
-            is DebugEvent.Stance -> play { it.copy(stances = it.stances.said(event.hero, event.words)) }
-            is DebugEvent.Ultimate -> play { it.copy(ultimates = it.ultimates.said(event.hero, event.words)) }
+            is DebugEvent.Stance -> play { it.copy(stances = it.stances + (event.hero to event.stance)) }
+            is DebugEvent.Ultimate -> play { it.copy(ultimates = it.ultimates + (event.hero to event.way)) }
+            is DebugEvent.Tick -> play { it.copy(ticks = it.ticks + (event.hero to it.ticks[event.hero].orEmpty().toggled(event.tick))) }
             DebugEvent.Save -> save()
             DebugEvent.OpenKept -> local.value.kept?.let { file -> viewModelScope.launch { _effects.send(DebugEffect.Open(file.parentFile)) } }
         }
     }
 
-    /* A read anew keeps what was said of the heroes still in the squads. */
+    /* A read anew keeps what was said of the heroes still in the squads, and the simulator is asked again: it may have started since. */
     private fun readSquads() {
         if (local.value.reading) return
         local.update { it.copy(reading = true) }
@@ -54,13 +57,15 @@ internal class DebugViewModel(private val watch: GameWatch, private val accounts
             read?.onFailure { reports.failed("reading the squads", it) }
             val said = if (read == null) getString(Res.string.game_closed) else read.exceptionOrNull()?.said(Res.string.squads_failed)
             val kept = read?.getOrNull()
+            val rules = rulesAt(SIMULATOR)
             local.update { state ->
-                val heroes = kept?.squads?.flatMap { screen -> screen.squads.flatten().map { it.called } }?.toSet()
+                val heroes = kept?.squads?.flatMap { screen -> screen.squads.flatten().map { it.called } }?.distinct()
                 state.copy(
                     reading = false,
                     squads = kept?.squads ?: state.squads,
                     kept = kept?.file ?: state.kept,
-                    play = heroes?.let(state.play::of) ?: state.play,
+                    rules = rules,
+                    play = heroes?.let { state.play.of(it.toSet()).timed(it, rules) } ?: state.play,
                     saved = kept == null && state.saved,
                     said = said,
                 )
@@ -80,12 +85,14 @@ internal class DebugViewModel(private val watch: GameWatch, private val accounts
                 .onFailure { failure -> reports.failed("keeping the squads", failure); local.update { it.copy(said = failure.message ?: failure.toString()) } }
         }
     }
+
+    private companion object {
+        /** The Armory's simulator, where its `armory.ps1` starts it on the PC. */
+        const val SIMULATOR = "http://127.0.0.1:5180"
+    }
 }
 
 private fun List<String>.toggled(hero: String): List<String> = if (hero in this) this - hero else this + hero
-
-/* Words emptied unsay them: the hero plays as the game would. */
-private fun Map<String, String>.said(hero: String, words: String): Map<String, String> = if (words.isBlank()) this - hero else this + (hero to words)
 
 private fun Play.of(heroes: Set<String>) = Play(
     deployOrder = deployOrder.filter { it in heroes },
@@ -93,4 +100,9 @@ private fun Play.of(heroes: Set<String>) = Play(
     inspiration = inspiration.filter { it in heroes },
     stances = stances.filterKeys { it in heroes },
     ultimates = ultimates.filterKeys { it in heroes },
+    ticks = ticks.filterKeys { it in heroes },
 )
+
+/* A hero whose Ultimate the simulator times stays at its first way until the player picks another, as the simulator plays him; the file says so. */
+private fun Play.timed(heroes: List<String>, rules: Rules?) =
+    copy(ultimates = heroes.mapNotNull { hero -> (ultimates[hero] ?: rules?.ultimates?.get(hero)?.firstOrNull())?.let { hero to it } }.toMap())

@@ -53,6 +53,7 @@ on a store.
 | `account/` | the account as the running game holds it: the table each list lives in, found by a field only that table has; and its lists as the cards each kind's scan writes | lua, client, senses, game, kinds |
 | `runs/` | a scan run and kept on disk, as the lab reads it | everything above |
 | `azhor/` | the lab's client | nothing |
+| `simulator/` | the Armory's simulator on the PC, which a dev build asks how a comp may be played | nothing |
 
 - Arrows point down only. `scan/` knows no kind.
 - Two places name every kind: `Kind.scan()` in `scanner`, and `Kind.named` in the `ui` module, for

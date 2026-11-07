@@ -1,28 +1,19 @@
 package com.gloryapps.worscanner.windows.debug
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gloryapps.worscanner.scanner.account.Squads
@@ -40,11 +31,10 @@ import com.gloryapps.worscanner.windows.resources.deploy_order_said
 import com.gloryapps.worscanner.windows.resources.healers
 import com.gloryapps.worscanner.windows.resources.inspiration
 import com.gloryapps.worscanner.windows.resources.open_folder
-import com.gloryapps.worscanner.windows.resources.play_words
-import com.gloryapps.worscanner.windows.resources.play_words_said
 import com.gloryapps.worscanner.windows.resources.read_squads
 import com.gloryapps.worscanner.windows.resources.reading_squads
 import com.gloryapps.worscanner.windows.resources.save_squads
+import com.gloryapps.worscanner.windows.resources.simulator_missing
 import com.gloryapps.worscanner.windows.resources.squad_line
 import com.gloryapps.worscanner.windows.resources.squad_lord
 import com.gloryapps.worscanner.windows.resources.squads_kept
@@ -52,8 +42,9 @@ import com.gloryapps.worscanner.windows.resources.squads_none
 import com.gloryapps.worscanner.windows.resources.squads_saved
 import com.gloryapps.worscanner.windows.resources.squads_section
 import com.gloryapps.worscanner.windows.resources.squads_stage
-import com.gloryapps.worscanner.windows.resources.stance_hint
-import com.gloryapps.worscanner.windows.resources.ultimate_hint
+import com.gloryapps.worscanner.windows.resources.stances
+import com.gloryapps.worscanner.windows.resources.ticks
+import com.gloryapps.worscanner.windows.resources.ultimates
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import java.awt.Desktop
@@ -82,8 +73,9 @@ private fun DebugScreen(state: DebugState, onEvent: (DebugEvent) -> Unit) {
 }
 
 /**
- * The squads of the squad screen open in the game, read when asked, and what no screen holds asked of the player: whom he deploys in
- * which order, his supports, each hero's stance and Ultimate. Saved, the file holds it all, every piece in full, for a comp to be made of.
+ * The squads of the squad screen open in the game, read when asked, and what no screen holds asked of the player, each with only the
+ * heroes and the ways the Armory's simulator offers: the supports, the deploy order where inspiration makes it count, each stance hero's
+ * stance, each other's Ultimate timing and the ticks. Saved, the file holds it all, every piece in full, for a comp to be made of.
  */
 @Composable
 private fun Squads(state: DebugState, onEvent: (DebugEvent) -> Unit) {
@@ -93,25 +85,24 @@ private fun Squads(state: DebugState, onEvent: (DebugEvent) -> Unit) {
         state.said?.let { Text(it, style = Lettering.data, color = Colors.muted) }
         if (state.squads?.isEmpty() == true) Text(stringResource(Res.string.squads_none), style = Lettering.caption, color = Colors.muted)
         state.squads.orEmpty().forEach { screen -> Read(screen) }
+        if (state.squads?.isNotEmpty() == true && state.rules == null) Text(stringResource(Res.string.simulator_missing), style = Lettering.caption, color = Colors.warning)
     }
     val heroes = state.squads.orEmpty().flatMap { screen -> screen.squads.flatten().map { it.called } }.distinct()
     if (heroes.isEmpty()) return
+    val rules = state.rules
+    val play = state.play
 
-    Picks(stringResource(Res.string.deploy_order), stringResource(Res.string.deploy_order_said), heroes, label = { hero ->
-        state.play.deployOrder.indexOf(hero).takeIf { it >= 0 }?.let { "${it + 1} · $hero" } ?: hero
-    }, chosen = { it in state.play.deployOrder }) { onEvent(DebugEvent.Deploy(it)) }
-    Picks(stringResource(Res.string.healers), null, heroes, chosen = { it in state.play.healers }) { onEvent(DebugEvent.Healer(it)) }
-    Picks(stringResource(Res.string.inspiration), null, heroes, chosen = { it in state.play.inspiration }) { onEvent(DebugEvent.Inspiration(it)) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Section(stringResource(Res.string.play_words))
-        Text(stringResource(Res.string.play_words_said), style = Lettering.caption, color = Colors.muted)
-        heroes.forEach { hero ->
-            Text(hero, style = Lettering.stepName, color = Colors.text)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Words(state.play.stances[hero].orEmpty(), stringResource(Res.string.stance_hint), Modifier.weight(1f)) { onEvent(DebugEvent.Stance(hero, it)) }
-                Words(state.play.ultimates[hero].orEmpty(), stringResource(Res.string.ultimate_hint), Modifier.weight(1f)) { onEvent(DebugEvent.Ultimate(hero, it)) }
-            }
+    if (rules != null) {
+        Heroes(stringResource(Res.string.healers), null, heroes.filter { it in rules.healers }, chosen = { it in play.healers }) { onEvent(DebugEvent.Healer(it)) }
+        Heroes(stringResource(Res.string.inspiration), null, heroes.filter { it in rules.inspirers }, chosen = { it in play.inspiration }) { onEvent(DebugEvent.Inspiration(it)) }
+        if (play.inspiration.isNotEmpty()) {
+            Heroes(stringResource(Res.string.deploy_order), stringResource(Res.string.deploy_order_said), heroes, label = { hero ->
+                play.deployOrder.indexOf(hero).takeIf { it >= 0 }?.let { "${it + 1} · $hero" } ?: hero
+            }, chosen = { it in play.deployOrder }) { onEvent(DebugEvent.Deploy(it)) }
         }
+        Ways(stringResource(Res.string.stances), heroes, rules.stances, chosen = { hero, stance -> play.stances[hero] == stance }) { hero, stance -> onEvent(DebugEvent.Stance(hero, stance)) }
+        Ways(stringResource(Res.string.ultimates), heroes, rules.ultimates, chosen = { hero, way -> play.ultimates[hero] == way }) { hero, way -> onEvent(DebugEvent.Ultimate(hero, way)) }
+        Ways(stringResource(Res.string.ticks), heroes, rules.ticks, chosen = { hero, tick -> tick in play.ticks[hero].orEmpty() }) { hero, tick -> onEvent(DebugEvent.Tick(hero, tick)) }
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Accented(stringResource(Res.string.save_squads), Modifier.fillMaxWidth(), enabled = !state.saved) { onEvent(DebugEvent.Save) }
@@ -132,9 +123,10 @@ private fun Read(screen: Squads) {
     }
 }
 
-/** Every hero as a pill under `title`, chosen or not, a tap telling which. */
+/** `heroes` as pills under `title`, chosen or not, a tap telling which; nothing where none is offered. */
 @Composable
-private fun Picks(title: String, said: String?, heroes: List<String>, label: (String) -> String = { it }, chosen: (String) -> Boolean, onTap: (String) -> Unit) {
+private fun Heroes(title: String, said: String?, heroes: List<String>, label: (String) -> String = { it }, chosen: (String) -> Boolean, onTap: (String) -> Unit) {
+    if (heroes.isEmpty()) return
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Section(title)
         said?.let { Text(it, style = Lettering.caption, color = Colors.muted) }
@@ -144,24 +136,18 @@ private fun Picks(title: String, said: String?, heroes: List<String>, label: (St
     }
 }
 
-/** A line of the player's own words, `hint` while it is empty. */
+/** Under `title`, each of `heroes` the simulator offers ways for, with his ways as pills; nothing where it offers none. */
 @Composable
-private fun Words(words: String, hint: String, modifier: Modifier = Modifier, onWords: (String) -> Unit) {
-    BasicTextField(
-        words,
-        onWords,
-        modifier,
-        textStyle = Lettering.body.copy(color = Colors.text),
-        singleLine = true,
-        cursorBrush = SolidColor(Colors.accent),
-        decorationBox = { field ->
-            Box(
-                Modifier.height(36.dp).clip(RoundedCornerShape(8.dp)).background(Colors.sunken).border(1.dp, Colors.edge, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                if (words.isEmpty()) Text(hint, style = Lettering.body, color = Colors.faint)
-                field()
+private fun Ways(title: String, heroes: List<String>, ways: Map<String, List<String>>, chosen: (String, String) -> Boolean, onTap: (String, String) -> Unit) {
+    val offered = heroes.filter { !ways[it].isNullOrEmpty() }
+    if (offered.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Section(title)
+        offered.forEach { hero ->
+            Text(hero, style = Lettering.stepName, color = Colors.text)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ways.getValue(hero).forEach { way -> Pill(way, chosen = chosen(hero, way)) { onTap(hero, way) } }
             }
-        },
-    )
+        }
+    }
 }

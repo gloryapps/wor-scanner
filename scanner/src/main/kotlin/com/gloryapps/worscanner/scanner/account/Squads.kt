@@ -9,15 +9,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Squads(val stageId: Long, val squads: List<List<SquadHero>>, val play: Play = Play())
 
-/** What the player says of how he plays a comp, which no screen holds: his heroes by name, as the squads name them. */
+/** What the player says of how he plays a comp, which no screen holds: his heroes by name, as the squads name them; the deploy order only where it matters, for inspiration. */
 @Serializable
 data class Play(
     val deployOrder: List<String> = emptyList(),
     val healers: List<String> = emptyList(),
     val inspiration: List<String> = emptyList(),
-    /** A hero's stance, and when he casts his Ultimate, in the player's words; a hero left out plays as the game would. */
+    /** A stance hero's stance, another's Ultimate timing and the ticks ticked for him, as the Armory's simulator names them. */
     val stances: Map<String, String> = emptyMap(),
     val ultimates: Map<String, String> = emptyMap(),
+    val ticks: Map<String, List<String>> = emptyMap(),
 )
 
 /** A hero in a squad: `heroId` is the account's own (a read's `iHeroId`), `baseId` and `name` the client's, null where the account or the client lacks them; `pieces` and `artifact` are what he wears. */
