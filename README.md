@@ -50,9 +50,11 @@ A debug build has **Debug** in the home screen's header: it opens the first run,
 newest scan as if it had just ended or with the permission ask open, each as it runs.
 
 A dev build of the Windows app has **Debug** at the foot of its window, which opens a window of its own.
-In it, **Read the squads** reads the
-squads of the squad screen open in the game, each hero named, the Lords marked, and with the pieces and
-artifact he wears, and keeps them under `squads` in its folder. The Guild Boss's squads are held only while that screen is open.
+In it, **Read the squads** reads the squads of the squad screen open in the game, the Lords marked and
+each hero with the pieces and artifact he wears. It then asks what no screen holds: the deploy order,
+the healers and inspiration, and each hero's stance and Ultimate. **Save the comp** keeps it all, every
+piece with its primary and secondary attributes, under `squads` in the app's folder. The Guild Boss's
+squads are held only while that screen is open.
 
 ## Contributing
 

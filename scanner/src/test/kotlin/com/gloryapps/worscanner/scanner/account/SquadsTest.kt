@@ -1,7 +1,10 @@
 package com.gloryapps.worscanner.scanner.account
 
+import com.gloryapps.worscanner.scanner.game.Attribute
+import com.gloryapps.worscanner.scanner.game.ReadAttribute
 import com.gloryapps.worscanner.scanner.kinds.gear.Slot
 import com.gloryapps.worscanner.scanner.lua.LaidOutHeap
+import com.gloryapps.worscanner.scanner.text.ValueUnit
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,8 +19,14 @@ class SquadsTest {
 
     private fun hero(heroId: Long, baseId: Int) = memory.table("iHeroId" to heroId, "iBaseId" to baseId)
 
-    private fun piece(uid: Long, itemId: Int, wearer: Long) =
-        memory.table("iItemUid" to uid, "iItemId" to itemId, "iIntensifyLvl" to 0, "vMasterAttrList" to memory.table(array = listOf(memory.table("iAttrId" to 1, "iValue" to 2350))), "iHeroId" to wearer)
+    private fun piece(uid: Long, itemId: Int, wearer: Long) = memory.table(
+        "iItemUid" to uid,
+        "iItemId" to itemId,
+        "iIntensifyLvl" to 0,
+        "vMasterAttrList" to memory.table(array = listOf(memory.table("iAttrId" to 1, "iValue" to 2350))),
+        "vViceAttrList" to memory.table(array = listOf(memory.table("iAttrId" to 13, "iValue" to 2900), memory.table("iAttrId" to 24, "iValue" to 1350))),
+        "iHeroId" to wearer,
+    )
 
     @Test
     fun `the squad screen's squads are read in their slots' order, each hero named by his base id, the Lord marked`() = runTest {
@@ -55,6 +64,18 @@ class SquadsTest {
 
         assertEquals(listOf("juggernaut" to Slot.WEAPON, "juggernaut" to Slot.BREASTPLATE), laya.pieces.map { it.set to it.slot })
         assertEquals("Medal of Fortitude" to 3, laya.artifact?.let { it.name to it.level })
+    }
+
+    @Test
+    fun `a squad hero's piece names its main attribute apart from the others`() = runTest {
+        memory.table("m_CharactorDatas" to memory.table(1 to hero(222400000L, 2224)))
+        memory.table("suitId2EquipIdExt" to memory.table(), "equips" to memory.table(7001L to piece(7001, 100101, wearer = 222400000L)))
+        memory.table("m_BattleStageId" to 5001007, "m_TeamDataList" to memory.table(1 to memory.table(1 to slot(222400000L, squad = 1))))
+
+        val weapon = squads().single().squads.single().single().pieces.single()
+
+        assertEquals(ReadAttribute(Attribute.ATK, 2350.0, ValueUnit.FLAT, null), weapon.primary)
+        assertEquals(listOf(ReadAttribute(Attribute.ATK_BONUS, 29.0, ValueUnit.PERCENTAGE, null), ReadAttribute(Attribute.CRIT_RATE, 13.5, ValueUnit.PERCENTAGE, null)), weapon.secondary)
     }
 
     @Test

@@ -52,11 +52,15 @@ class Accounts(root: File, private val game: Game = Game.shipped) {
         val read = Cards(game, readAccount(memory, startedAt = stamp), ScanChoices(), client).squads
 
         return withContext(Dispatchers.IO) {
-            val file = File(squads, "$stamp.json").apply { parentFile.mkdirs(); writeText(Json.encodeToString(ListSerializer(Squads.serializer()), read)) }
+            val file = File(squads, "$stamp.json").apply { parentFile.mkdirs() }
+            keep(file, read)
             newestOnly(squads)
             KeptSquads(file, read)
         }
     }
+
+    /** Keeps `read` in `file` again, as the player completed it: every field written, to be read by eye. */
+    suspend fun keep(file: File, read: List<Squads>) = withContext(Dispatchers.IO) { file.writeText(SQUADS_FILE.encodeToString(ListSerializer(Squads.serializer()), read)) }
 
     /* A scan in place of the lab's list of its kind would empty it where it holds no cards, so a kind with none sends none. */
     private fun keep(account: Account, cards: Cards, arrival: Arrival): KeptAccount {
@@ -106,5 +110,7 @@ class Accounts(root: File, private val game: Game = Game.shipped) {
 
     companion object {
         const val KEPT = 20
+
+        private val SQUADS_FILE = Json { encodeDefaults = true; prettyPrint = true }
     }
 }

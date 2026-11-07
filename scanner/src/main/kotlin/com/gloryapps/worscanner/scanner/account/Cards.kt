@@ -69,7 +69,7 @@ class Cards(private val game: Game, private val account: Account, private val ch
                             baseId = base,
                             name = base?.let { client?.unitName(it) },
                             lord = (slot.field(SLOT_LORD) as? JsonPrimitive)?.let { it.longOrNull != null || it.booleanOrNull == true } == true,
-                            pieces = account.gear.filter { it.long(HERO_ID) == id }.mapNotNull(::piece).sortedBy { it.slot?.ordinal },
+                            pieces = account.gear.filter { it.long(HERO_ID) == id }.mapNotNull(::worn).sortedBy { it.slot?.ordinal },
                             artifact = account.artifacts.firstOrNull { it.long(HERO_ID) == id }?.let(::artifact),
                         )
                     }
@@ -81,12 +81,26 @@ class Cards(private val game: Game, private val account: Account, private val ch
     /** The weapons and breastplates side's first, each side's in the order the game lists them. */
     val rules: List<ScannedRule> by lazy { account.rules.mapNotNull(::rule).sortedBy { it.side } }
 
-    private fun piece(entry: JsonElement): ScannedGear? {
+    private fun piece(entry: JsonElement): ScannedGear? = worn(entry)?.let {
+        ScannedGear(
+            set = it.set,
+            slot = it.slot,
+            ancient = it.ancient,
+            variant = it.variant,
+            variantEffect = it.variantEffect,
+            variantAttributes = it.variantAttributes,
+            exclusive = it.exclusive,
+            attributes = listOfNotNull(it.primary) + it.secondary,
+        )
+    }
+
+    /* A card lists the main attribute first, as the panel prints it; a squad's file names it apart. */
+    private fun worn(entry: JsonElement): SquadPiece? {
         val known = entry.long("iItemId")?.let(game.gear::get) ?: return null
         val variant = entry.long("iVaryEffectId")?.let { game.variants[it shr EFFECT_SHIFT]?.get(it and EFFECT_INDEX) }
         val main = entry.list("vMasterAttrList").firstOrNull()?.let { attribute(it.int("iAttrId"), it.long("iValue"), entry.long("iExtraMasterAttrValue")?.takeIf { bonus -> bonus != 0L }) }
 
-        return ScannedGear(
+        return SquadPiece(
             set = known.set,
             slot = Slot.entries.firstOrNull { it.word == known.slot },
             ancient = entry.int("iStarLvl")?.let { it in ANCIENT } == true,
@@ -94,7 +108,8 @@ class Cards(private val game: Game, private val account: Account, private val ch
             variantEffect = variant?.effect,
             variantAttributes = variant?.attributes.orEmpty().mapNotNull { (id, value) -> attribute(id.toInt(), value, null) },
             exclusive = entry.long("iExclusiveEffectId")?.let { game.exclusives[it shr EFFECT_SHIFT] },
-            attributes = (listOfNotNull(main) + entry.list("vViceAttrList").mapNotNull { attribute(it.int("iAttrId"), it.long("iValue"), null) }).distinctBy { it.name },
+            primary = main,
+            secondary = entry.list("vViceAttrList").mapNotNull { attribute(it.int("iAttrId"), it.long("iValue"), null) }.distinctBy { it.name }.filter { it.name != main?.name },
         )
     }
 
