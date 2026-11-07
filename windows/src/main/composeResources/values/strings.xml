@@ -45,6 +45,7 @@
     <string name="off_map">on the bench</string>
     <string name="map_title">Where each stands</string>
     <string name="map_said">Tap a hero, then his cell; tap his cell again to take him off. A Lord left off the map leads from the bench.</string>
+    <string name="map_missing">The Armory’s simulator holds no map for stage %1$s, so where each stands is not asked.</string>
     <string name="facing">Faces</string>
     <string name="boss">Boss</string>
     <string name="stance">Stance</string>

@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gloryapps.worscanner.scanner.account.Placed
 import com.gloryapps.worscanner.scanner.account.Play
-import com.gloryapps.worscanner.scanner.account.called
 import com.gloryapps.worscanner.scanner.resultOf
 import com.gloryapps.worscanner.scanner.runs.Accounts
 import com.gloryapps.worscanner.scanner.runs.Reports
@@ -17,6 +16,7 @@ import com.gloryapps.worscanner.windows.memory.said
 import com.gloryapps.worscanner.windows.resources.Res
 import com.gloryapps.worscanner.windows.resources.game_closed
 import com.gloryapps.worscanner.windows.resources.squads_failed
+import com.gloryapps.worscanner.windows.resources.squads_none
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,7 +51,7 @@ internal class DebugViewModel(private val watch: GameWatch, private val accounts
         }
     }
 
-    /* A read anew keeps what was said of the heroes still in the squads, and the simulator is asked again: it may have started since. */
+    /* A read anew keeps what was said of the heroes still in the squads, and one finding no squad screen keeps all of it; the simulator is asked again: it may have started since. */
     private fun readSquads() {
         if (local.value.reading) return
         local.update { it.copy(reading = true) }
@@ -59,11 +59,15 @@ internal class DebugViewModel(private val watch: GameWatch, private val accounts
             val game = watch.game.value
             val read = if (game == null) null else resultOf { GameMemory.of(game.handle).getOrThrow().use { accounts.squads(it, it.clientOrNone(reports)) } }
             read?.onFailure { reports.failed("reading the squads", it) }
-            val said = if (read == null) getString(Res.string.game_closed) else read.exceptionOrNull()?.said(Res.string.squads_failed)
             val kept = read?.getOrNull()
+            val said = when {
+                read == null -> getString(Res.string.game_closed)
+                kept == null -> read.exceptionOrNull()?.said(Res.string.squads_failed) ?: getString(Res.string.squads_none)
+                else -> null
+            }
             val rules = rulesAt(SIMULATOR)
             local.update { state ->
-                val heroes = kept?.squads?.flatMap { screen -> screen.squads.flatten().map { it.called } }?.distinct()
+                val heroes = kept?.squads?.heroes
                 state.copy(
                     reading = false,
                     squads = kept?.squads ?: state.squads,
@@ -85,7 +89,7 @@ internal class DebugViewModel(private val watch: GameWatch, private val accounts
         val there = cells.entries.firstOrNull { it.value.cell == cell }?.key
         val hero = state.placing ?: return@update state.copy(placing = there)
         val moved = if (there == hero) cells - hero else cells.filterKeys { it != there } + (hero to Placed(cell, cells[hero]?.face ?: Placed(cell).face))
-        val heroes = state.squads.orEmpty().flatMap { screen -> screen.squads.flatten().map { it.called } }
+        val heroes = state.squads.orEmpty().heroes
         state.copy(
             play = state.play.copy(cells = moved),
             placing = if (there == hero) hero else heroes.firstOrNull { it !in moved } ?: hero,

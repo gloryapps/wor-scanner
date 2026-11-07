@@ -53,6 +53,7 @@ import com.gloryapps.worscanner.windows.resources.facing
 import com.gloryapps.worscanner.windows.resources.healer
 import com.gloryapps.worscanner.windows.resources.inspiration
 import com.gloryapps.worscanner.windows.resources.lord
+import com.gloryapps.worscanner.windows.resources.map_missing
 import com.gloryapps.worscanner.windows.resources.map_said
 import com.gloryapps.worscanner.windows.resources.map_title
 import com.gloryapps.worscanner.windows.resources.no_cell
@@ -66,7 +67,6 @@ import com.gloryapps.worscanner.windows.resources.simulator_missing
 import com.gloryapps.worscanner.windows.resources.squad_line
 import com.gloryapps.worscanner.windows.resources.squad_lord
 import com.gloryapps.worscanner.windows.resources.squads_kept
-import com.gloryapps.worscanner.windows.resources.squads_none
 import com.gloryapps.worscanner.windows.resources.squads_saved
 import com.gloryapps.worscanner.windows.resources.squads_stage
 import com.gloryapps.worscanner.windows.resources.stance
@@ -103,15 +103,20 @@ private fun DebugScreen(state: DebugState, onEvent: (DebugEvent) -> Unit) {
         Top(state, onEvent)
         Rule()
         val squads = state.squads.orEmpty()
-        val heroes = squads.flatMap { screen -> screen.squads.flatten().map { it.called } }.distinct()
+        val heroes = squads.heroes
         if (heroes.isEmpty()) return
         val lords = squads.flatMap { screen -> screen.squads.flatten().filter { it.lord }.map { it.called } }.toSet()
         val rules = state.rules
         Row(Modifier.fillMaxSize()) {
             Column(Modifier.width(LEFT).fillMaxHeight().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 squads.forEach { screen -> Read(screen) }
-                rules?.let { squads.firstNotNullOfOrNull { screen -> it.gridOf(screen.stageId) } }?.let { grid ->
-                    Placing(grid, heroes, lords, state.play.cells, state.placing, onEvent)
+                if (rules != null) {
+                    val grid = squads.firstNotNullOfOrNull { rules.gridOf(it.stageId) }
+                    if (grid != null) {
+                        Placing(grid, heroes, lords, state.play.cells, state.placing, onEvent)
+                    } else {
+                        Text(stringResource(Res.string.map_missing, squads.joinToString { it.stageId.toString() }), style = Lettering.caption, color = Colors.warning)
+                    }
                 }
                 if (rules != null && state.play.inspiration.isNotEmpty()) Deploy(heroes, state.play, onEvent)
             }
@@ -129,7 +134,7 @@ private fun Top(state: DebugState, onEvent: (DebugEvent) -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Edged(stringResource(if (state.reading) Res.string.reading_squads else Res.string.read_squads)) { onEvent(DebugEvent.ReadSquads) }
             /* Saving again only writes the same file again; only a read under way holds it, its squads not yet the ones shown. */
-            if (state.squads?.isNotEmpty() == true) {
+            if (state.squads != null) {
                 Accented(stringResource(Res.string.save_squads), Modifier.width(SAVE), enabled = !state.reading) { onEvent(DebugEvent.Save) }
             }
             state.kept?.let { kept ->
@@ -138,8 +143,7 @@ private fun Top(state: DebugState, onEvent: (DebugEvent) -> Unit) {
             }
         }
         state.said?.let { Text(it, style = Lettering.data, color = Colors.muted) }
-        if (state.squads?.isEmpty() == true) Text(stringResource(Res.string.squads_none), style = Lettering.caption, color = Colors.muted)
-        if (state.squads?.isNotEmpty() == true && state.rules == null) Text(stringResource(Res.string.simulator_missing), style = Lettering.caption, color = Colors.warning)
+        if (state.squads != null && state.rules == null) Text(stringResource(Res.string.simulator_missing), style = Lettering.caption, color = Colors.warning)
     }
 }
 

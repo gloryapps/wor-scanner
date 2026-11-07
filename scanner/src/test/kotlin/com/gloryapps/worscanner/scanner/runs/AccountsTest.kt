@@ -16,6 +16,9 @@ import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class AccountsTest {
     private val root: File = createTempDirectory().toFile()
@@ -43,11 +46,19 @@ class AccountsTest {
             table("m_BattleStageId" to 5001007, "m_TeamDataList" to table(1 to table(1 to table("m_iHeroID" to 222400000L, "m_IsLord" to 101))))
         }
 
-        val kept = Accounts(root).squads(memory, CLIENT)
+        val kept = assertNotNull(Accounts(root).squads(memory, CLIENT))
 
         assertEquals(File(root, "squads"), kept.file.parentFile)
         assertEquals(kept.squads, Json.decodeFromString(ListSerializer(Squads.serializer()), kept.file.readText()))
         assertEquals(listOf("Pelagios" to "Spear of Leonidas"), kept.squads.single().squads.single().map { it.name to it.artifact?.name })
+    }
+
+    @Test
+    fun `with no squad screen open, a read of the squads keeps no file`() = runTest {
+        val memory = LaidOutHeap().apply { table("m_CharactorDatas" to table(1 to table("iHeroId" to 222400000L, "iBaseId" to 2224))) }
+
+        assertNull(Accounts(root).squads(memory, CLIENT))
+        assertFalse(File(root, "squads").exists())
     }
 
     @Test
