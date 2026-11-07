@@ -62,7 +62,11 @@ import com.gloryapps.worscanner.windows.resources.scanning_account
 import com.gloryapps.worscanner.windows.resources.debug_title
 import com.gloryapps.worscanner.windows.resources.read_squads
 import com.gloryapps.worscanner.windows.resources.reading_squads
-import com.gloryapps.worscanner.windows.resources.squad_line
+import com.gloryapps.worscanner.windows.resources.squad_artifact
+import com.gloryapps.worscanner.windows.resources.squad_hero_no_artifact
+import com.gloryapps.worscanner.windows.resources.squad_hero_no_gear
+import com.gloryapps.worscanner.windows.resources.squad_hero_worn
+import com.gloryapps.worscanner.windows.resources.squad_title
 import com.gloryapps.worscanner.windows.resources.squad_lord
 import com.gloryapps.worscanner.windows.resources.squads_none
 import com.gloryapps.worscanner.windows.resources.squads_stage
@@ -123,7 +127,7 @@ private fun HomeScreen(state: HomeState, onEvent: (HomeEvent) -> Unit, modifier:
     }
 }
 
-/** A dev build's: the squads of the squad screen open in the game, read when asked, each squad's heroes in their slots' order. */
+/** A dev build's: the squads of the squad screen open in the game, read when asked, each squad's heroes in their slots' order with the sets and artifact each wears. */
 @Composable
 private fun Debug(state: HomeState, onEvent: (HomeEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -134,10 +138,20 @@ private fun Debug(state: HomeState, onEvent: (HomeEvent) -> Unit) {
         state.squads.orEmpty().forEach { screen ->
             Text(stringResource(Res.string.squads_stage, screen.stageId), style = Lettering.stepName, color = Colors.text)
             screen.squads.forEachIndexed { at, squad ->
-                Text(stringResource(Res.string.squad_line, at + 1, squad.map { shown(it) }.joinToString(" · ")), style = Lettering.data, color = Colors.text)
+                Text(stringResource(Res.string.squad_title, at + 1), style = Lettering.data, color = Colors.text)
+                squad.forEach { Text(worn(it), style = Lettering.caption, color = Colors.muted) }
             }
         }
     }
+}
+
+/** A hero with how many pieces of each set he wears, and his artifact. */
+@Composable
+private fun worn(hero: SquadHero): String {
+    val sets = hero.pieces.groupingBy { it.set ?: "?" }.eachCount().entries.joinToString { (set, count) -> "$count $set" }
+    val artifact = hero.artifact?.let { stringResource(Res.string.squad_artifact, it.name ?: "?", it.level ?: 0) }
+
+    return stringResource(Res.string.squad_hero_worn, shown(hero), sets.ifEmpty { stringResource(Res.string.squad_hero_no_gear) }, artifact ?: stringResource(Res.string.squad_hero_no_artifact))
 }
 
 @Composable

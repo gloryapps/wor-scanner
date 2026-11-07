@@ -26,6 +26,8 @@ data class Account(
     val collected: List<Long>,
     /** The rules of the game's plan, both sides'. */
     val rules: List<JsonElement>,
+    /** Each squad screen open in the game, its stage and its squads: the Guild Boss's are held nowhere else, and only while it is open. */
+    val squads: List<JsonElement> = emptyList(),
     /** How many entries every table holding each list had: the largest is the one read, the others copies the game let go. */
     val found: Map<Holding, List<Int>>,
     val seconds: Double,
@@ -51,7 +53,7 @@ enum class Holding(val anchor: String, val list: String, val shared: Set<String>
 suspend fun readAccount(memory: Memory, startedAt: String): Account = withContext(Dispatchers.Default) {
     val started = TimeSource.Monotonic.markNow()
     val heap = LuaHeap(memory)
-    val holders = heap.holders(Holding.entries.map { it.anchor }.toSet())
+    val holders = heap.holders(Holding.entries.map { it.anchor }.toSet() + SQUAD_TEAMS)
     /* Each list's holders with what each holds, the one holding most first. */
     val lists = Holding.entries.associateWith { holding ->
         holders[holding.anchor].orEmpty().map { it to heap.entries(it, holding) }.sortedByDescending { (_, list) -> list.size }
@@ -65,6 +67,7 @@ suspend fun readAccount(memory: Memory, startedAt: String): Account = withContex
         artifacts = read.getValue(Holding.ARTIFACTS),
         collected = lists.getValue(Holding.HEROES).firstOrNull()?.let { (holder, _) -> heap.values<LuaValue.Integer>(heap.field(holder, COLLECTED)).map { it.value } }.orEmpty(),
         rules = read.getValue(Holding.RULES),
+        squads = holders[SQUAD_TEAMS].orEmpty().mapNotNull { heap.squadScreen(it) }.distinct(),
         found = lists.mapValues { (_, candidates) -> candidates.map { (_, list) -> list.size } },
         seconds = started.elapsedNow().inWholeMilliseconds / 1000.0,
     )
@@ -83,6 +86,16 @@ internal fun LuaHeap.entries(holder: Long, holding: Holding): List<LuaValue.Tabl
 
     return if (holding.grouped) held.flatMap { values<LuaValue.Table>(it) } else held
 }
+
+/** A squad screen's stage and squads in the game's own fields; null for a table holding teams that is no squad screen. */
+private fun LuaHeap.squadScreen(holder: Long): JsonElement? {
+    val fields = fields(holder)?.takeIf { it[LuaValue.Text(SQUAD_STAGE)] is LuaValue.Integer } ?: return null
+
+    return json(fields.filterKeys { it.name == SQUAD_STAGE || it.name == SQUAD_TEAMS }, depth = SQUAD_DEPTH)
+}
+
+/** A squad screen's teams, their squads, and each slot's fields. */
+private const val SQUAD_DEPTH = 3
 
 /** An entry as JSON without its `shared` fields, read to an attribute in a piece's attribute list, and with its `keyed` fields as their ids. */
 private fun LuaHeap.entry(entry: LuaValue.Table, holding: Holding): JsonElement? {

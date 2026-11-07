@@ -9,7 +9,6 @@ import com.gloryapps.worscanner.scanner.account.PLAN
 import com.gloryapps.worscanner.scanner.account.ScannedRule
 import com.gloryapps.worscanner.scanner.account.Squads
 import com.gloryapps.worscanner.scanner.account.readAccount
-import com.gloryapps.worscanner.scanner.account.readSquads
 import com.gloryapps.worscanner.scanner.client.Client
 import com.gloryapps.worscanner.scanner.kinds.Kind
 import com.gloryapps.worscanner.scanner.kinds.artifact.ScannedArtifact
@@ -44,10 +43,10 @@ class Accounts(root: File, private val game: Game = Game.shipped) {
         }
     }
 
-    /** Reads the squads the game's open squad screen holds, each hero named by `client`, and keeps them. */
+    /** Reads the squads the game's open squad screen holds, each hero named by `client` and with what he wears, and keeps them. */
     suspend fun squads(memory: Memory, client: Client? = null): List<Squads> {
         val stamp = LocalDateTime.now().format(STAMP)
-        val read = readSquads(memory, client)
+        val read = Cards(game, readAccount(memory, startedAt = stamp), ScanChoices(), client).squads
 
         return withContext(Dispatchers.IO) {
             File(squads, "$stamp.json").apply { parentFile.mkdirs(); writeText(Json.encodeToString(ListSerializer(Squads.serializer()), read)) }
